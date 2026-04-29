@@ -2,6 +2,137 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Y2K FIT HONDURAS — DARK GOTHIC THEME
+   ──────────────────────────────────────────────────────────────────────────
+   How to use this file:
+   - Reference brand tokens via the CSS vars below, or via Tailwind classes
+     mapped in tailwind.config.js (e.g. bg-brand-void-black,
+     text-brand-ghost-white, border-brand-amethyst).
+   - Default headings (h1–h6) and body copy already pick up the right font
+     and color from the @layer base block.
+   - For semantic intents (sale, primary CTA, etc.) prefer the helper
+     classes defined under @layer components at the bottom of this file.
+
+   ─────────────── 70 / 20 / 10 RATIO RULE ───────────────
+   Every screen should roughly hit:
+     70%  Black tones      → Void Black + Abyss Purple (bg, shirt base)
+     20%  White / Silver   → Ghost White text + Silver Ash accents
+     10%  Violet tones     → Sacred Violet + Divine Lilac highlights/glow
+
+   If a layout feels "too purple", you've blown the 10% accent budget.
+   If it feels flat, you're missing the 10% violet pop.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* ────────────────────── PRIMARY (70%) ──────────────────────
+       The black tones. Use for nearly everything that fills space:
+       page backgrounds, sections, cards, garment base color renders. */
+
+    /* Void Black — the canvas. Use on <body>, full-page sections,
+       the nav/footer, modal backdrops, hero backgrounds, and as the
+       default "shirt base color" in product mocks. Pairs with Ghost
+       White text and Sacred Violet accents. */
+    --brand-void-black:    #0A0A0A;
+
+    /* Abyss Purple — the deep gradient companion to Void Black. Use
+       for vertical gradients (Void → Abyss), large dark overlays on
+       imagery, drawer/sheet bodies, and section dividers that need
+       a hint of warmth without breaking the dark feel. */
+    --brand-abyss-purple:  #1A0A2E;
+
+    /* ────────────────────── ACCENT (10%) ──────────────────────
+       Violet family. Reserved for highlights, CTAs, and glow.
+       Be stingy: overuse breaks the 10% rule and the brand. */
+
+    /* Dark Amethyst — heavier violet for borders, dividers on dark
+       surfaces, secondary buttons, and hover backgrounds where
+       Sacred Violet would be too loud. */
+    --brand-amethyst:      #7B2D8E;
+
+    /* Sacred Violet — THE brand color. Use for the logo wordmark,
+       primary CTA buttons (Buy / Add to bag / Checkout), active links,
+       focus rings, and any "look here" UI element. White text on top. */
+    --brand-sacred-violet: #9B4DCA;
+
+    /* Divine Lilac — the glow. Use for hover states (text + button
+       glow), focus halos, neon-style outlines on featured tiles,
+       and subtle drop-shadows behind hero artwork. Never as a fill
+       for blocks of text — too low contrast on Void Black. */
+    --brand-divine-lilac:  #C084FC;
+
+    /* ────────────────────── TEXT / METALLIC (20%) ──────────────────────
+       Off-white and silver. The legibility budget. */
+
+    /* Ghost White — default body and heading text on dark surfaces.
+       Use for paragraphs, h1–h6, button labels on Sacred Violet,
+       and primary list items. NOT pure white — the warm tint keeps
+       it from feeling clinical against the violet undertones. */
+    --brand-ghost-white:   #F5F0FF;
+
+    /* Silver Ash — secondary text and subtle accents. Use for
+       captions, helper text, placeholders, breadcrumb separators,
+       inactive nav, timestamps, and thin metallic borders/dividers
+       where Amethyst would be too saturated. */
+    --brand-silver-ash:    #C0C0C0;
+
+    /* ─────────────────────────── FONTS ───────────────────────────
+       --brand-font-display: UnifrakturMaguntia. Blackletter / gothic.
+         Use ONLY for the logo wordmark and rare hero flourishes.
+         Never for body or buttons — illegible at small sizes.
+       --brand-font-heading: Cinzel. Elegant serif caps.
+         Use for h1–h6, section titles, product names on PDP.
+       --brand-font-body:    Inter. Neutral sans.
+         Use for everything else: paragraphs, buttons, nav, forms. */
+    --brand-font-display: var(--font-unifraktur, 'UnifrakturMaguntia', cursive);
+    --brand-font-heading: var(--font-cinzel, 'Cinzel', serif);
+    --brand-font-body:    var(--font-inter, 'Inter', sans-serif);
+  }
+
+  /* Body — Void Black canvas, Ghost White text, Inter font.
+     This carries the 70% black tone across the whole site. */
+  body {
+    background-color: var(--brand-void-black);
+    color: var(--brand-ghost-white);
+    font-family: var(--brand-font-body);
+  }
+
+  /* Headings — Cinzel + Ghost White. h1/h2 stay bright; h3+ drop
+     to Silver Ash to create hierarchy without leaving the 20% budget. */
+  h1, h2 {
+    font-family: var(--brand-font-heading);
+    color: var(--brand-ghost-white);
+    letter-spacing: 0.02em;
+  }
+
+  h3, h4 {
+    font-family: var(--brand-font-heading);
+    color: var(--brand-ghost-white);
+  }
+
+  h5, h6 {
+    font-family: var(--brand-font-heading);
+    color: var(--brand-silver-ash);
+  }
+
+  /* Links — Sacred Violet by default, glow to Divine Lilac on hover. */
+  a {
+    color: var(--brand-sacred-violet);
+    transition: color 200ms ease;
+  }
+  a:hover {
+    color: var(--brand-divine-lilac);
+    text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
+  }
+
+  /* Selection — Sacred Violet tint with Ghost White text. */
+  ::selection {
+    background-color: var(--brand-sacred-violet);
+    color: var(--brand-ghost-white);
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
@@ -26,6 +157,7 @@
     @apply left-0;
   }
 
+  /* Autofill — keep the dark surface, ghost-white ink. */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
@@ -35,9 +167,9 @@
   select:-webkit-autofill,
   select:-webkit-autofill:hover,
   select:-webkit-autofill:focus {
-    border: 1px solid #212121;
-    -webkit-text-fill-color: #212121;
-    -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+    border: 1px solid var(--brand-amethyst);
+    -webkit-text-fill-color: var(--brand-ghost-white);
+    -webkit-box-shadow: 0 0 0px 1000px var(--brand-abyss-purple) inset;
     transition: background-color 5000s ease-in-out 0s;
   }
 
@@ -47,6 +179,23 @@
   input[type="search"]::-webkit-search-results-decoration {
     -webkit-appearance: none;
   }
+
+  /* ─────────── Brand font helpers ───────────
+     Use when an element needs a brand font without a heading tag. */
+  .font-display { font-family: var(--brand-font-display); }
+  .font-heading { font-family: var(--brand-font-heading); }
+  .font-body    { font-family: var(--brand-font-body); }
+
+  /* ─────────── Glow helpers (the 10% accent) ───────────
+     glow-violet — soft Sacred Violet halo. For featured tiles,
+                   active CTA, hero logo. Don't put on body text.
+     glow-lilac  — brighter Divine Lilac glow. Use only on hover/focus. */
+  .glow-violet {
+    box-shadow: 0 0 24px rgba(155, 77, 202, 0.35);
+  }
+  .glow-lilac {
+    box-shadow: 0 0 32px rgba(192, 132, 252, 0.55);
+  }
 }
 
 @layer components {
@@ -54,8 +203,95 @@
     @apply max-w-[1440px] w-full mx-auto px-6;
   }
 
+  /* Legacy black/white pill — kept for compatibility. Prefer the
+     brand button helpers below for new work. */
   .contrast-btn {
-    @apply px-4 py-2 border border-black rounded-full hover:bg-black hover:text-white transition-colors duration-200 ease-in;
+    @apply px-4 py-2 border rounded-full transition-colors duration-200 ease-in;
+    border-color: var(--brand-ghost-white);
+    color: var(--brand-ghost-white);
+  }
+  .contrast-btn:hover {
+    background-color: var(--brand-ghost-white);
+    color: var(--brand-void-black);
+  }
+
+  /* ─────────── BUTTONS ───────────
+     btn-primary  → main conversion action (Sacred Violet + Ghost White).
+     btn-ghost    → secondary action (Amethyst border, Sacred Violet text).
+     btn-glow     → hero / featured CTA (Sacred Violet + Divine Lilac glow).
+     Use btn-primary by default. Reserve btn-glow for the one most-important
+     action on a page (PDP "Add to bag", hero CTA). */
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-rounded font-medium transition-all duration-200 ease-in;
+    background-color: var(--brand-sacred-violet);
+    color: var(--brand-ghost-white);
+  }
+  .btn-primary:hover {
+    background-color: var(--brand-divine-lilac);
+    color: var(--brand-void-black);
+    box-shadow: 0 0 24px rgba(192, 132, 252, 0.5);
+  }
+
+  .btn-ghost {
+    @apply px-5 py-2.5 rounded-rounded font-medium border transition-colors duration-200 ease-in;
+    border-color: var(--brand-amethyst);
+    color: var(--brand-sacred-violet);
+    background-color: transparent;
+  }
+  .btn-ghost:hover {
+    background-color: var(--brand-abyss-purple);
+    color: var(--brand-divine-lilac);
+  }
+
+  .btn-glow {
+    @apply px-6 py-3 rounded-rounded font-semibold tracking-wide uppercase transition-all duration-200 ease-in;
+    background-color: var(--brand-sacred-violet);
+    color: var(--brand-ghost-white);
+    box-shadow: 0 0 24px rgba(155, 77, 202, 0.4);
+  }
+  .btn-glow:hover {
+    background-color: var(--brand-divine-lilac);
+    color: var(--brand-void-black);
+    box-shadow: 0 0 40px rgba(192, 132, 252, 0.7);
+  }
+
+  /* ─────────── BADGES ───────────
+     badge-accent  → "new", "drop", category tags (Abyss bg + Sacred Violet).
+     badge-glow    → featured / limited (Sacred Violet bg + Ghost White). */
+  .badge-accent {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    background-color: var(--brand-abyss-purple);
+    color: var(--brand-sacred-violet);
+    border: 1px solid var(--brand-amethyst);
+  }
+
+  .badge-glow {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide;
+    background-color: var(--brand-sacred-violet);
+    color: var(--brand-ghost-white);
+  }
+
+  /* ─────────── SURFACES ───────────
+     surface-card    → product cards, modal bodies. Abyss Purple lifted
+                       off the Void Black bg with a thin Amethyst border.
+     surface-gradient→ Void → Abyss vertical gradient for sections / hero.
+     divider-soft    → 1px Amethyst divider between sections. */
+  .surface-card {
+    background-color: var(--brand-abyss-purple);
+    border: 1px solid var(--brand-amethyst);
+    @apply rounded-large;
+  }
+
+  .surface-gradient {
+    background-image: linear-gradient(
+      180deg,
+      var(--brand-void-black) 0%,
+      var(--brand-abyss-purple) 100%
+    );
+  }
+
+  .divider-soft {
+    border-top: 1px solid var(--brand-amethyst);
   }
 
   .text-xsmall-regular {

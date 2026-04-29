@@ -1,9 +1,9 @@
 import { listProducts } from "@lib/data/products"
 import { HttpTypes } from "@medusajs/types"
-import { Text } from "@medusajs/ui"
 
 import InteractiveLink from "@modules/common/components/interactive-link"
 import ProductPreview from "@modules/products/components/product-preview"
+import ProductCarousel from "@modules/home/components/featured-products/product-carousel"
 
 export default async function ProductRail({
   collection,
@@ -22,26 +22,31 @@ export default async function ProductRail({
     },
   })
 
-  if (!pricedProducts) {
+  if (!pricedProducts?.length) {
     return null
   }
 
   return (
-    <div className="content-container py-12 small:py-24">
-      <div className="flex justify-between mb-8">
-        <Text className="txt-xlarge">{collection.title}</Text>
+    <div className="content-container py-10 small:py-16">
+      <div className="flex justify-between items-baseline mb-6">
+        <h2 className="font-heading text-xl" style={{ color: "var(--brand-ghost-white)" }}>
+          {collection.title}
+        </h2>
         <InteractiveLink href={`/collections/${collection.handle}`}>
           View all
         </InteractiveLink>
       </div>
-      <ul className="grid grid-cols-2 small:grid-cols-3 gap-x-6 gap-y-24 small:gap-y-36">
-        {pricedProducts &&
-          pricedProducts.map((product) => (
-            <li key={product.id}>
-              <ProductPreview product={product} region={region} isFeatured />
-            </li>
-          ))}
-      </ul>
+
+      <ProductCarousel>
+        {pricedProducts.map((product) => (
+          <div
+            key={product.id}
+            className="flex-none w-[160px] snap-start small:w-auto small:snap-none"
+          >
+            <ProductPreview product={product} region={region} />
+          </div>
+        ))}
+      </ProductCarousel>
     </div>
   )
 }

@@ -28,6 +28,8 @@ export default async function Home(props: {
     return null
   }
 
+  console.log(collections)
+
   return (
     <>
       <Hero />

@@ -34,6 +34,18 @@ module.exports = {
           80: "#1F2937",
           90: "#111827",
         },
+        brand: {
+          // Primary (70%) — black tones
+          "void-black":     "var(--brand-void-black)",
+          "abyss-purple":   "var(--brand-abyss-purple)",
+          // Accent (10%) — violets
+          amethyst:         "var(--brand-amethyst)",
+          "sacred-violet":  "var(--brand-sacred-violet)",
+          "divine-lilac":   "var(--brand-divine-lilac)",
+          // Text / metallic (20%)
+          "ghost-white":    "var(--brand-ghost-white)",
+          "silver-ash":     "var(--brand-silver-ash)",
+        },
       },
       borderRadius: {
         none: "0px",
@@ -69,6 +81,8 @@ module.exports = {
           "Ubuntu",
           "sans-serif",
         ],
+        display: ["var(--font-unifraktur)", "UnifrakturMaguntia", "cursive"],
+        heading: ["var(--font-cinzel)", "Cinzel", "serif"],
       },
       keyframes: {
         ring: {
