@@ -3,6 +3,8 @@ import { Metadata } from "next"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import StoreTemplate from "@modules/store/templates"
 
+export const revalidate = 600
+
 export const metadata: Metadata = {
   title: "Store",
   description: "Explore all of our products.",

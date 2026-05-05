@@ -4,18 +4,20 @@ import { sdk } from "@lib/config"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
+const COLLECTIONS_REVALIDATE = 1800
+
 export const retrieveCollection = async (id: string) => {
   const next = {
     ...(await getCacheOptions("collections")),
+    revalidate: COLLECTIONS_REVALIDATE,
   }
 
   return sdk.client
     .fetch<{ collection: HttpTypes.StoreCollection }>(
       `/store/collections/${id}`,
       {
-        next: {
-          revalidate: 60,
-        },
+        next,
+        cache: "force-cache",
       }
     )
     .then(({ collection }) => collection)
@@ -26,6 +28,7 @@ export const listCollections = async (
 ): Promise<{ collections: HttpTypes.StoreCollection[]; count: number }> => {
   const next = {
     ...(await getCacheOptions("collections")),
+    revalidate: COLLECTIONS_REVALIDATE,
   }
 
   queryParams.limit = queryParams.limit || "100"
@@ -36,9 +39,8 @@ export const listCollections = async (
       "/store/collections",
       {
         query: queryParams,
-        next: {
-          revalidate: 60,
-        },
+        next,
+        cache: "force-cache",
       }
     )
     .then(({ collections }) => ({ collections, count: collections.length }))
@@ -49,14 +51,14 @@ export const getCollectionByHandle = async (
 ): Promise<HttpTypes.StoreCollection> => {
   const next = {
     ...(await getCacheOptions("collections")),
+    revalidate: COLLECTIONS_REVALIDATE,
   }
 
   return sdk.client
     .fetch<HttpTypes.StoreCollectionListResponse>(`/store/collections`, {
       query: { handle, fields: "*products" },
-      next: {
-        revalidate: 60,
-      },
+      next,
+      cache: "force-cache",
     })
     .then(({ collections }) => collections[0])
 }

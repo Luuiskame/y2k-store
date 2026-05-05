@@ -1,5 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react"
-import { Button, clx } from "@medusajs/ui"
+import { clx } from "@medusajs/ui"
 import React, { Fragment, useMemo } from "react"
 
 import useToggleState from "@lib/hooks/use-toggle-state"
@@ -42,11 +42,8 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   })
 
   const selectedPrice = useMemo(() => {
-    if (!price) {
-      return null
-    }
+    if (!price) return null
     const { variantPrice, cheapestPrice } = price
-
     return variantPrice || cheapestPrice || null
   }, [price])
 
@@ -63,76 +60,89 @@ const MobileActions: React.FC<MobileActionsProps> = ({
           as={Fragment}
           show={show}
           enter="ease-in-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
+          enterFrom="opacity-0 translate-y-full"
+          enterTo="opacity-100 translate-y-0"
           leave="ease-in duration-300"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+          leaveFrom="opacity-100 translate-y-0"
+          leaveTo="opacity-0 translate-y-full"
         >
           <div
-            className="bg-white flex flex-col gap-y-3 justify-center items-center text-large-regular p-4 h-full w-full border-t border-gray-200"
+            className="flex flex-col gap-y-3 p-4 w-full"
+            style={{
+              backgroundColor: "var(--brand-void-black)",
+              borderTop: "1px solid var(--brand-amethyst)",
+              boxShadow: "0 -8px 32px rgba(0,0,0,0.6)",
+            }}
             data-testid="mobile-actions"
           >
-            <div className="flex items-center gap-x-2">
-              <span data-testid="mobile-title">{product.title}</span>
-              <span>—</span>
+            <div className="flex items-center justify-between gap-x-3">
+              <span
+                className="font-heading uppercase tracking-[0.15em] text-sm text-brand-ghost-white truncate"
+                data-testid="mobile-title"
+              >
+                {product.title}
+              </span>
               {selectedPrice ? (
-                <div className="flex items-end gap-x-2 text-ui-fg-base">
+                <div className="flex items-baseline gap-x-2">
                   {selectedPrice.price_type === "sale" && (
-                    <p>
-                      <span className="line-through text-small-regular">
-                        {selectedPrice.original_price}
-                      </span>
-                    </p>
+                    <span className="line-through text-[11px] text-brand-silver-ash">
+                      {selectedPrice.original_price}
+                    </span>
                   )}
                   <span
-                    className={clx({
-                      "text-ui-fg-interactive":
-                        selectedPrice.price_type === "sale",
-                    })}
+                    className={clx(
+                      "font-heading text-base",
+                      selectedPrice.price_type === "sale"
+                        ? "text-brand-divine-lilac"
+                        : "text-brand-ghost-white"
+                    )}
                   >
                     {selectedPrice.calculated_price}
                   </span>
                 </div>
-              ) : (
-                <div></div>
-              )}
+              ) : null}
             </div>
-            <div className={clx("grid grid-cols-2 w-full gap-x-4", {
-              "!grid-cols-1": isSimple
-            })}>
-              {!isSimple && <Button
-                onClick={open}
-                variant="secondary"
-                className="w-full"
-                data-testid="mobile-actions-button"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <span>
+            <div
+              className={clx("grid grid-cols-2 w-full gap-x-3", {
+                "!grid-cols-1": isSimple,
+              })}
+            >
+              {!isSimple && (
+                <button
+                  type="button"
+                  onClick={open}
+                  className="btn-ghost flex items-center justify-between"
+                  data-testid="mobile-actions-button"
+                >
+                  <span className="text-xs uppercase tracking-[0.18em] truncate">
                     {variant
-                      ? Object.values(options).join(" / ")
-                      : "Select Options"}
+                      ? Object.values(options).join(" / ")
+                      : "Talla"}
                   </span>
                   <ChevronDown />
-                </div>
-              </Button>}
-              <Button
+                </button>
+              )}
+              <button
+                type="button"
                 onClick={handleAddToCart}
-                disabled={!inStock || !variant}
-                className="w-full"
-                isLoading={isAdding}
+                disabled={!inStock || !variant || isAdding}
+                className="btn-glow disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                 data-testid="mobile-cart-button"
+                aria-busy={isAdding}
               >
                 {!variant
-                  ? "Select variant"
+                  ? "Selecciona talla"
                   : !inStock
-                  ? "Out of stock"
-                  : "Add to cart"}
-              </Button>
+                  ? "Agotado"
+                  : isAdding
+                  ? "Añadiendo..."
+                  : "Añadir"}
+              </button>
             </div>
           </div>
         </Transition>
       </div>
+
       <Transition appear show={state} as={Fragment}>
         <Dialog as="div" className="relative z-[75]" onClose={close}>
           <Transition.Child
@@ -144,7 +154,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-700 bg-opacity-75 backdrop-blur-sm" />
+            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed bottom-0 inset-x-0">
@@ -152,11 +162,11 @@ const MobileActions: React.FC<MobileActionsProps> = ({
               <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
+                enterFrom="opacity-0 translate-y-8"
+                enterTo="opacity-100 translate-y-0"
                 leave="ease-in duration-200"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
+                leaveFrom="opacity-100 translate-y-0"
+                leaveTo="opacity-0 translate-y-8"
               >
                 <Dialog.Panel
                   className="w-full h-full transform overflow-hidden text-left flex flex-col gap-y-3"
@@ -164,29 +174,40 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                 >
                   <div className="w-full flex justify-end pr-6">
                     <button
+                      type="button"
                       onClick={close}
-                      className="bg-white w-12 h-12 rounded-full text-ui-fg-base flex justify-center items-center"
+                      className="w-12 h-12 rounded-full flex justify-center items-center"
+                      style={{
+                        backgroundColor: "var(--brand-abyss-purple)",
+                        color: "var(--brand-ghost-white)",
+                        border: "1px solid var(--brand-amethyst)",
+                      }}
                       data-testid="close-modal-button"
+                      aria-label="Cerrar"
                     >
                       <X />
                     </button>
                   </div>
-                  <div className="bg-white px-6 py-12">
+                  <div
+                    className="px-6 py-12"
+                    style={{
+                      backgroundColor: "var(--brand-void-black)",
+                      borderTop: "1px solid var(--brand-amethyst)",
+                    }}
+                  >
                     {(product.variants?.length ?? 0) > 1 && (
                       <div className="flex flex-col gap-y-6">
-                        {(product.options || []).map((option) => {
-                          return (
-                            <div key={option.id}>
-                              <OptionSelect
-                                option={option}
-                                current={options[option.id]}
-                                updateOption={updateOptions}
-                                title={option.title ?? ""}
-                                disabled={optionsDisabled}
-                              />
-                            </div>
-                          )
-                        })}
+                        {(product.options || []).map((option) => (
+                          <div key={option.id}>
+                            <OptionSelect
+                              option={option}
+                              current={options[option.id]}
+                              updateOption={updateOptions}
+                              title={option.title ?? ""}
+                              disabled={optionsDisabled}
+                            />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
