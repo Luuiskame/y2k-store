@@ -34,7 +34,10 @@ const Modal = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-opacity-75 backdrop-blur-md  h-screen" />
+          <div
+            className="fixed inset-0 backdrop-blur-md h-screen"
+            style={{ backgroundColor: "rgba(10, 10, 10, 0.75)" }}
+          />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-hidden">
@@ -58,6 +61,16 @@ const Modal = ({
             >
               <Dialog.Panel
                 data-testid={dataTestId}
+                style={
+                  search
+                    ? undefined
+                    : {
+                        backgroundColor: "var(--brand-abyss-purple)",
+                        borderColor: "var(--brand-amethyst)",
+                        color: "var(--brand-ghost-white)",
+                        boxShadow: "0 0 32px rgba(155, 77, 202, 0.25)",
+                      }
+                }
                 className={clx(
                   "flex flex-col justify-start w-full transform p-5 text-left align-middle transition-all max-h-[75vh] h-fit",
                   {
@@ -65,7 +78,7 @@ const Modal = ({
                     "max-w-xl": size === "medium",
                     "max-w-3xl": size === "large",
                     "bg-transparent shadow-none": search,
-                    "bg-white shadow-xl border rounded-rounded": !search,
+                    "border rounded-rounded": !search,
                   }
                 )}
               >
@@ -96,7 +109,7 @@ const Title: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const Description: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <Dialog.Description className="flex text-small-regular text-ui-fg-base items-center justify-center pt-2 pb-4 h-full">
+    <Dialog.Description className="flex text-small-regular text-brand-ghost-white items-center justify-center pt-2 pb-4 h-full">
       {children}
     </Dialog.Description>
   )

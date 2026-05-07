@@ -17,10 +17,17 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus()
 
+  const brandClasses =
+    variant === "primary"
+      ? "bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none transition-colors"
+      : variant === "secondary"
+        ? "bg-transparent border border-brand-amethyst text-brand-sacred-violet hover:bg-brand-abyss-purple hover:text-brand-divine-lilac transition-colors"
+        : ""
+
   return (
     <Button
       size="large"
-      className={className}
+      className={`${brandClasses} ${className ?? ""}`.trim()}
       type="submit"
       isLoading={pending}
       variant={variant || "primary"}

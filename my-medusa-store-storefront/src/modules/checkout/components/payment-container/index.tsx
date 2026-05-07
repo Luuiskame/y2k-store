@@ -34,9 +34,9 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
       value={paymentProviderId}
       disabled={disabled}
       className={clx(
-        "flex flex-col gap-y-2 text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
+        "flex flex-col gap-y-2 text-small-regular cursor-pointer py-4 border border-brand-amethyst rounded-rounded px-8 mb-2 transition-all hover:border-brand-sacred-violet",
         {
-          "border-ui-border-interactive":
+          "border-brand-sacred-violet shadow-[0_0_0_2px_rgba(155,77,202,0.25)]":
             selectedPaymentOptionId === paymentProviderId,
         }
       )}
@@ -44,14 +44,14 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
       <div className="flex items-center justify-between ">
         <div className="flex items-center gap-x-4">
           <Radio checked={selectedPaymentOptionId === paymentProviderId} />
-          <Text className="text-base-regular">
+          <Text className="text-base-regular text-brand-ghost-white">
             {paymentInfoMap[paymentProviderId]?.title || paymentProviderId}
           </Text>
           {isManual(paymentProviderId) && isDevelopment && (
             <PaymentTest className="hidden small:block" />
           )}
         </div>
-        <span className="justify-self-end text-ui-fg-base">
+        <span className="justify-self-end text-brand-silver-ash">
           {paymentInfoMap[paymentProviderId]?.icon}
         </span>
       </div>
@@ -85,14 +85,20 @@ export const StripeCardContainer = ({
       style: {
         base: {
           fontFamily: "Inter, sans-serif",
-          color: "#424270",
+          color: "#F5F0FF",
+          iconColor: "#C084FC",
           "::placeholder": {
-            color: "rgb(107 114 128)",
+            color: "#C0C0C0",
           },
+        },
+        invalid: {
+          color: "#C084FC",
+          iconColor: "#C084FC",
         },
       },
       classes: {
-        base: "pt-3 pb-1 block w-full h-11 px-4 mt-0 bg-ui-bg-field border rounded-md appearance-none focus:outline-none focus:ring-0 focus:shadow-borders-interactive-with-active border-ui-border-base hover:bg-ui-bg-field-hover transition-all duration-300 ease-in-out",
+        base: "pt-3 pb-1 block w-full h-11 px-4 mt-0 bg-brand-void-black border border-brand-amethyst rounded-md appearance-none focus:outline-none focus:ring-0 focus:border-brand-sacred-violet transition-all duration-300 ease-in-out",
+        focus: "border-brand-sacred-violet",
       },
     }
   }, [])
@@ -107,8 +113,8 @@ export const StripeCardContainer = ({
       {selectedPaymentOptionId === paymentProviderId &&
         (stripeReady ? (
           <div className="my-4 transition-all duration-150 ease-in-out">
-            <Text className="txt-medium-plus text-ui-fg-base mb-1">
-              Enter your card details:
+            <Text className="txt-medium-plus text-brand-ghost-white mb-1">
+              Ingresá los datos de tu tarjeta:
             </Text>
             <CardElement
               options={useOptions as StripeCardElementOptions}

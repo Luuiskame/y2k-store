@@ -9,7 +9,6 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import PaymentContainer, {
   StripeCardContainer,
 } from "@modules/checkout/components/payment-container"
-import Divider from "@modules/common/components/divider"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 
@@ -105,29 +104,31 @@ const Payment = ({
   }, [isOpen])
 
   return (
-    <div className="bg-white">
+    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-6 text-brand-ghost-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
           className={clx(
-            "flex flex-row text-3xl-regular gap-x-2 items-baseline",
+            "flex flex-row text-3xl-regular gap-x-2 items-baseline text-brand-ghost-white",
             {
               "opacity-50 pointer-events-none select-none":
                 !isOpen && !paymentReady,
             }
           )}
         >
-          Payment
-          {!isOpen && paymentReady && <CheckCircleSolid />}
+          Pago
+          {!isOpen && paymentReady && (
+            <CheckCircleSolid className="text-brand-sacred-violet" />
+          )}
         </Heading>
         {!isOpen && paymentReady && (
           <Text>
             <button
               onClick={handleEdit}
-              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
+              className="text-brand-sacred-violet hover:text-brand-divine-lilac transition-colors"
               data-testid="edit-payment-button"
             >
-              Edit
+              Editar
             </button>
           </Text>
         )}
@@ -166,14 +167,14 @@ const Payment = ({
 
           {paidByGiftcard && (
             <div className="flex flex-col w-1/3">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                Payment method
+              <Text className="txt-medium-plus text-brand-ghost-white mb-1">
+                Método de pago
               </Text>
               <Text
-                className="txt-medium text-ui-fg-subtle"
+                className="txt-medium text-brand-silver-ash"
                 data-testid="payment-method-summary"
               >
-                Gift card
+                Tarjeta de regalo
               </Text>
             </div>
           )}
@@ -185,7 +186,7 @@ const Payment = ({
 
           <Button
             size="large"
-            className="mt-6"
+            className="mt-6 bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none"
             onClick={handleSubmit}
             isLoading={isLoading}
             disabled={
@@ -195,8 +196,8 @@ const Payment = ({
             data-testid="submit-payment-button"
           >
             {!activeSession && isStripeLike(selectedPaymentMethod)
-              ? " Enter card details"
-              : "Continue to review"}
+              ? "Ingresá los datos de tu tarjeta"
+              : "Continuar a revisión"}
           </Button>
         </div>
 
@@ -204,11 +205,11 @@ const Payment = ({
           {cart && paymentReady && activeSession ? (
             <div className="flex items-start gap-x-1 w-full">
               <div className="flex flex-col w-1/3">
-                <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                  Payment method
+                <Text className="txt-medium-plus text-brand-ghost-white mb-1">
+                  Método de pago
                 </Text>
                 <Text
-                  className="txt-medium text-ui-fg-subtle"
+                  className="txt-medium text-brand-silver-ash"
                   data-testid="payment-method-summary"
                 >
                   {paymentInfoMap[activeSession?.provider_id]?.title ||
@@ -216,14 +217,14 @@ const Payment = ({
                 </Text>
               </div>
               <div className="flex flex-col w-1/3">
-                <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                  Payment details
+                <Text className="txt-medium-plus text-brand-ghost-white mb-1">
+                  Detalles de pago
                 </Text>
                 <div
-                  className="flex gap-2 txt-medium text-ui-fg-subtle items-center"
+                  className="flex gap-2 txt-medium text-brand-silver-ash items-center"
                   data-testid="payment-details-summary"
                 >
-                  <Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
+                  <Container className="flex items-center h-7 w-fit p-2 bg-brand-void-black border border-brand-amethyst">
                     {paymentInfoMap[selectedPaymentMethod]?.icon || (
                       <CreditCard />
                     )}
@@ -231,27 +232,26 @@ const Payment = ({
                   <Text>
                     {isStripeLike(selectedPaymentMethod) && cardBrand
                       ? cardBrand
-                      : "Another step will appear"}
+                      : "Otro paso aparecerá"}
                   </Text>
                 </div>
               </div>
             </div>
           ) : paidByGiftcard ? (
             <div className="flex flex-col w-1/3">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                Payment method
+              <Text className="txt-medium-plus text-brand-ghost-white mb-1">
+                Método de pago
               </Text>
               <Text
-                className="txt-medium text-ui-fg-subtle"
+                className="txt-medium text-brand-silver-ash"
                 data-testid="payment-method-summary"
               >
-                Gift card
+                Tarjeta de regalo
               </Text>
             </div>
           ) : null}
         </div>
       </div>
-      <Divider className="mt-8" />
     </div>
   )
 }

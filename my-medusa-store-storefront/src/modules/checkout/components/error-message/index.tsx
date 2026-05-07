@@ -4,7 +4,10 @@ const ErrorMessage = ({ error, 'data-testid': dataTestid }: { error?: string | n
   }
 
   return (
-    <div className="pt-2 text-rose-500 text-small-regular" data-testid={dataTestid}>
+    <div
+      className="pt-2 text-small-regular text-brand-divine-lilac"
+      data-testid={dataTestid}
+    >
       <span>{error}</span>
     </div>
   )

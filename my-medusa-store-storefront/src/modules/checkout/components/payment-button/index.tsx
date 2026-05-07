@@ -40,7 +40,11 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         <ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
       )
     default:
-      return <Button disabled>Select a payment method</Button>
+      return (
+        <Button disabled className="bg-brand-sacred-violet text-brand-ghost-white border-none">
+          Seleccioná un método de pago
+        </Button>
+      )
   }
 }
 
@@ -139,9 +143,10 @@ const StripePaymentButton = ({
         onClick={handlePayment}
         size="large"
         isLoading={submitting}
+        className="bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
         data-testid={dataTestId}
       >
-        Place order
+        Confirmar pedido
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -178,9 +183,10 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
+        className="bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
         data-testid="submit-order-button"
       >
-        Place order
+        Confirmar pedido
       </Button>
       <ErrorMessage
         error={errorMessage}

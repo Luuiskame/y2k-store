@@ -3,8 +3,6 @@
 import { addToCart } from "@lib/data/cart"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
-import { Button } from "@medusajs/ui"
-import Divider from "@modules/common/components/divider"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
@@ -40,7 +38,6 @@ export default function ProductActions({
   const [isAdding, setIsAdding] = useState(false)
   const countryCode = useParams().countryCode as string
 
-  // If there is only 1 variant, preselect the options
   useEffect(() => {
     if (product.variants?.length === 1) {
       const variantOptions = optionsAsKeymap(product.variants[0].options)
@@ -59,7 +56,6 @@ export default function ProductActions({
     })
   }, [product.variants, options])
 
-  // update the options when a variant is selected
   const setOptionValue = (optionId: string, value: string) => {
     setOptions((prev) => ({
       ...prev,
@@ -67,7 +63,6 @@ export default function ProductActions({
     }))
   }
 
-  //check if the selected options produce a valid variant
   const isValidVariant = useMemo(() => {
     return product.variants?.some((v) => {
       const variantOptions = optionsAsKeymap(v.options)
@@ -92,19 +87,15 @@ export default function ProductActions({
     router.replace(pathname + "?" + params.toString())
   }, [selectedVariant, isValidVariant])
 
-  // check if the selected variant is in stock
   const inStock = useMemo(() => {
-    // If we don't manage inventory, we can always add to cart
     if (selectedVariant && !selectedVariant.manage_inventory) {
       return true
     }
 
-    // If we allow back orders on the variant, we can add to cart
     if (selectedVariant?.allow_backorder) {
       return true
     }
 
-    // If there is inventory available, we can add to cart
     if (
       selectedVariant?.manage_inventory &&
       (selectedVariant?.inventory_quantity || 0) > 0
@@ -112,15 +103,18 @@ export default function ProductActions({
       return true
     }
 
-    // Otherwise, we can't add to cart
     return false
   }, [selectedVariant])
 
-  const actionsRef = useRef<HTMLDivElement>(null)
+  const lowStock = useMemo(() => {
+    if (!selectedVariant?.manage_inventory) return false
+    const qty = selectedVariant?.inventory_quantity || 0
+    return qty > 0 && qty <= 5
+  }, [selectedVariant])
 
+  const actionsRef = useRef<HTMLDivElement>(null)
   const inView = useIntersection(actionsRef, "0px")
 
-  // add the selected variant to the cart
   const handleAddToCart = async () => {
     if (!selectedVariant?.id) return null
 
@@ -135,53 +129,73 @@ export default function ProductActions({
     setIsAdding(false)
   }
 
+  const buttonLabel = !selectedVariant
+    ? "Selecciona una talla"
+    : !inStock || !isValidVariant
+    ? "Agotado"
+    : isAdding
+    ? "Añadiendo..."
+    : "Añadir al carrito"
+
+  const buttonDisabled =
+    !inStock || !selectedVariant || !!disabled || isAdding || !isValidVariant
+
   return (
     <>
-      <div className="flex flex-col gap-y-2" ref={actionsRef}>
-        <div>
-          {(product.variants?.length ?? 0) > 1 && (
-            <div className="flex flex-col gap-y-4">
-              {(product.options || []).map((option) => {
-                return (
-                  <div key={option.id}>
-                    <OptionSelect
-                      option={option}
-                      current={options[option.id]}
-                      updateOption={setOptionValue}
-                      title={option.title ?? ""}
-                      data-testid="product-options"
-                      disabled={!!disabled || isAdding}
-                    />
-                  </div>
-                )
-              })}
-              <Divider />
-            </div>
-          )}
-        </div>
-
+      <div className="flex flex-col gap-y-6" ref={actionsRef}>
         <ProductPrice product={product} variant={selectedVariant} />
 
-        <Button
+        {(product.variants?.length ?? 0) > 1 && (
+          <div className="flex flex-col gap-y-5">
+            {(product.options || []).map((option) => (
+              <div key={option.id}>
+                <OptionSelect
+                  option={option}
+                  current={options[option.id]}
+                  updateOption={setOptionValue}
+                  title={option.title ?? ""}
+                  data-testid="product-options"
+                  disabled={!!disabled || isAdding}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Stock urgency line */}
+        {selectedVariant && inStock && lowStock && (
+          <div
+            className="flex items-center gap-2 text-xs uppercase tracking-[0.2em]"
+            style={{ color: "var(--brand-divine-lilac)" }}
+          >
+            <span aria-hidden>●</span>
+            Stock limitado · Quedan {selectedVariant?.inventory_quantity}
+          </div>
+        )}
+        {selectedVariant && inStock && !lowStock && (
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-brand-silver-ash">
+            <span aria-hidden style={{ color: "var(--brand-sacred-violet)" }}>
+              ●
+            </span>
+            En stock · Listo para envío
+          </div>
+        )}
+
+        <button
+          type="button"
           onClick={handleAddToCart}
-          disabled={
-            !inStock ||
-            !selectedVariant ||
-            !!disabled ||
-            isAdding ||
-            !isValidVariant
-          }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
+          disabled={buttonDisabled}
+          aria-busy={isAdding}
           data-testid="add-product-button"
+          className="btn-glow w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
         >
-          {!selectedVariant && !options
-            ? "Select variant"
-            : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
-        </Button>
+          {buttonLabel}
+        </button>
+
+        <p className="text-[11px] uppercase tracking-[0.22em] text-brand-silver-ash/70 text-center">
+          Pagos seguros · Envío a toda Honduras
+        </p>
+
         <MobileActions
           product={product}
           variant={selectedVariant}

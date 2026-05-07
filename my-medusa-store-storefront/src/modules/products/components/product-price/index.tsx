@@ -18,41 +18,58 @@ export default function ProductPrice({
   const selectedPrice = variant ? variantPrice : cheapestPrice
 
   if (!selectedPrice) {
-    return <div className="block w-32 h-9 bg-gray-100 animate-pulse" />
+    return (
+      <div
+        className="block w-32 h-9 animate-pulse rounded-rounded"
+        style={{ backgroundColor: "var(--brand-abyss-purple)" }}
+      />
+    )
   }
 
+  const isSale = selectedPrice.price_type === "sale"
+
   return (
-    <div className="flex flex-col text-ui-fg-base">
-      <span
-        className={clx("text-xl-semi", {
-          "text-ui-fg-interactive": selectedPrice.price_type === "sale",
-        })}
-      >
-        {!variant && "From "}
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline gap-3 flex-wrap">
         <span
-          data-testid="product-price"
-          data-value={selectedPrice.calculated_price_number}
+          className={clx(
+            "font-heading text-3xl small:text-4xl tracking-wide",
+            isSale ? "text-brand-divine-lilac" : "text-brand-ghost-white"
+          )}
         >
-          {selectedPrice.calculated_price}
-        </span>
-      </span>
-      {selectedPrice.price_type === "sale" && (
-        <>
-          <p>
-            <span className="text-ui-fg-subtle">Original: </span>
-            <span
-              className="line-through"
-              data-testid="original-product-price"
-              data-value={selectedPrice.original_price_number}
-            >
-              {selectedPrice.original_price}
+          {!variant && (
+            <span className="text-sm text-brand-silver-ash mr-1 font-body normal-case tracking-normal">
+              Desde
             </span>
-          </p>
-          <span className="text-ui-fg-interactive">
-            -{selectedPrice.percentage_diff}%
+          )}
+          <span
+            data-testid="product-price"
+            data-value={selectedPrice.calculated_price_number}
+          >
+            {selectedPrice.calculated_price}
           </span>
-        </>
-      )}
+        </span>
+
+        {isSale && (
+          <span
+            className="line-through text-sm text-brand-silver-ash"
+            data-testid="original-product-price"
+            data-value={selectedPrice.original_price_number}
+          >
+            {selectedPrice.original_price}
+          </span>
+        )}
+
+        {isSale && (
+          <span className="badge-glow text-[10px]">
+            -{selectedPrice.percentage_diff}% OFF
+          </span>
+        )}
+      </div>
+
+      <span className="text-[11px] uppercase tracking-[0.2em] text-brand-silver-ash/70">
+        Envio gratis a todo Honduras
+      </span>
     </div>
   )
 }

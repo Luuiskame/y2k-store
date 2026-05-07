@@ -15,6 +15,7 @@ export type Locale = {
 export const listLocales = async (): Promise<Locale[] | null> => {
   const next = {
     ...(await getCacheOptions("locales")),
+    revalidate: 3600,
   }
 
   return sdk.client
