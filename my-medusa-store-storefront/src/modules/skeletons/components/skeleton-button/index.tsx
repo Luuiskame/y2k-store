@@ -1,5 +1,10 @@
 const SkeletonButton = () => {
-  return <div className="w-full min-h-[50px] px-5 py-[10px] bg-gray-100"></div>
+  return (
+    <div
+      className="w-full h-12 rounded-rounded animate-pulse"
+      style={{ background: "rgba(155, 77, 202, 0.28)" }}
+    />
+  )
 }
 
 export default SkeletonButton

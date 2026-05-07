@@ -1,6 +1,6 @@
 "use client"
 
-import { Badge, Heading, Input, Label, Text } from "@medusajs/ui"
+import { Heading, Label, Text } from "@medusajs/ui"
 import React from "react"
 
 import { applyPromotions } from "@lib/data/cart"
@@ -56,17 +56,17 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
   }
 
   return (
-    <div className="w-full bg-white flex flex-col">
+    <div className="w-full flex flex-col text-brand-ghost-white">
       <div className="txt-medium">
         <form action={(a) => addPromotionCode(a)} className="w-full mb-5">
           <Label className="flex gap-x-1 my-2 items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
               type="button"
-              className="txt-medium text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
+              className="txt-medium text-brand-sacred-violet hover:text-brand-divine-lilac transition-colors"
               data-testid="add-discount-button"
             >
-              Add Promotion Code(s)
+              {isOpen ? "− Ocultar código" : "+ Agregar código de promoción"}
             </button>
 
             {/* <Tooltip content="You can add multiple promotion codes">
@@ -77,19 +77,20 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
           {isOpen && (
             <>
               <div className="flex w-full gap-x-2">
-                <Input
-                  className="size-full"
+                <input
+                  className="flex-1 px-3 py-2 rounded-rounded text-sm font-body outline-none transition-colors bg-brand-void-black text-brand-ghost-white border border-brand-amethyst focus:border-brand-sacred-violet"
                   id="promotion-input"
                   name="code"
                   type="text"
                   autoFocus={false}
+                  placeholder="Ingresá tu código"
                   data-testid="discount-input"
                 />
                 <SubmitButton
                   variant="secondary"
                   data-testid="discount-apply-button"
                 >
-                  Apply
+                  Aplicar
                 </SubmitButton>
               </div>
 
@@ -104,8 +105,8 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
         {promotions.length > 0 && (
           <div className="w-full flex items-center">
             <div className="flex flex-col w-full">
-              <Heading className="txt-medium mb-2">
-                Promotion(s) applied:
+              <Heading className="txt-medium mb-2 text-brand-ghost-white">
+                Promociones aplicadas:
               </Heading>
 
               {promotions.map((promotion) => {
@@ -115,14 +116,13 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                     className="flex items-center justify-between w-full max-w-full mb-2"
                     data-testid="discount-row"
                   >
-                    <Text className="flex gap-x-1 items-baseline txt-small-plus w-4/5 pr-1">
+                    <Text className="flex gap-x-1 items-baseline txt-small-plus w-4/5 pr-1 text-brand-silver-ash">
                       <span className="truncate" data-testid="discount-code">
-                        <Badge
-                          color={promotion.is_automatic ? "green" : "grey"}
-                          size="small"
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-brand-amethyst bg-brand-void-black text-brand-divine-lilac"
                         >
                           {promotion.code}
-                        </Badge>{" "}
+                        </span>{" "}
                         (
                         {promotion.application_method?.value !== undefined &&
                           promotion.application_method.currency_code !==
@@ -149,7 +149,8 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                     </Text>
                     {!promotion.is_automatic && (
                       <button
-                        className="flex items-center"
+                        type="button"
+                        className="flex items-center text-brand-silver-ash hover:text-brand-divine-lilac transition-colors"
                         onClick={() => {
                           if (!promotion.code) {
                             return
@@ -161,7 +162,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                       >
                         <Trash size={14} />
                         <span className="sr-only">
-                          Remove discount code from order
+                          Quitar código de descuento
                         </span>
                       </button>
                     )}

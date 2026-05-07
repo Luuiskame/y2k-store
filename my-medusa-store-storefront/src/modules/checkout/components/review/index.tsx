@@ -19,29 +19,28 @@ const Review = ({ cart }: { cart: any }) => {
     (cart.payment_collection || paidByGiftcard)
 
   return (
-    <div className="bg-white">
+    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-6 text-brand-ghost-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
           className={clx(
-            "flex flex-row text-3xl-regular gap-x-2 items-baseline",
+            "flex flex-row text-3xl-regular gap-x-2 items-baseline text-brand-ghost-white",
             {
               "opacity-50 pointer-events-none select-none": !isOpen,
             }
           )}
         >
-          Review
+          Revisión
         </Heading>
       </div>
       {isOpen && previousStepsCompleted && (
         <>
           <div className="flex items-start gap-x-1 w-full mb-6">
             <div className="w-full">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                By clicking the Place Order button, you confirm that you have
-                read, understand and accept our Terms of Use, Terms of Sale and
-                Returns Policy and acknowledge that you have read Medusa
-                Store&apos;s Privacy Policy.
+              <Text className="txt-medium-plus text-brand-silver-ash mb-1">
+                Al confirmar tu pedido, aceptás los Términos de uso, Términos de
+                venta y Política de devoluciones de Y2K Fit Honduras, y
+                reconocés haber leído nuestra Política de privacidad.
               </Text>
             </div>
           </div>
