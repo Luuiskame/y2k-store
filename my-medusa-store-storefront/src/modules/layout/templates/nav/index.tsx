@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import Image from "next/image"
 
 import { listRegions } from "@lib/data/regions"
 import { listLocales } from "@lib/data/locales"
@@ -7,6 +8,7 @@ import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
+import { User } from "@medusajs/icons"
 
 export default async function Nav() {
   const [regions, locales, currentLocale] = await Promise.all([
@@ -17,42 +19,88 @@ export default async function Nav() {
 
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
-      <header className="relative h-16 mx-auto border-b duration-200 bg-brand-void-black border-brand-sacred-violet">
-        <nav className="content-container txt-xsmall-plus text-brand-silver-ash flex items-center justify-between w-full h-full text-small-regular">
-          <div className="flex-1 basis-0 h-full flex items-center">
-            <div className="h-full">
-              <SideMenu regions={regions} locales={locales} currentLocale={currentLocale} />
+      <header className="relative h-16 mx-auto border-b bg-brand-void-black/95 backdrop-blur-md border-brand-amethyst/60">
+        <nav className="content-container flex items-center justify-between w-full h-full text-brand-silver-ash">
+          {/* LEFT — hamburger (mobile) + logo */}
+          <div className="flex items-center gap-x-3 small:gap-x-8 flex-1 small:flex-none basis-0 small:basis-auto">
+            <div className="small:hidden">
+              <SideMenu
+                regions={regions}
+                locales={locales}
+                currentLocale={currentLocale}
+              />
             </div>
-          </div>
 
-          <div className="flex items-center h-full">
             <LocalizedClientLink
               href="/"
-              className="font-heading tracking-widest text-brand-sacred-violet hover:text-brand-divine-lilac uppercase transition-colors duration-200"
               data-testid="nav-store-link"
+              className="flex items-center gap-x-2 group/logo"
+              aria-label="Y2K Fit Store — Inicio"
             >
-              Y2K Fit Store
+              <span className="relative w-7 h-7 small:w-8 small:h-8 shrink-0">
+                <Image
+                  src="/mainlogo.svg"
+                  alt=""
+                  fill
+                  priority
+                  className="object-contain invert opacity-90 group-hover/logo:opacity-100 transition-opacity duration-200"
+                />
+              </span>
+              <span className="font-heading tracking-[0.18em] text-sm small:text-base uppercase text-brand-sacred-violet group-hover/logo:text-brand-divine-lilac transition-colors duration-200">
+                Y2K&nbsp;Fit
+              </span>
             </LocalizedClientLink>
           </div>
 
-          <div className="flex items-center gap-x-6 h-full flex-1 basis-0 justify-end">
-            <div className="hidden small:flex items-center gap-x-6 h-full">
+          {/* CENTER — desktop nav links */}
+          <ul className="hidden small:flex items-center gap-x-10 absolute left-1/2 -translate-x-1/2">
+            <li>
               <LocalizedClientLink
-                className="text-brand-silver-ash hover:text-brand-divine-lilac transition-colors duration-200"
-                href="/account"
-                data-testid="nav-account-link"
+                href="/"
+                className="font-heading uppercase tracking-widest text-sm text-brand-ghost-white hover:text-brand-divine-lilac transition-colors duration-200"
+                data-testid="nav-home-link"
               >
-                Account
+                Inicio
               </LocalizedClientLink>
-            </div>
+            </li>
+            <li>
+              <LocalizedClientLink
+                href="/store"
+                className="font-heading uppercase tracking-widest text-sm text-brand-ghost-white hover:text-brand-divine-lilac transition-colors duration-200"
+                data-testid="nav-store-page-link"
+              >
+                Tienda
+              </LocalizedClientLink>
+            </li>
+          </ul>
+
+          {/* RIGHT — account + cart */}
+          <div className="flex items-center gap-x-3 small:gap-x-5 h-full justify-end">
+            <LocalizedClientLink
+              className="hidden small:inline-flex items-center justify-center w-9 h-9 rounded-full text-brand-silver-ash hover:text-brand-divine-lilac hover:bg-brand-abyss-purple/60 transition-all duration-200"
+              href="/account"
+              data-testid="nav-account-link"
+              aria-label="Cuenta"
+            >
+              <User />
+            </LocalizedClientLink>
+
             <Suspense
               fallback={
                 <LocalizedClientLink
-                  className="text-brand-silver-ash hover:text-brand-divine-lilac flex gap-2 transition-colors duration-200"
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-full text-brand-silver-ash hover:text-brand-divine-lilac transition-colors duration-200"
                   href="/cart"
                   data-testid="nav-cart-link"
+                  aria-label="Carrito"
                 >
-                  Cart (0)
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path d="M6 2.5A1.5 1.5 0 0 1 7.5 1h5A1.5 1.5 0 0 1 14 2.5V4h2.5a1.5 1.5 0 0 1 1.49 1.66l-1.1 10A1.5 1.5 0 0 1 15.4 17H4.6a1.5 1.5 0 0 1-1.49-1.34l-1.1-10A1.5 1.5 0 0 1 3.5 4H6V2.5ZM7.5 4h5V2.5h-5V4Z" />
+                  </svg>
                 </LocalizedClientLink>
               }
             >

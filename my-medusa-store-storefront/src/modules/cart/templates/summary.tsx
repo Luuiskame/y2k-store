@@ -180,22 +180,74 @@ const Summary = ({ cart }: SummaryProps) => {
         <span>Pago 100% seguro · Datos cifrados</span>
       </div>
 
-      <div
-        className="flex items-center justify-center gap-x-3 pt-1"
-        style={{ color: "var(--brand-silver-ash)" }}
-      >
-        <span className="text-[10px] uppercase tracking-wider">Aceptamos</span>
-        <span className="text-xs font-semibold">VISA</span>
+      <div className="flex items-center justify-center gap-x-2 pt-1 flex-wrap">
         <span
-          className="w-1 h-1 rounded-full"
-          style={{ background: "var(--brand-amethyst)" }}
-        />
-        <span className="text-xs font-semibold">Mastercard</span>
-        <span
-          className="w-1 h-1 rounded-full"
-          style={{ background: "var(--brand-amethyst)" }}
-        />
-        <span className="text-xs font-semibold">Transferencia</span>
+          className="text-[10px] uppercase tracking-wider mr-1"
+          style={{ color: "var(--brand-silver-ash)" }}
+        >
+          Aceptamos
+        </span>
+
+        {/* Visa */}
+        <svg
+          width="42"
+          height="28"
+          viewBox="0 0 42 28"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-label="Visa"
+          role="img"
+        >
+          <rect width="42" height="28" rx="4" fill="#1A1F71" />
+          <text
+            x="21"
+            y="19"
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontWeight="700"
+            fontStyle="italic"
+            fontSize="13"
+            fill="white"
+            letterSpacing="0.5"
+          >
+            VISA
+          </text>
+        </svg>
+
+        {/* Mastercard */}
+        <svg
+          width="42"
+          height="28"
+          viewBox="0 0 42 28"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-label="Mastercard"
+          role="img"
+        >
+          <rect width="42" height="28" rx="4" fill="#252525" />
+          <circle cx="16" cy="14" r="8" fill="#EB001B" />
+          <circle cx="26" cy="14" r="8" fill="#F79E1B" />
+          <path
+            d="M21 7.54a8 8 0 0 1 0 12.92A8 8 0 0 1 21 7.54z"
+            fill="#FF5F00"
+          />
+        </svg>
+
+        {/* BAC Credomatic */}
+        <div
+          className="flex items-center justify-center rounded px-2"
+          style={{
+            background: "#C8102E",
+            height: "28px",
+            minWidth: "70px",
+          }}
+        >
+          <img
+            src="/bac-credomatic.svg"
+            alt="BAC Credomatic"
+            style={{ height: "14px", width: "auto", filter: "brightness(0) invert(1)" }}
+          />
+        </div>
       </div>
     </div>
   )

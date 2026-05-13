@@ -7,6 +7,7 @@ import {
   Transition,
 } from "@headlessui/react"
 import { convertToLocale } from "@lib/util/money"
+import { ShoppingBag } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import Item from "@modules/cart/components/item"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -80,12 +81,25 @@ const CartDropdown = ({
       onMouseLeave={close}
     >
       <Popover className="relative h-full">
-        <PopoverButton className="h-full">
+        <PopoverButton className="h-full focus:outline-none">
           <LocalizedClientLink
-            className="text-brand-silver-ash hover:text-brand-divine-lilac transition-colors duration-200"
+            className="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-brand-silver-ash hover:text-brand-divine-lilac hover:bg-brand-abyss-purple/60 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-sacred-violet"
             href="/cart"
             data-testid="nav-cart-link"
-          >{`Cart (${totalItems})`}</LocalizedClientLink>
+            aria-label={`Carrito (${totalItems} ${
+              totalItems === 1 ? "artículo" : "artículos"
+            })`}
+          >
+            <ShoppingBag />
+            {totalItems > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-heading font-semibold bg-brand-sacred-violet text-brand-ghost-white shadow-[0_0_10px_rgba(155,77,202,0.6)]"
+                data-testid="nav-cart-count"
+              >
+                {totalItems > 99 ? "99+" : totalItems}
+              </span>
+            )}
+          </LocalizedClientLink>
         </PopoverButton>
         <Transition
           show={cartDropdownOpen}
