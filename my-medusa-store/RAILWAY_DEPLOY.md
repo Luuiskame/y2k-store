@@ -72,8 +72,8 @@ Env vars to set on Railway (also added to `.env.template`):
 | `R2_SECRET_ACCESS_KEY` | from the API token | Shown only once at creation |
 | `R2_FILE_URL` | `https://pub-xxxx.r2.dev` or `https://cdn.yourdomain.com` | Public URL prefix for uploaded files |
 
-- [ ] Add the **same 5 vars locally** to `my-medusa-store/.env` if you want to test uploads in dev before deploying. Otherwise dev will fail when you try to upload an image.
-- [ ] **Update the storefront's `next.config.js`** `images.remotePatterns` to include your R2 hostname, otherwise `next/image` will refuse to render product images. Add:
+- [done] Add the **same 5 vars locally** to `my-medusa-store/.env` if you want to test uploads in dev before deploying. Otherwise dev will fail when you try to upload an image.
+- [done] **Update the storefront's `next.config.js`** `images.remotePatterns` to include your R2 hostname, otherwise `next/image` will refuse to render product images. Add:
   ```js
   {
     protocol: "https",
@@ -83,12 +83,22 @@ Env vars to set on Railway (also added to `.env.template`):
 
 After deploy, verify by uploading a product image in the admin → image URL should be `https://<R2_FILE_URL>/<filename>` and load in a browser.
 
-### Events / Cache / Workflow engine (recommended for production)
+### Events / Cache / Workflow engine — Redis
 
-- [ ] Currently `medusa-config.ts` has no Redis modules configured — Medusa falls back to in-memory implementations, which lose state on restart and don't work across multiple instances. For production:
-  - [ ] Add a Redis plugin on Railway (one-click) OR use Upstash.
-  - [ ] Add modules in `medusa-config.ts`: `@medusajs/event-bus-redis`, `@medusajs/cache-redis`, `@medusajs/workflow-engine-redis`.
-  - [ ] Set `REDIS_URL` env var on Railway.
+- [done] **Redis modules wired into `medusa-config.ts`.** Three modules are now registered: `@medusajs/medusa/cache-redis`, `@medusajs/medusa/event-bus-redis`, and `@medusajs/medusa/workflow-engine-redis`. They all read from a single `REDIS_URL` env var.
+- [done] **Conditional load.** The Redis modules only register when `REDIS_URL` is set. If it's unset (e.g. local dev without Redis), Medusa falls back to the in-memory implementations and the server still boots normally.
+- [done] **`.env.template` updated** with the `REDIS_URL` entry (left blank — intentional, to opt into in-memory locally).
+
+What you still need to do **on Railway**:
+
+- [done] In Railway → your project → **+ New → Database → Add Redis**. This one-click provisions a Redis instance inside the same project and exposes a `REDIS_URL` reference variable.
+- [ ] In your Medusa service → **Variables** → click **+ New Variable → Reference → select the Redis service → `REDIS_URL`** (Railway will auto-link it as `${{Redis.REDIS_URL}}`). This way you never paste the URL by hand and rotations propagate automatically.
+  - Alternative: Upstash (free tier, separate provider). Copy the `rediss://...` URL from Upstash and paste it as a plain `REDIS_URL` variable on the Medusa service. Note Upstash uses TLS (`rediss://`), which is fine — ioredis handles both.
+- [ ] Redeploy. On boot you should see Medusa log three Redis connections (cache, event bus, workflow engine) instead of the in-memory warnings.
+
+Optional (only if you want Redis in local dev):
+
+- [ ] Run `docker run -d --name medusa-redis -p 6379:6379 redis:7-alpine` and set `REDIS_URL=redis://localhost:6379` in `my-medusa-store/.env`. Otherwise leave it blank locally.
 
 ### Email / Notifications
 
@@ -138,7 +148,7 @@ Recommended once you set them up:
 
 | Variable | Value |
 |---|---|
-| `REDIS_URL` | From Railway Redis plugin or Upstash |
+| `REDIS_URL` | **Recommended** — link as `${{Redis.REDIS_URL}}` from the Railway Redis plugin, or paste an Upstash `rediss://...` URL. Unset = in-memory fallback (not recommended for prod). |
 | `MEDUSA_BACKEND_URL` | Your public backend URL (used by admin to know its own origin) |
 | `STRIPE_API_KEY` | If using Stripe |
 | `R2_ENDPOINT` | **Required** for R2 file storage (see section 2) |
@@ -208,4 +218,4 @@ This is just so you know what's coming next. Don't do these yet unless you're re
 - [ ] **Custom domain for the backend?** Either keep `*.up.railway.app` (free, fine to start) or add `api.yourdomain.com` as a custom domain in Railway → costs nothing extra, looks cleaner.
 - [done] **File storage provider:** Cloudflare R2 (configured in `medusa-config.ts`).
 - [ ] **Email provider?** Resend is the easiest path for a small store.
-- [ ] **Redis now or later?** Recommended now, but the store will boot without it.
+- [done] **Redis:** modules configured (cache + event bus + workflow engine). Provision Redis on Railway and link `REDIS_URL`.

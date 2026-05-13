@@ -4,6 +4,7 @@
 /uploads
 /node_modules
 yarn-error.log
+RAILWAY_DEPLOY.md
 
 .idea
 

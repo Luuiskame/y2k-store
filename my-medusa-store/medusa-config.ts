@@ -33,5 +33,33 @@ module.exports = defineConfig({
         ],
       },
     },
+    ...(process.env.REDIS_URL
+      ? [
+          {
+            resolve: "@medusajs/medusa/cache-redis",
+            options: {
+              redisUrl: process.env.REDIS_URL,
+            },
+          },
+          {
+            resolve: "@medusajs/medusa/event-bus-redis",
+            options: {
+              redisUrl: process.env.REDIS_URL,
+              jobOptions: {
+                removeOnComplete: { age: 3600, count: 1000 },
+                removeOnFail: { age: 3600, count: 1000 },
+              },
+            },
+          },
+          {
+            resolve: "@medusajs/medusa/workflow-engine-redis",
+            options: {
+              redis: {
+                url: process.env.REDIS_URL,
+              },
+            },
+          },
+        ]
+      : []),
   ],
 })
