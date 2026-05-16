@@ -6,7 +6,7 @@ const Hero = () => {
     <section className="relative w-full overflow-hidden bg-brand-void-black">
       {/* Layered background: void→abyss gradient, central violet glow, vignette */}
       <div aria-hidden className="absolute inset-0">
-        <div className="absolute inset-0 surface-gradient" />
+        <div className="absolute inset-0 " />
         <div
           className="absolute inset-0"
           style={{
@@ -35,13 +35,13 @@ const Hero = () => {
 
         <div className="flex flex-col gap-3 max-w-2xl">
           <h1 className="font-heading uppercase tracking-[0.18em] text-3xl small:text-5xl text-brand-ghost-white">
-            Forged in the Dark
+            Y2k Fit
           </h1>
-          <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
+          {/* <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
             Compresión técnica con estética gótica. Activewear de alto
             rendimiento para los que entrenan distinto — el primero y único en
             Honduras.
-          </p>
+          </p> */}
         </div>
 
         <div className="flex flex-col small:flex-row items-center gap-4 mt-2">
