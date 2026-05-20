@@ -81,7 +81,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
         >
           <Thumbnail
             thumbnail={item.thumbnail}
-            images={item.variant?.product?.images}
+            images={item.product?.images}
             size="square"
           />
         </LocalizedClientLink>
@@ -133,7 +133,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       >
         <Thumbnail
           thumbnail={item.thumbnail}
-          images={item.variant?.product?.images}
+          images={item.product?.images}
           size="square"
         />
       </LocalizedClientLink>
