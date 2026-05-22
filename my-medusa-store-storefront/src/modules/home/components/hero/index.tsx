@@ -26,7 +26,7 @@ const Hero = () => {
       <div className="relative z-10 content-container min-h-[88vh] flex flex-col items-center justify-center text-center py-20 small:py-28 gap-8">
         {/* Scarcity + locality pill */}
         <span className="badge-glow tracking-[0.25em] text-[10px] small:text-xs">
-          Drop 001 · Hecho en Honduras
+          Y2K FIT
         </span>
 
         <div>
@@ -38,9 +38,9 @@ const Hero = () => {
             Camisetas de Compresión Góticas en Honduras
           </h1>
           <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
-            Y2K Fit Honduras — activewear oscuro inspirado en Breathe Divinity.
+            Y2K Fit Honduras trae camisetas Breathe Divinity.
             Compresión técnica con estética gótica para los que entrenan
-            distinto. La primera marca de su tipo, hecha en Honduras.
+            y buscan algo distinto. Por primera vez en Honduras
           </p>
         </div>
 
@@ -62,7 +62,7 @@ const Hero = () => {
           <li aria-hidden className="hidden small:inline">
             ·
           </li>
-          <li>Drops Limitados</li>
+          <li>Camisetas exclusivas</li>
           <li aria-hidden className="hidden small:inline">
             ·
           </li>

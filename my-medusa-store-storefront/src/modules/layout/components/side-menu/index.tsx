@@ -2,12 +2,16 @@
 
 import { Popover, PopoverPanel, Transition } from "@headlessui/react"
 import {
+  AcademicCap,
   ArrowRightMini,
   BarsThree,
   BuildingStorefront,
-  Heart,
+  // Heart, // (Favoritos — desactivado por ahora)
   House,
+  QuestionMarkCircle,
   ShoppingBag,
+  Sparkles,
+  TruckFast,
   User,
   XMark,
 } from "@medusajs/icons"
@@ -26,12 +30,39 @@ type MenuItem = {
   Icon: React.ComponentType<{ className?: string }>
 }
 
-const SideMenuItems: MenuItem[] = [
-  { name: "Inicio", href: "/", Icon: House },
-  { name: "Tienda", href: "/store", Icon: BuildingStorefront },
-  { name: "Favoritos", href: "/account/@dashboard/profile", Icon: Heart },
-  { name: "Cuenta", href: "/account", Icon: User },
-  { name: "Carrito", href: "/cart", Icon: ShoppingBag },
+type MenuSection = {
+  label?: string
+  items: MenuItem[]
+}
+
+const SideMenuSections: MenuSection[] = [
+  {
+    items: [
+      { name: "Inicio", href: "/", Icon: House },
+      { name: "Tienda", href: "/store", Icon: BuildingStorefront },
+    ],
+  },
+  {
+    label: "Información",
+    items: [
+      { name: "Sobre Nosotros", href: "/sobre-nosotros", Icon: Sparkles },
+      { name: "Guía de Tallas", href: "/guia-de-tallas", Icon: AcademicCap },
+      { name: "Envíos", href: "/envios", Icon: TruckFast },
+      {
+        name: "Preguntas Frecuentes",
+        href: "/preguntas-frecuentes",
+        Icon: QuestionMarkCircle,
+      },
+    ],
+  },
+  {
+    label: "Cuenta",
+    items: [
+      // { name: "Favoritos", href: "/account/@dashboard/profile", Icon: Heart },
+      { name: "Cuenta", href: "/account", Icon: User },
+      { name: "Carrito", href: "/cart", Icon: ShoppingBag },
+    ],
+  },
 ]
 
 type SideMenuProps = {
@@ -105,21 +136,34 @@ const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
                     </div>
 
                     {/* Menu items */}
-                    <ul className="flex flex-col gap-1 items-start justify-start flex-1">
-                      {SideMenuItems.map(({ name, href, Icon }) => (
-                        <li key={name} className="w-full">
-                          <LocalizedClientLink
-                            href={href}
-                            className="flex items-center gap-x-4 w-full py-3 px-3 rounded-rounded font-heading uppercase tracking-widest text-lg text-brand-ghost-white hover:text-brand-divine-lilac hover:bg-brand-abyss-purple/60 transition-all duration-200"
-                            onClick={close}
-                            data-testid={`${name.toLowerCase()}-link`}
-                          >
-                            <Icon className="w-5 h-5 text-brand-sacred-violet" />
-                            <span>{name}</span>
-                          </LocalizedClientLink>
-                        </li>
+                    <nav className="flex flex-col gap-y-6 items-start justify-start flex-1 overflow-y-auto">
+                      {SideMenuSections.map((section, idx) => (
+                        <div key={section.label ?? `section-${idx}`} className="w-full">
+                          {section.label && (
+                            <span className="block px-3 mb-2 text-[10px] tracking-[0.25em] uppercase text-brand-silver-ash/60 font-heading">
+                              {section.label}
+                            </span>
+                          )}
+                          <ul className="flex flex-col gap-1 w-full">
+                            {section.items.map(({ name, href, Icon }) => (
+                              <li key={name} className="w-full">
+                                <LocalizedClientLink
+                                  href={href}
+                                  className="flex items-center gap-x-4 w-full py-3 px-3 rounded-rounded font-heading uppercase tracking-widest text-base text-brand-ghost-white hover:text-brand-divine-lilac hover:bg-brand-abyss-purple/60 transition-all duration-200"
+                                  onClick={close}
+                                  data-testid={`${name
+                                    .toLowerCase()
+                                    .replace(/\s+/g, "-")}-link`}
+                                >
+                                  <Icon className="w-5 h-5 text-brand-sacred-violet shrink-0" />
+                                  <span>{name}</span>
+                                </LocalizedClientLink>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ))}
-                    </ul>
+                    </nav>
 
                     {/* Footer — region / language / copyright */}
                     <div className="flex flex-col gap-y-5 pt-6 border-t border-brand-amethyst/40">

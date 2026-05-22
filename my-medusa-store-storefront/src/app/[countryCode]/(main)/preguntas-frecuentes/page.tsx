@@ -20,8 +20,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Sí. Cada camiseta está diseñada con tela técnica de compresión que mejora el soporte muscular, reduce la fatiga y maneja el sudor. Las usamos para gym, calistenia y entrenamiento funcional.",
   },
   {
-    q: "¿Cómo se compara con Breathe Divinity o Midnight Studios?",
-    a: "Mismo lenguaje estético — paletas oscuras, simbolismo gótico, compresión técnica — pero hecho en Honduras, con envío local, sin aduana y a precio en lempiras.",
+    q: "¿Son originales?",
+    a: "De momento solo manejamos producto 100% original, siempre manteniendo precios justos",
   },
   {
     q: "¿Qué talla pido?",
@@ -29,19 +29,19 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuánto tardan los envíos?",
-    a: "1–2 días hábiles a Tegucigalpa y San Pedro Sula. 2–4 días a ciudades intermedias. 3–6 días al resto del país. Detalles en la página de envíos.",
+    a: "entrega inmediata en SPS y alrededores. 1–2 días hábiles a Tegucigalpa. 2–4 días a ciudades intermedias. 3–6 días al resto del país. Detalles en la página de envíos.",
   },
   {
     q: "¿Aceptan cambios?",
     a: "Sí, hacemos cambio de talla dentro de los 7 días posteriores a la entrega si la prenda está sin usar y con etiqueta.",
   },
   {
-    q: "¿Por qué drops limitados?",
-    a: "Cada colección es numerada y limitada. Cuando se agota, se agota. No hacemos producción infinita — eso protege el valor de cada pieza y mantiene la identidad de la marca.",
+    q: "¿Por qué tan poco inventario?",
+    a: "Nos enfocamos en drops limitados para mantener la exclusividad y el valor de cada pieza.",
   },
   {
     q: "¿Dónde están ubicados?",
-    a: "Operamos desde Honduras y enviamos a todo el país. Si nos sigues en redes verás cuándo activamos pop-ups y drops presenciales.",
+    a: "Operamos desde San Pedro sula sin tienda física (de momento), pero con envíos a todo Honduras.",
   },
 ]
 

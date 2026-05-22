@@ -39,17 +39,17 @@ export default function EnviosPage() {
               <strong className="text-brand-ghost-white">
                 Tegucigalpa y SPS:
               </strong>{" "}
-              1–2 días hábiles después de despachado.
+              SPS: entrega inmediata el mismo dia. Tegucigalpa: 2-3 días hábiles.
             </li>
             <li>
               <strong className="text-brand-ghost-white">
                 Ciudades intermedias:
               </strong>{" "}
-              2–4 días hábiles (La Ceiba, Choluteca, Comayagua, Danlí, Siguatepeque).
+              3–4 días hábiles (La Ceiba, Choluteca, Comayagua, Danlí, Siguatepeque, Choluteca).
             </li>
             <li>
               <strong className="text-brand-ghost-white">Resto del país:</strong>{" "}
-              3–6 días hábiles según ubicación.
+              4–6 días hábiles según ubicación.
             </li>
           </ul>
         </section>
