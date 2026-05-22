@@ -35,13 +35,13 @@ const Hero = () => {
 
         <div className="flex flex-col gap-3 max-w-2xl">
           <h1 className="font-heading uppercase tracking-[0.18em] text-3xl small:text-5xl text-brand-ghost-white">
-            Y2k Fit
+            Camisetas de Compresión Góticas en Honduras
           </h1>
-          {/* <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
-            Compresión técnica con estética gótica. Activewear de alto
-            rendimiento para los que entrenan distinto — el primero y único en
-            Honduras.
-          </p> */}
+          <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
+            Y2K Fit Honduras — activewear oscuro inspirado en Breathe Divinity.
+            Compresión técnica con estética gótica para los que entrenan
+            distinto. La primera marca de su tipo, hecha en Honduras.
+          </p>
         </div>
 
         <div className="flex flex-col small:flex-row items-center gap-4 mt-2">

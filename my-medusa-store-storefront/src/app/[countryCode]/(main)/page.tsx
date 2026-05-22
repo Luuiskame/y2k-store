@@ -8,9 +8,19 @@ import { getRegion } from "@lib/data/regions"
 export const revalidate = 600
 
 export const metadata: Metadata = {
-  title: "Medusa Next.js Starter Template",
+  title:
+    "Camisetas de Compresión Góticas en Honduras | Y2K Fit Honduras",
   description:
-    "A performant frontend ecommerce starter template with Next.js 15 and Medusa.",
+    "Compra camisetas de compresión con estética gótica en Honduras. Activewear oscuro inspirado en Breathe Divinity — drops limitados, envíos a todo el país. Hecho en Honduras.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title:
+      "Camisetas de Compresión Góticas en Honduras | Y2K Fit Honduras",
+    description:
+      "Activewear gótico hecho en Honduras. Compresión técnica + estética oscura. Drops limitados.",
+    url: "/",
+    type: "website",
+  },
 }
 
 export default async function Home(props: {

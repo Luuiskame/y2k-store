@@ -89,12 +89,25 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     notFound()
   }
 
+  const cleanDescription =
+    product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+    `${product.title} — camiseta de compresión gótica de Y2K Fit Honduras. Activewear oscuro inspirado en Breathe Divinity. Envíos a toda Honduras.`
+
   return {
-    title: `${product.title} | Medusa Store`,
-    description: `${product.title}`,
+    title: `${product.title} · Camiseta de Compresión Gótica`,
+    description: cleanDescription,
+    alternates: { canonical: `/products/${handle}` },
     openGraph: {
-      title: `${product.title} | Medusa Store`,
-      description: `${product.title}`,
+      title: `${product.title} | Y2K Fit Honduras`,
+      description: cleanDescription,
+      type: "website",
+      url: `/products/${handle}`,
+      images: product.thumbnail ? [product.thumbnail] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.title} | Y2K Fit Honduras`,
+      description: cleanDescription,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
   }
@@ -122,12 +135,49 @@ export default async function ProductPage(props: Props) {
     notFound()
   }
 
+  const cheapestVariant = pricedProduct.variants
+    ?.map((v: any) => v.calculated_price)
+    .filter((p: any) => p?.calculated_amount != null)
+    .sort(
+      (a: any, b: any) => a.calculated_amount - b.calculated_amount
+    )[0]
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: pricedProduct.title,
+    description:
+      pricedProduct.description ||
+      `${pricedProduct.title} — camiseta de compresión gótica de Y2K Fit Honduras.`,
+    image: (pricedProduct.images || []).map((i: any) => i.url).filter(Boolean),
+    sku: pricedProduct.variants?.[0]?.sku ?? undefined,
+    brand: { "@type": "Brand", name: "Y2K Fit Honduras" },
+    category: "Apparel > Activewear > Compression Shirts",
+    offers: cheapestVariant
+      ? {
+          "@type": "Offer",
+          price: cheapestVariant.calculated_amount,
+          priceCurrency:
+            cheapestVariant.currency_code?.toUpperCase() ||
+            region.currency_code?.toUpperCase(),
+          availability: "https://schema.org/InStock",
+          url: `/products/${params.handle}`,
+        }
+      : undefined,
+  }
+
   return (
-    <ProductTemplate
-      product={pricedProduct}
-      region={region}
-      countryCode={params.countryCode}
-      images={images}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <ProductTemplate
+        product={pricedProduct}
+        region={region}
+        countryCode={params.countryCode}
+        images={images}
+      />
+    </>
   )
 }
