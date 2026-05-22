@@ -14,12 +14,14 @@ const Login = ({ setCurrentView }: Props) => {
 
   return (
     <div
-      className="max-w-sm w-full flex flex-col items-center"
+      className="surface-card max-w-sm w-full flex flex-col items-center p-8"
       data-testid="login-page"
     >
-      <h1 className="text-large-semi uppercase mb-6">Welcome back</h1>
-      <p className="text-center text-base-regular text-ui-fg-base mb-8">
-        Sign in to access an enhanced shopping experience.
+      <h1 className="text-large-semi uppercase mb-6 text-[color:var(--brand-ghost-white)]">
+        Bienvenido de nuevo
+      </h1>
+      <p className="text-center text-base-regular text-[color:var(--brand-silver-ash)] mb-8">
+        Ingresa tu email y contraseña para acceder a tu cuenta.
       </p>
       <form className="w-full" action={formAction}>
         <div className="flex flex-col w-full gap-y-2">
@@ -33,7 +35,7 @@ const Login = ({ setCurrentView }: Props) => {
             data-testid="email-input"
           />
           <Input
-            label="Password"
+            label="Contraseña"
             name="password"
             type="password"
             autoComplete="current-password"
@@ -42,18 +44,18 @@ const Login = ({ setCurrentView }: Props) => {
           />
         </div>
         <ErrorMessage error={message} data-testid="login-error-message" />
-        <SubmitButton data-testid="sign-in-button" className="w-full mt-6">
-          Sign in
+        <SubmitButton data-testid="sign-in-button" className="btn-primary w-full mt-6">
+          Sign In
         </SubmitButton>
       </form>
-      <span className="text-center text-ui-fg-base text-small-regular mt-6">
-        Not a member?{" "}
+      <span className="text-center text-[color:var(--brand-silver-ash)] text-small-regular mt-6">
+        No tienes una cuenta?{" "}
         <button
           onClick={() => setCurrentView(LOGIN_VIEW.REGISTER)}
-          className="underline"
+          className="underline text-[color:var(--brand-sacred-violet)] hover:text-[color:var(--brand-divine-lilac)] transition-colors"
           data-testid="register-button"
         >
-          Join us
+          Regístrate aquí
         </button>
         .
       </span>
