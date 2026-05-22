@@ -72,6 +72,15 @@ export default async function Nav() {
                 Tienda
               </LocalizedClientLink>
             </li>
+            <li>
+              <LocalizedClientLink
+                href="/sobre-nosotros"
+                className="font-heading uppercase tracking-widest text-sm text-brand-ghost-white hover:text-brand-divine-lilac transition-colors duration-200"
+                data-testid="nav-about-link"
+              >
+                Sobre&nbsp;Nosotros
+              </LocalizedClientLink>
+            </li>
           </ul>
 
           {/* RIGHT — account + cart */}

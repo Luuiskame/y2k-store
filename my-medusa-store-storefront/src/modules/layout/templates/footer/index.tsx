@@ -27,7 +27,7 @@ export default async function Footer() {
             {productCategories && productCategories?.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
-                  Categories
+                  Categorías
                 </span>
                 <ul
                   className="grid grid-cols-1 gap-2"
@@ -85,7 +85,7 @@ export default async function Footer() {
             {collections && collections.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
-                  Collections
+                  Colecciones
                 </span>
                 <ul
                   className={clx(
@@ -108,41 +108,45 @@ export default async function Footer() {
                 </ul>
               </div>
             )}
-            {/* <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">Medusa</span>
+            <div className="flex flex-col gap-y-2">
+              <span className="txt-small-plus txt-ui-fg-base">
+                Y2K Fit Honduras
+              </span>
               <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
                 <li>
-                  <a
-                    href="https://github.com/medusajs"
-                    target="_blank"
-                    rel="noreferrer"
+                  <LocalizedClientLink
+                    href="/sobre-nosotros"
                     className="hover:text-ui-fg-base"
                   >
-                    GitHub
-                  </a>
+                    Sobre nosotros
+                  </LocalizedClientLink>
                 </li>
                 <li>
-                  <a
-                    href="https://docs.medusajs.com"
-                    target="_blank"
-                    rel="noreferrer"
+                  <LocalizedClientLink
+                    href="/envios"
                     className="hover:text-ui-fg-base"
                   >
-                    Documentation
-                  </a>
+                    Envíos
+                  </LocalizedClientLink>
                 </li>
                 <li>
-                  <a
-                    href="https://github.com/medusajs/nextjs-starter-medusa"
-                    target="_blank"
-                    rel="noreferrer"
+                  <LocalizedClientLink
+                    href="/guia-de-tallas"
                     className="hover:text-ui-fg-base"
                   >
-                    Source code
-                  </a>
+                    Guía de tallas
+                  </LocalizedClientLink>
+                </li>
+                <li>
+                  <LocalizedClientLink
+                    href="/preguntas-frecuentes"
+                    className="hover:text-ui-fg-base"
+                  >
+                    Preguntas frecuentes
+                  </LocalizedClientLink>
                 </li>
               </ul>
-            </div> */}
+            </div>
           </div>
         </div>
         <div className="flex w-full mb-16 justify-between text-brand-silver-ash">

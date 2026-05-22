@@ -25,16 +25,116 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
+  title: {
+    default:
+      "Y2K Fit Honduras | Camisetas de Compresión Gótica · Activewear Oscuro",
+    template: "%s | Y2K Fit Honduras",
+  },
+  description:
+    "Camisetas de compresión en Honduras con estética gótica. Activewear oscuro inspirado en Breathe Divinity — la primera marca de ropa deportiva alternativa hecha en Honduras. Envíos a todo el país.",
+  keywords: [
+    "camisetas de compresión Honduras",
+    "ropa de compresión Honduras",
+    "compression shirt Honduras",
+    "ropa deportiva gótica",
+    "activewear gótico Honduras",
+    "ropa gym oscura",
+    "alternativa Breathe Divinity",
+    "Midnight Studios Honduras",
+    "y2k streetwear Honduras",
+    "ropa alternativa Tegucigalpa",
+    "ropa gym San Pedro Sula",
+    "Y2K Fit Honduras",
+  ],
+  applicationName: "Y2K Fit Honduras",
+  authors: [{ name: "Y2K Fit Honduras" }],
+  creator: "Y2K Fit Honduras",
+  publisher: "Y2K Fit Honduras",
+  category: "ecommerce",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_HN",
+    siteName: "Y2K Fit Honduras",
+    title:
+      "Y2K Fit Honduras | Camisetas de Compresión Gótica · Activewear Oscuro",
+    description:
+      "Camisetas de compresión con estética gótica, hechas en Honduras. Inspirado en Breathe Divinity y la nueva ola de activewear oscuro. Envíos a todo el país.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Y2K Fit Honduras | Camisetas de Compresión Gótica",
+    description:
+      "Camisetas de compresión con estética gótica · Hecho en Honduras · Drop 001",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  alternates: {
+    canonical: "/",
+    languages: {
+      "es-HN": "/hn",
+    },
+  },
 }
 
 export default function RootLayout(props: { children: React.ReactNode }) {
+  const baseUrl = getBaseURL()
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Y2K Fit Honduras",
+    alternateName: "Y2K Fit",
+    url: baseUrl,
+    logo: `${baseUrl}/mainlogo.svg`,
+    description:
+      "Marca hondureña de camisetas de compresión con estética gótica. Activewear oscuro inspirado en Breathe Divinity.",
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "HN",
+    },
+  }
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Y2K Fit Honduras",
+    url: baseUrl,
+    inLanguage: "es-HN",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${baseUrl}/hn/store?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  }
+
   return (
     <html
-      lang="en"
+      lang="es-HN"
       data-mode="light"
       className={`${unifraktur.variable} ${cinzel.variable} ${inter.variable}`}
     >
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <main className="relative">{props.children}</main>
       </body>
     </html>

@@ -104,6 +104,11 @@ async function getCountryCode(
  * Middleware to handle region selection and onboarding status.
  */
 export async function middleware(request: NextRequest) {
+  // Let the maintenance page render without hitting the backend.
+  if (request.nextUrl.pathname.startsWith("/maintenance")) {
+    return NextResponse.next()
+  }
+
   let redirectUrl = request.nextUrl.href
 
   let response = NextResponse.redirect(redirectUrl, 307)
@@ -112,7 +117,15 @@ export async function middleware(request: NextRequest) {
 
   let cacheId = cacheIdCookie?.value || crypto.randomUUID()
 
-  const regionMap = await getRegionMap(cacheId)
+  let regionMap: Map<string, HttpTypes.StoreRegion>
+  try {
+    regionMap = await getRegionMap(cacheId)
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Middleware.ts: backend unreachable, redirecting to /maintenance", error)
+    }
+    return NextResponse.rewrite(new URL("/maintenance", request.url))
+  }
 
   const countryCode = regionMap && (await getCountryCode(request, regionMap))
 

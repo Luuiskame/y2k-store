@@ -6,7 +6,7 @@ const Hero = () => {
     <section className="relative w-full overflow-hidden bg-brand-void-black">
       {/* Layered background: void→abyss gradient, central violet glow, vignette */}
       <div aria-hidden className="absolute inset-0">
-        <div className="absolute inset-0 " />
+        <div className="absolute inset-0 surface-gradient" />
         <div
           className="absolute inset-0"
           style={{
@@ -26,7 +26,7 @@ const Hero = () => {
       <div className="relative z-10 content-container min-h-[88vh] flex flex-col items-center justify-center text-center py-20 small:py-28 gap-8">
         {/* Scarcity + locality pill */}
         <span className="badge-glow tracking-[0.25em] text-[10px] small:text-xs">
-          Drop 001 · Hecho en Honduras
+          Y2K FIT
         </span>
 
         <div>
@@ -35,13 +35,13 @@ const Hero = () => {
 
         <div className="flex flex-col gap-3 max-w-2xl">
           <h1 className="font-heading uppercase tracking-[0.18em] text-3xl small:text-5xl text-brand-ghost-white">
-            Y2k Fit
+            Camisetas de Compresión Góticas en Honduras
           </h1>
-          {/* <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
-            Compresión técnica con estética gótica. Activewear de alto
-            rendimiento para los que entrenan distinto — el primero y único en
-            Honduras.
-          </p> */}
+          <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
+            Y2K Fit Honduras trae camisetas Breathe Divinity.
+            Compresión técnica con estética gótica para los que entrenan
+            y buscan algo distinto. Por primera vez en Honduras
+          </p>
         </div>
 
         <div className="flex flex-col small:flex-row items-center gap-4 mt-2">
@@ -62,7 +62,7 @@ const Hero = () => {
           <li aria-hidden className="hidden small:inline">
             ·
           </li>
-          <li>Drops Limitados</li>
+          <li>Camisetas exclusivas</li>
           <li aria-hidden className="hidden small:inline">
             ·
           </li>
