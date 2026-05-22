@@ -6,7 +6,7 @@ const Hero = () => {
     <section className="relative w-full overflow-hidden bg-brand-void-black">
       {/* Layered background: void→abyss gradient, central violet glow, vignette */}
       <div aria-hidden className="absolute inset-0">
-        <div className="absolute inset-0 " />
+        <div className="absolute inset-0 surface-gradient" />
         <div
           className="absolute inset-0"
           style={{
