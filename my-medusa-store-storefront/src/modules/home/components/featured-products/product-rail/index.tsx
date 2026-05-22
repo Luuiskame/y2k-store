@@ -28,12 +28,12 @@ export default async function ProductRail({
 
   return (
     <div className="content-container py-10 small:py-16">
-      <div className="flex justify-between items-baseline mb-6">
+      <div className="flex justify-between items-center gap-4 mb-6">
         <h2 className="font-heading text-xl" style={{ color: "var(--brand-ghost-white)" }}>
           {collection.title}
         </h2>
         <InteractiveLink href={`/collections/${collection.handle}`}>
-          View all
+          Ver todo
         </InteractiveLink>
       </div>
 
