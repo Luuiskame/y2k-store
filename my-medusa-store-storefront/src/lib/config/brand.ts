@@ -8,7 +8,7 @@ export const BRAND = {
   founderName: "Luis M",
   founderRole: "Fundador",
   founderQuote:
-    "Yo personalmente selecciono cada prenda y empaco los envios para que te llegue en las mejores condiciones.",
+    "Soy Luis, fundador de Y2K Fit. Nueva tienda local, cada camiseta sale de mi casa revisada a mano.",
   whatsappNumber: "50487466059",
   instagramHandle: "y2kfithn",
   tiktokHandle: "y2kfithn",

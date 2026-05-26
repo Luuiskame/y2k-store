@@ -56,11 +56,10 @@ export default async function RelatedProducts({
           También te puede interesar
         </span>
         <h2 className="font-heading uppercase tracking-[0.06em] text-2xl small:text-3xl leading-tight text-brand-ghost-white max-w-lg">
-          Otras prendas del culto
+          Otras prendas que combinan con tu próximo fit
         </h2>
         <p className="text-sm text-brand-silver-ash leading-relaxed max-w-md">
-          Piezas que combinan con tu próximo fit. Mismo corte compresivo, misma
-          estética oscura.
+           Mismo corte compresivo, misma estetica Breathe divinity pero con diferentes estilos y colores para que armes el combo perfecto.
         </p>
       </div>
 

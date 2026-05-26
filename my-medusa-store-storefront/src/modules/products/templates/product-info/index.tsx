@@ -73,7 +73,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           <span aria-hidden style={{ color: "var(--brand-sacred-violet)" }}>
             ✦
           </span>
-          Lote fundador · sé de los primeros
+          Se de los primeros en probarlo
         </a>
       )}
 

@@ -3,6 +3,7 @@ import {
   socialUrls,
   whatsappLink,
 } from "@lib/config/brand"
+import Image from "next/image"
 
 // Placeholder avatar. Replace the <PlaceholderAvatar /> below with an
 // <Image src="/founder.jpg" ... /> once the real photo lands in /public.
@@ -42,7 +43,13 @@ const FounderStrip = () => {
         }}
       >
         <div className="flex items-center gap-5 min-w-0">
-          <PlaceholderAvatar />
+          <Image
+            src="/founder.jpg"
+            alt={`${BRAND.founderName}, ${BRAND.founderRole} de Y2K Fit`}
+            width={80}
+            height={80}
+            className="rounded-full shrink-0 rotate"
+          />
           <div className="flex flex-col gap-1 min-w-0">
             <p className="text-sm leading-relaxed text-brand-ghost-white/90">
               “{BRAND.founderQuote}”

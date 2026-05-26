@@ -170,10 +170,7 @@ const FabricStoryTab = () => {
   return (
     <div className="py-6 flex flex-col gap-4 text-sm leading-relaxed text-brand-silver-ash">
       <p>
-        La tela viene de un proveedor técnico en Colombia que también trabaja con
-        marcas de gym wear oscuro en Sudamérica. La elegimos por su balance entre
-        compresión, recuperación y respiración — no se afloja después de tres
-        lavadas como pasa con las imitaciones.
+        Esta camiseta es una aleacion de expandex y poliester que le da ese fit compresivo y a la vez suave que la hace perfecta para el dia a dia. Cada prenda se revisa y empaca a mano en Honduras por nuestro fundador Luis, quien se asegura de que cada envío llegue en las mejores condiciones a tu puerta.
       </p>
       <p>
         Cada lote lo revisamos a mano antes de etiquetar. Si una pieza no pasa
