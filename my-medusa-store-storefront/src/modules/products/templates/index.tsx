@@ -106,15 +106,15 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
             title="Pago Contra Entrega"
             body="Tegus y SPS. Paga cuando recibas tu pedido en la puerta."
           />
-          <TrustItem
+          {/* <TrustItem
             icon={<Refresh size="24" />}
             title="Cambio de Talla Gratis"
             body="7 días desde la entrega. Nosotros pagamos el reenvío."
-          />
+          /> */}
           <TrustItem
             icon={<FastDelivery size="24" />}
             title="Envío Rastreado"
-            body="Te mandamos el número de guía por WhatsApp en cuanto sale."
+            body="Te mandamos y actualizamos sobre como va tu pedido hasta que llegue a tus manos via whatsapp."
           />
         </div>
       </div>

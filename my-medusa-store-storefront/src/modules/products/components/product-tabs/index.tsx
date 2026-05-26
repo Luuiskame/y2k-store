@@ -133,13 +133,13 @@ const ShippingInfoTab = () => {
     {
       icon: <FastDelivery />,
       title: "Envío Nacional",
-      body: "Entrega en 2–5 días hábiles a todo Honduras. Tegucigalpa y SPS reciben antes.",
+      body: "Entrega en 2–5 días hábiles a todo Honduras. SPS con entrega inmediata el mismo día.",
     },
-    {
-      icon: <Refresh />,
-      title: "Cambios de Talla",
-      body: "Si la talla no encaja, te la cambiamos sin preguntas dentro de los primeros 7 días.",
-    },
+    // {
+    //   icon: <Refresh />,
+    //   title: "Cambios de Talla",
+    //   body: "Si la talla no encaja, te la cambiamos sin preguntas dentro de los primeros 7 días.",
+    // },
     {
       icon: <Back />,
       title: "Devoluciones",
