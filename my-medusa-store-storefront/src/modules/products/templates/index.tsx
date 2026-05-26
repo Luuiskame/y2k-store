@@ -1,10 +1,17 @@
 import React, { Suspense } from "react"
 
+import Cash from "@modules/common/icons/cash"
+import FastDelivery from "@modules/common/icons/fast-delivery"
+import Refresh from "@modules/common/icons/refresh"
+import FounderStrip from "@modules/products/components/founder-strip"
 import ImageGallery from "@modules/products/components/image-gallery"
 import ProductActions from "@modules/products/components/product-actions"
+import ProductFAQ from "@modules/products/components/product-faq"
 import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
 import ProductTabs from "@modules/products/components/product-tabs"
 import RelatedProducts from "@modules/products/components/related-products"
+import ReviewsSection from "@modules/products/components/reviews-section"
+import SocialAnchor from "@modules/products/components/social-anchor"
 import ProductInfo from "@modules/products/templates/product-info"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
@@ -22,19 +29,19 @@ type ProductTemplateProps = {
 const TrustItem = ({
   title,
   body,
-  glyph,
+  icon,
 }: {
   title: string
   body: string
-  glyph: string
+  icon: React.ReactNode
 }) => (
   <div className="surface-card p-6 flex items-start gap-4">
     <span
       aria-hidden
-      className="font-display text-2xl"
+      className="shrink-0"
       style={{ color: "var(--brand-sacred-violet)" }}
     >
-      {glyph}
+      {icon}
     </span>
     <div className="flex flex-col gap-1">
       <span className="font-heading uppercase tracking-[0.18em] text-sm text-brand-ghost-white">
@@ -88,26 +95,32 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         </div>
       </div>
 
-      {/* Trust strip — three short signals to seal the conversion */}
+      {/* Founder strip — closes the "¿quién está detrás?" gap before anything else */}
+      <FounderStrip />
+
+      {/* Trust strip — payment-first signals for the Honduran buyer */}
       <div className="content-container pb-12">
         <div className="grid grid-cols-1 small:grid-cols-3 gap-4">
           <TrustItem
-            glyph="✦"
-            title="Envío Nacional"
-            body="Entrega a todo Honduras en 2–5 días hábiles. Empaque ritual, sellado a mano."
+            icon={<Cash size="24" />}
+            title="Pago Contra Entrega"
+            body="Tegus y SPS. Paga cuando recibas tu pedido en la puerta."
           />
           <TrustItem
-            glyph="❖"
-            title="Cambios de Talla"
-            body="Si la talla no encaja, te la cambiamos. 7 días desde la entrega."
+            icon={<Refresh size="24" />}
+            title="Cambio de Talla Gratis"
+            body="7 días desde la entrega. Nosotros pagamos el reenvío."
           />
           <TrustItem
-            glyph="✧"
-            title="Calidad Premium"
-            body="Tela técnica de compresión, costuras planas y acabados pensados para entrenar."
+            icon={<FastDelivery size="24" />}
+            title="Envío Rastreado"
+            body="Te mandamos el número de guía por WhatsApp en cuanto sale."
           />
         </div>
       </div>
+
+      {/* Reviews — placeholder until the reviews module ships */}
+      <ReviewsSection />
 
       {/* Detail tabs — full width below the fold */}
       <div className="content-container pb-16 small:pb-24">
@@ -115,6 +128,12 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           <ProductTabs product={product} />
         </div>
       </div>
+
+      {/* Social anchor — proof of life on TikTok / IG / FB */}
+      <SocialAnchor />
+
+      {/* Product-flavored FAQ — links out to /preguntas-frecuentes for the rest */}
+      <ProductFAQ />
 
       <div
         className="content-container my-16 small:my-24"

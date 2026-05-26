@@ -48,12 +48,19 @@ export default async function RelatedProducts({
 
   return (
     <div className="product-page-constraint">
-      <div className="flex flex-col items-center text-center mb-16">
-        <span className="text-base-regular text-gray-600 mb-6">
-          Related products
+      <div className="flex flex-col items-center text-center mb-12 small:mb-16 gap-3">
+        <span
+          className="font-heading uppercase tracking-[0.25em] text-xs"
+          style={{ color: "var(--brand-sacred-violet)" }}
+        >
+          También te puede interesar
         </span>
-        <p className="text-2xl-regular text-ui-fg-base max-w-lg">
-          You might also want to check out these products.
+        <h2 className="font-heading uppercase tracking-[0.06em] text-2xl small:text-3xl leading-tight text-brand-ghost-white max-w-lg">
+          Otras prendas del culto
+        </h2>
+        <p className="text-sm text-brand-silver-ash leading-relaxed max-w-md">
+          Piezas que combinan con tu próximo fit. Mismo corte compresivo, misma
+          estética oscura.
         </p>
       </div>
 
