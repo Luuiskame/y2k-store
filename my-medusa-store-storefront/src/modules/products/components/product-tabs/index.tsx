@@ -25,6 +25,10 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
       label: "Envío y cambios",
       component: <ShippingInfoTab />,
     },
+    {
+      label: "Historia de la tela",
+      component: <FabricStoryTab />,
+    },
   ]
 
   return (
@@ -129,13 +133,13 @@ const ShippingInfoTab = () => {
     {
       icon: <FastDelivery />,
       title: "Envío Nacional",
-      body: "Entrega en 2–5 días hábiles a todo Honduras. Tegucigalpa y SPS reciben antes.",
+      body: "Entrega en 2–5 días hábiles a todo Honduras. SPS con entrega inmediata el mismo día.",
     },
-    {
-      icon: <Refresh />,
-      title: "Cambios de Talla",
-      body: "Si la talla no encaja, te la cambiamos sin preguntas dentro de los primeros 7 días.",
-    },
+    // {
+    //   icon: <Refresh />,
+    //   title: "Cambios de Talla",
+    //   body: "Si la talla no encaja, te la cambiamos sin preguntas dentro de los primeros 7 días.",
+    // },
     {
       icon: <Back />,
       title: "Devoluciones",
@@ -158,6 +162,21 @@ const ShippingInfoTab = () => {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+const FabricStoryTab = () => {
+  return (
+    <div className="py-6 flex flex-col gap-4 text-sm leading-relaxed text-brand-silver-ash">
+      <p>
+        Esta camiseta es una aleacion de expandex y poliester que le da ese fit compresivo y a la vez suave que la hace perfecta para el dia a dia. Cada prenda se revisa y empaca a mano en Honduras por nuestro fundador Luis, quien se asegura de que cada envío llegue en las mejores condiciones a tu puerta.
+      </p>
+      <p>
+        Cada lote lo revisamos a mano antes de etiquetar. Si una pieza no pasa
+        el control, no la vendemos. Esa es la única forma que conocemos de
+        hacer una marca que dure en Honduras.
+      </p>
     </div>
   )
 }

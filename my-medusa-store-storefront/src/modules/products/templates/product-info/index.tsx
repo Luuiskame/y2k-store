@@ -1,5 +1,7 @@
 import { HttpTypes } from "@medusajs/types"
+import Check from "@modules/common/icons/check"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import RatingStars from "@modules/products/components/rating-stars"
 
 type ProductInfoProps = {
   product: HttpTypes.StoreProduct
@@ -19,9 +21,16 @@ const parseBenefits = (raw?: string | null): string[] => {
     .filter(Boolean)
 }
 
+// Reviews are not wired up yet. When the backend ships, swap these two
+// placeholders for the real summary fetched alongside the product.
+const REVIEW_COUNT = 0
+const AVG_RATING = 0
+const MIN_REVIEWS_TO_SHOW_STARS = 3
+
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const benefits = parseBenefits(product.description)
   const showAsList = benefits.length > 1
+  const hasEnoughReviews = REVIEW_COUNT >= MIN_REVIEWS_TO_SHOW_STARS
 
   return (
     <div id="product-info" className="flex flex-col gap-y-5">
@@ -42,6 +51,32 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         {product.title}
       </h1>
 
+      {hasEnoughReviews ? (
+        <div className="flex items-center gap-3 text-xs">
+          <RatingStars rating={AVG_RATING} />
+          <span className="text-brand-ghost-white/90">
+            {AVG_RATING.toFixed(1)}
+          </span>
+          <span className="text-brand-silver-ash">·</span>
+          <a
+            href="#reviews"
+            className="underline-offset-4 hover:underline text-brand-silver-ash"
+          >
+            {REVIEW_COUNT} reseñas
+          </a>
+        </div>
+      ) : (
+        <a
+          href="#founder"
+          className="inline-flex items-center gap-2 self-start font-heading uppercase tracking-[0.18em] text-[11px] text-brand-silver-ash hover:text-brand-ghost-white transition-colors"
+        >
+          <span aria-hidden style={{ color: "var(--brand-sacred-violet)" }}>
+            ✦
+          </span>
+          Se de los primeros en probarlo
+        </a>
+      )}
+
       {showAsList ? (
         <ul
           className="flex flex-col gap-2.5 mt-1"
@@ -54,13 +89,10 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
             >
               <span
                 aria-hidden
-                className="mt-0.5 text-base leading-none"
-                style={{
-                  color: "var(--brand-sacred-violet)",
-                  textShadow: "0 0 8px rgba(155, 77, 202, 0.45)",
-                }}
+                className="mt-0.5 shrink-0"
+                style={{ color: "var(--brand-sacred-violet)" }}
               >
-                ✦
+                <Check size="16" />
               </span>
               <span>{benefit}</span>
             </li>
