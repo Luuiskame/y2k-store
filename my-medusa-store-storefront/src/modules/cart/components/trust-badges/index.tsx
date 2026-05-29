@@ -5,13 +5,13 @@ import Package from "@modules/common/icons/package"
 const items = [
   {
     icon: FastDelivery,
-    title: "Envío rápido",
-    body: "Entrega a toda Honduras en 24–72h",
+    title: "Envío 24–72h",
+    body: "Entrega a toda Honduras",
   },
   {
     icon: Package,
-    title: "Pago seguro",
-    body: "Tarjeta, transferencia o contra entrega",
+    title: "Transferencia BAC sin recargo",
+    body: "Tarjeta o transferencia bancaria",
   },
   {
     icon: Refresh,

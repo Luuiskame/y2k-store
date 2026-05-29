@@ -2,6 +2,7 @@ import { HttpTypes } from "@medusajs/types"
 
 import EmptyCartMessage from "../components/empty-cart-message"
 import FreeShippingBar from "../components/free-shipping-bar"
+import PaymentMethodsStrip from "../components/payment-methods-strip"
 import SignInPrompt from "../components/sign-in-prompt"
 import SuggestedProducts from "../components/suggested-products"
 import TrustBadges from "../components/trust-badges"
@@ -34,6 +35,7 @@ const CartTemplate = ({ cart, customer, countryCode }: CartTemplateProps) => {
                 />
                 {!customer && <SignInPrompt />}
                 <ItemsTemplate cart={cart!} />
+                <PaymentMethodsStrip />
                 <TrustBadges />
               </div>
 
