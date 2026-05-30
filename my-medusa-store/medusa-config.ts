@@ -46,6 +46,34 @@ module.exports = defineConfig({
         ],
       },
     },
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/transferencia-bac",
+            id: "transferencia-bac",
+          },
+        ],
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/notification-resend",
+            id: "resend",
+            options: {
+              channels: ["email"],
+              apiKey: process.env.RESEND_API_KEY,
+              fromEmail: process.env.RESEND_FROM_EMAIL,
+              ownerEmail: process.env.STORE_OWNER_EMAIL,
+            },
+          },
+        ],
+      },
+    },
     ...(REDIS_URL
       ? [
           {

@@ -1,6 +1,6 @@
 "use client"
 
-import { isManual, isStripeLike } from "@lib/constants"
+import { isBacTransfer, isManual, isStripeLike } from "@lib/constants"
 import { placeOrder } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
@@ -38,6 +38,10 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     case isManual(paymentSession?.provider_id):
       return (
         <ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
+      )
+    case isBacTransfer(paymentSession?.provider_id):
+      return (
+        <BacTransferPaymentButton notReady={notReady} data-testid={dataTestId} />
       )
     default:
       return (
@@ -191,6 +195,47 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
       <ErrorMessage
         error={errorMessage}
         data-testid="manual-payment-error-message"
+      />
+    </>
+  )
+}
+
+const BacTransferPaymentButton = ({
+  notReady,
+  "data-testid": dataTestId,
+}: {
+  notReady: boolean
+  "data-testid"?: string
+}) => {
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const handlePayment = async () => {
+    setSubmitting(true)
+    await placeOrder()
+      .catch((err) => {
+        setErrorMessage(err.message)
+      })
+      .finally(() => {
+        setSubmitting(false)
+      })
+  }
+
+  return (
+    <>
+      <Button
+        disabled={notReady}
+        isLoading={submitting}
+        onClick={handlePayment}
+        size="large"
+        className="bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
+        data-testid={dataTestId ?? "submit-bac-transfer-button"}
+      >
+        Reservar pedido y ver datos de transferencia
+      </Button>
+      <ErrorMessage
+        error={errorMessage}
+        data-testid="bac-transfer-payment-error-message"
       />
     </>
   )

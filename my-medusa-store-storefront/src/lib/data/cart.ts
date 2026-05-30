@@ -403,7 +403,11 @@ export async function placeOrder(cartId?: string) {
   }
 
   const cartRes = await sdk.store.cart
-    .complete(id, {}, headers)
+    .complete(
+      id,
+      { fields: "+payment_collections.payment_sessions.provider_id" },
+      headers
+    )
     .then(async (cartRes) => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
@@ -419,6 +423,15 @@ export async function placeOrder(cartId?: string) {
     revalidateTag(orderCacheTag)
 
     removeCartId()
+
+    const providerId =
+      cartRes.order.payment_collections?.[0]?.payment_sessions?.[0]?.provider_id
+    if (providerId?.startsWith("pp_transferencia-bac")) {
+      redirect(
+        `/${countryCode}/order/${cartRes?.order.id}/transferencia-bac`
+      )
+    }
+
     redirect(`/${countryCode}/order/${cartRes?.order.id}/confirmed`)
   }
 
