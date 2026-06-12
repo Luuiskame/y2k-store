@@ -27,17 +27,17 @@ export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
   title: {
     default:
-      "Y2K Fit Honduras | Camisetas de Compresión Gótica · Activewear Oscuro",
+      "Y2K Fit Honduras | Camisetas de Compresión Gótica · Ropa Deportiva Oscura",
     template: "%s | Y2K Fit Honduras",
   },
   description:
-    "Camisetas de compresión en Honduras con estética gótica. Activewear oscuro inspirado en Breathe Divinity — la primera marca de ropa deportiva alternativa hecha en Honduras. Envíos a todo el país.",
+    "Camisetas de compresión en Honduras con estética gótica. Ropa deportiva oscura inspirada en Breathe Divinity — la primera marca local de su tipo hecha en Honduras. Envíos a todo el país.",
   keywords: [
     "camisetas de compresión Honduras",
     "ropa de compresión Honduras",
     "compression shirt Honduras",
     "ropa deportiva gótica",
-    "activewear gótico Honduras",
+    "ropa gótica Honduras",
     "ropa gym oscura",
     "alternativa Breathe Divinity",
     "Midnight Studios Honduras",
@@ -61,9 +61,9 @@ export const metadata: Metadata = {
     locale: "es_HN",
     siteName: "Y2K Fit Honduras",
     title:
-      "Y2K Fit Honduras | Camisetas de Compresión Gótica · Activewear Oscuro",
+      "Y2K Fit Honduras | Camisetas de Compresión Gótica · Ropa Deportiva Oscura",
     description:
-      "Camisetas de compresión con estética gótica, hechas en Honduras. Inspirado en Breathe Divinity y la nueva ola de activewear oscuro. Envíos a todo el país.",
+      "Camisetas de compresión con estética gótica, hechas en Honduras. Inspirado en Breathe Divinity y la nueva ola de ropa deportiva oscura. Envíos a todo el país.",
     url: "/",
   },
   twitter: {
@@ -101,7 +101,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
     url: baseUrl,
     logo: `${baseUrl}/mainlogo.svg`,
     description:
-      "Marca hondureña de camisetas de compresión con estética gótica. Activewear oscuro inspirado en Breathe Divinity.",
+      "Marca hondureña de camisetas de compresión con estética gótica. Ropa deportiva oscura inspirada en Breathe Divinity.",
     address: {
       "@type": "PostalAddress",
       addressCountry: "HN",

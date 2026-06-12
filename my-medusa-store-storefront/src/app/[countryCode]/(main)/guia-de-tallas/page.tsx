@@ -1,18 +1,24 @@
 import { Metadata } from "next"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-export const metadata: Metadata = {
-  title: "Guía de Tallas · Camisetas de Compresión Y2K Fit Honduras",
-  description:
-    "Guía de tallas para camisetas de compresión góticas Y2K Fit Honduras. Medidas en cm para que tu ropa de compresión te quede como debe.",
-  alternates: { canonical: "/guia-de-tallas" },
-  openGraph: {
-    title: "Guía de Tallas | Y2K Fit Honduras",
+export async function generateMetadata(props: {
+  params: Promise<{ countryCode: string }>
+}): Promise<Metadata> {
+  const { countryCode } = await props.params
+
+  return {
+    title: "Guía de Tallas · Camisetas de Compresión Y2K Fit Honduras",
     description:
-      "Cómo medirte para elegir la talla correcta en compresión gótica.",
-    type: "website",
-    url: "/guia-de-tallas",
-  },
+      "Guía de tallas para camisetas de compresión góticas Y2K Fit Honduras. Medidas en cm para que tu ropa de compresión te quede como debe.",
+    alternates: { canonical: `/${countryCode}/guia-de-tallas` },
+    openGraph: {
+      title: "Guía de Tallas | Y2K Fit Honduras",
+      description:
+        "Cómo medirte para elegir la talla correcta en compresión gótica.",
+      type: "website",
+      url: `/${countryCode}/guia-de-tallas`,
+    },
+  }
 }
 
 const TALLAS = [

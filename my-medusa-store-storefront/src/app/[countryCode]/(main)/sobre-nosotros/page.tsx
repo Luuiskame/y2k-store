@@ -1,18 +1,24 @@
 import { Metadata } from "next"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-export const metadata: Metadata = {
-  title: "Sobre Nosotros · La Primera Marca Gótica de Compresión en Honduras",
-  description:
-    "Y2K Fit Honduras es la primera marca hondureña de camisetas de compresión con estética gótica. Inspirados en Breathe Divinity y Midnight Studios, hechos para los que entrenan distinto.",
-  alternates: { canonical: "/sobre-nosotros" },
-  openGraph: {
-    title: "Sobre Y2K Fit Honduras · Compresión Gótica Hecha en Honduras",
+export async function generateMetadata(props: {
+  params: Promise<{ countryCode: string }>
+}): Promise<Metadata> {
+  const { countryCode } = await props.params
+
+  return {
+    title: "Sobre Nosotros · La Primera Marca Gótica de Compresión en Honduras",
     description:
-      "Conoce la historia detrás de Y2K Fit Honduras — la primera marca local de activewear gótico.",
-    type: "website",
-    url: "/sobre-nosotros",
-  },
+      "Y2K Fit Honduras es la primera marca hondureña de camisetas de compresión con estética gótica. Inspirados en Breathe Divinity y Midnight Studios, hechos para los que entrenan distinto.",
+    alternates: { canonical: `/${countryCode}/sobre-nosotros` },
+    openGraph: {
+      title: "Sobre Y2K Fit Honduras · Compresión Gótica Hecha en Honduras",
+      description:
+        "Conoce la historia detrás de Y2K Fit Honduras — la primera marca local de ropa deportiva gótica.",
+      type: "website",
+      url: `/${countryCode}/sobre-nosotros`,
+    },
+  }
 }
 
 export default function SobreNosotrosPage() {

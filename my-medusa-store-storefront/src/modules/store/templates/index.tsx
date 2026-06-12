@@ -25,8 +25,17 @@ const StoreTemplate = ({
     >
       <RefinementList sortBy={sort} />
       <div className="w-full">
-        <div className="mb-8 text-2xl-semi">
-          <h1 data-testid="store-page-title">All products</h1>
+        <div className="mb-8">
+          <h1 data-testid="store-page-title" className="text-2xl-semi">
+            Tienda Y2K Fit Honduras
+          </h1>
+          <p className="mt-3 max-w-3xl text-base-regular text-ui-fg-subtle">
+            Bienvenido a la tienda de Y2K Fit Honduras, la primera tienda de
+            ropa gótica y estilo Y2K del país. Aquí encuentras camisetas de
+            compresión, ropa deportiva oscura y drops limitados inspirados en
+            Breathe Divinity. Compra ropa y2k online con envío a todo Honduras
+            — Tegucigalpa, San Pedro Sula y el resto del país.
+          </p>
         </div>
         <Suspense fallback={<SkeletonProductGrid />}>
           <PaginatedProducts

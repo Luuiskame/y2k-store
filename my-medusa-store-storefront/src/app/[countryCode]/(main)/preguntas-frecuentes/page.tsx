@@ -1,17 +1,23 @@
 import { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Preguntas Frecuentes · Camisetas de Compresión Y2K Fit",
-  description:
-    "Preguntas frecuentes sobre las camisetas de compresión góticas de Y2K Fit Honduras: tallas, materiales, envíos, devoluciones y más.",
-  alternates: { canonical: "/preguntas-frecuentes" },
-  openGraph: {
-    title: "Preguntas Frecuentes | Y2K Fit Honduras",
+export async function generateMetadata(props: {
+  params: Promise<{ countryCode: string }>
+}): Promise<Metadata> {
+  const { countryCode } = await props.params
+
+  return {
+    title: "Preguntas Frecuentes · Camisetas de Compresión Y2K Fit",
     description:
-      "Todo lo que necesitas saber antes de comprar tu camiseta de compresión gótica.",
-    type: "website",
-    url: "/preguntas-frecuentes",
-  },
+      "Preguntas frecuentes sobre las camisetas de compresión góticas de Y2K Fit Honduras: tallas, materiales, envíos, devoluciones y más.",
+    alternates: { canonical: `/${countryCode}/preguntas-frecuentes` },
+    openGraph: {
+      title: "Preguntas Frecuentes | Y2K Fit Honduras",
+      description:
+        "Todo lo que necesitas saber antes de comprar tu camiseta de compresión gótica.",
+      type: "website",
+      url: `/${countryCode}/preguntas-frecuentes`,
+    },
+  }
 }
 
 const FAQS: { q: string; a: string }[] = [

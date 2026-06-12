@@ -1,18 +1,23 @@
 import { Metadata } from "next"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-export const metadata: Metadata = {
-  title: "Envíos a Toda Honduras · Tiempos, Costos y Cobertura",
-  description:
-    "Envíos de Y2K Fit Honduras a Tegucigalpa, San Pedro Sula y todo el país. Tiempos, costos y cobertura de nuestra paquetería para camisetas de compresión góticas.",
-  alternates: { canonical: "/envios" },
-  openGraph: {
-    title: "Envíos a Toda Honduras | Y2K Fit Honduras",
+export async function generateMetadata(props: {
+  params: Promise<{ countryCode: string }>
+}): Promise<Metadata> {
+  const { countryCode } = await props.params
+
+  return {
+    title: "Envíos a Toda Honduras · Tiempos, Costos y Cobertura",
     description:
-      "Cobertura, tiempos y costos de envío de Y2K Fit Honduras.",
-    type: "website",
-    url: "/envios",
-  },
+      "Envíos de Y2K Fit Honduras a Tegucigalpa, San Pedro Sula y todo el país. Tiempos, costos y cobertura de nuestra paquetería para camisetas de compresión góticas.",
+    alternates: { canonical: `/${countryCode}/envios` },
+    openGraph: {
+      title: "Envíos a Toda Honduras | Y2K Fit Honduras",
+      description: "Cobertura, tiempos y costos de envío de Y2K Fit Honduras.",
+      type: "website",
+      url: `/${countryCode}/envios`,
+    },
+  }
 }
 
 export default function EnviosPage() {
