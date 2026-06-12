@@ -16,6 +16,14 @@ export async function generateMetadata(props: {
         "Todo lo que necesitas saber antes de comprar tu camiseta de compresión gótica.",
       type: "website",
       url: `/${countryCode}/preguntas-frecuentes`,
+      images: ["/opengraph-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Preguntas Frecuentes | Y2K Fit Honduras",
+      description:
+        "Todo lo que necesitas saber antes de comprar tu camiseta de compresión gótica.",
+      images: ["/opengraph-image.png"],
     },
   }
 }

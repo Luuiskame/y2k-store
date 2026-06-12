@@ -66,6 +66,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
         description,
         type: "website",
         url: `/${params.countryCode}/categories/${params.category.join("/")}`,
+        images: ["/opengraph-image.png"],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${productCategory.name} | Y2K Fit Honduras`,
+        description,
+        images: ["/opengraph-image.png"],
       },
     }
   } catch (error) {

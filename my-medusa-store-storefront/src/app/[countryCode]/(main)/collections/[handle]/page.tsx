@@ -69,6 +69,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       description: `Drop de la colección ${collection.title} — compresión gótica hecha en Honduras.`,
       type: "website",
       url: `/${params.countryCode}/collections/${params.handle}`,
+      images: ["/opengraph-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Colección ${collection.title} | Y2K Fit Honduras`,
+      description: `Drop de la colección ${collection.title} — compresión gótica hecha en Honduras.`,
+      images: ["/opengraph-image.png"],
     },
   } as Metadata
 
