@@ -53,19 +53,19 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
     const description =
       productCategory.description ??
-      `Explora ${productCategory.name.toLowerCase()} en Y2K Fit Honduras — camisetas de compresión góticas y activewear oscuro hecho en Honduras. Envíos a todo el país.`
+      `Explora ${productCategory.name.toLowerCase()} en Y2K Fit Honduras — camisetas de compresión góticas y ropa deportiva oscura hecha en Honduras. Envíos a todo el país.`
 
     return {
       title,
       description,
       alternates: {
-        canonical: `/categories/${params.category.join("/")}`,
+        canonical: `/${params.countryCode}/categories/${params.category.join("/")}`,
       },
       openGraph: {
         title: `${productCategory.name} | Y2K Fit Honduras`,
         description,
         type: "website",
-        url: `/categories/${params.category.join("/")}`,
+        url: `/${params.countryCode}/categories/${params.category.join("/")}`,
       },
     }
   } catch (error) {

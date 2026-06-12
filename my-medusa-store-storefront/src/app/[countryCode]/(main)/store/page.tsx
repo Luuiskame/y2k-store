@@ -5,18 +5,24 @@ import StoreTemplate from "@modules/store/templates"
 
 export const revalidate = 600
 
-export const metadata: Metadata = {
-  title: "Tienda · Camisetas de Compresión y Activewear Gótico",
-  description:
-    "Explora toda la tienda Y2K Fit Honduras: camisetas de compresión góticas, activewear oscuro y drops limitados. Inspirado en Breathe Divinity, hecho en Honduras.",
-  alternates: { canonical: "/store" },
-  openGraph: {
-    title: "Tienda Y2K Fit Honduras · Compresión Gótica",
+export async function generateMetadata(props: {
+  params: Promise<{ countryCode: string }>
+}): Promise<Metadata> {
+  const { countryCode } = await props.params
+
+  return {
+    title: "Tienda de Ropa Y2K y Gótica en Honduras",
     description:
-      "Camisetas de compresión, activewear gótico y drops limitados. Envíos a toda Honduras.",
-    url: "/store",
-    type: "website",
-  },
+      "Explora toda la tienda Y2K Fit Honduras: ropa gótica, camisetas de compresión y ropa deportiva oscura, drops limitados. Compra online con envío a todo Honduras.",
+    alternates: { canonical: `/${countryCode}/store` },
+    openGraph: {
+      title: "Tienda de Ropa Y2K y Gótica en Honduras | Y2K Fit",
+      description:
+        "Camisetas de compresión, ropa deportiva gótica y drops limitados. Envíos a toda Honduras.",
+      url: `/${countryCode}/store`,
+      type: "website",
+    },
+  }
 }
 
 type Params = {

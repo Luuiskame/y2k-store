@@ -38,9 +38,10 @@ const Hero = () => {
             Camisetas de Compresión Góticas en Honduras
           </h1>
           <p className="font-body text-brand-silver-ash text-sm small:text-lg max-w-xl mx-auto leading-relaxed">
-            Y2K Fit Honduras trae camisetas Breathe Divinity.
-            Compresión técnica con estética gótica para los que entrenan
-            y buscan algo distinto. Por primera vez en Honduras
+            Y2K Fit Honduras trae ropa gótica y camisetas de compresión
+            Breathe Divinity con estilo Y2K. Compresión técnica con estética
+            gótica para los que entrenan y buscan algo distinto. Por primera
+            vez en Honduras
           </p>
         </div>
 

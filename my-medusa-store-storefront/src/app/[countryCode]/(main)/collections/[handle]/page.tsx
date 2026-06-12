@@ -62,13 +62,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
   const metadata = {
     title: `Colección ${collection.title} · Y2K Fit Honduras`,
-    description: `Descubre la colección ${collection.title} de Y2K Fit Honduras — camisetas de compresión góticas y activewear oscuro inspirado en Breathe Divinity. Envíos a toda Honduras.`,
-    alternates: { canonical: `/collections/${params.handle}` },
+    description: `Descubre la colección ${collection.title} de Y2K Fit Honduras — camisetas de compresión góticas y ropa deportiva oscura inspirada en Breathe Divinity. Envíos a toda Honduras.`,
+    alternates: { canonical: `/${params.countryCode}/collections/${params.handle}` },
     openGraph: {
       title: `Colección ${collection.title} | Y2K Fit Honduras`,
       description: `Drop de la colección ${collection.title} — compresión gótica hecha en Honduras.`,
       type: "website",
-      url: `/collections/${params.handle}`,
+      url: `/${params.countryCode}/collections/${params.handle}`,
     },
   } as Metadata
 

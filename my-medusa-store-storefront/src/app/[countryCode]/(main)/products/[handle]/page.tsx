@@ -89,25 +89,32 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     notFound()
   }
 
-  const cleanDescription =
+  // Per-product SEO overrides set from Medusa Admin (product metadata),
+  // falling back to the product description and then a generic template.
+  const metaTitle =
+    (product.metadata?.meta_title as string | undefined)?.trim() ||
+    `${product.title} · Camiseta de Compresión Gótica`
+
+  const metaDescription =
+    (product.metadata?.meta_description as string | undefined)?.trim() ||
     product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
-    `${product.title} — camiseta de compresión gótica de Y2K Fit Honduras. Activewear oscuro inspirado en Breathe Divinity. Envíos a toda Honduras.`
+    `${product.title} — camiseta de compresión gótica de Y2K Fit Honduras. Ropa deportiva oscura inspirada en Breathe Divinity. Envíos a toda Honduras.`
 
   return {
-    title: `${product.title} · Camiseta de Compresión Gótica`,
-    description: cleanDescription,
-    alternates: { canonical: `/products/${handle}` },
+    title: metaTitle,
+    description: metaDescription,
+    alternates: { canonical: `/${params.countryCode}/products/${handle}` },
     openGraph: {
       title: `${product.title} | Y2K Fit Honduras`,
-      description: cleanDescription,
+      description: metaDescription,
       type: "website",
-      url: `/products/${handle}`,
+      url: `/${params.countryCode}/products/${handle}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
     twitter: {
       card: "summary_large_image",
       title: `${product.title} | Y2K Fit Honduras`,
-      description: cleanDescription,
+      description: metaDescription,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
   }
@@ -147,12 +154,13 @@ export default async function ProductPage(props: Props) {
     "@type": "Product",
     name: pricedProduct.title,
     description:
+      (pricedProduct.metadata?.meta_description as string | undefined) ||
       pricedProduct.description ||
       `${pricedProduct.title} — camiseta de compresión gótica de Y2K Fit Honduras.`,
     image: (pricedProduct.images || []).map((i: any) => i.url).filter(Boolean),
     sku: pricedProduct.variants?.[0]?.sku ?? undefined,
     brand: { "@type": "Brand", name: "Y2K Fit Honduras" },
-    category: "Apparel > Activewear > Compression Shirts",
+    category: "Apparel > Compression Wear > Compression Shirts",
     offers: cheapestVariant
       ? {
           "@type": "Offer",
@@ -161,7 +169,7 @@ export default async function ProductPage(props: Props) {
             cheapestVariant.currency_code?.toUpperCase() ||
             region.currency_code?.toUpperCase(),
           availability: "https://schema.org/InStock",
-          url: `/products/${params.handle}`,
+          url: `/${params.countryCode}/products/${params.handle}`,
         }
       : undefined,
   }
