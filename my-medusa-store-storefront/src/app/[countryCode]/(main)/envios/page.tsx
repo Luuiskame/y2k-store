@@ -16,6 +16,13 @@ export async function generateMetadata(props: {
       description: "Cobertura, tiempos y costos de envío de Y2K Fit Honduras.",
       type: "website",
       url: `/${countryCode}/envios`,
+      images: ["/opengraph-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Envíos a Toda Honduras | Y2K Fit Honduras",
+      description: "Cobertura, tiempos y costos de envío de Y2K Fit Honduras.",
+      images: ["/opengraph-image.png"],
     },
   }
 }

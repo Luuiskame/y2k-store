@@ -17,6 +17,14 @@ export async function generateMetadata(props: {
         "Conoce la historia detrás de Y2K Fit Honduras — la primera marca local de ropa deportiva gótica.",
       type: "website",
       url: `/${countryCode}/sobre-nosotros`,
+      images: ["/opengraph-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Sobre Y2K Fit Honduras · Compresión Gótica Hecha en Honduras",
+      description:
+        "Conoce la historia detrás de Y2K Fit Honduras — la primera marca local de ropa deportiva gótica.",
+      images: ["/opengraph-image.png"],
     },
   }
 }

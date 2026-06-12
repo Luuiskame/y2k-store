@@ -25,6 +25,14 @@ export async function generateMetadata(props: {
         "Ropa gótica y de compresión hecha en Honduras. Estilo Y2K, compresión técnica y estética oscura. Drops limitados.",
       url: `/${countryCode}`,
       type: "website",
+      images: ["/opengraph-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Y2K Fit Honduras | Ropa Gótica de Compresión y Estilo Y2K",
+      description:
+        "Ropa gótica y de compresión hecha en Honduras. Estilo Y2K, compresión técnica y estética oscura. Drops limitados.",
+      images: ["/opengraph-image.png"],
     },
   }
 }

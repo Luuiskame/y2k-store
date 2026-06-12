@@ -17,6 +17,14 @@ export async function generateMetadata(props: {
         "Cómo medirte para elegir la talla correcta en compresión gótica.",
       type: "website",
       url: `/${countryCode}/guia-de-tallas`,
+      images: ["/opengraph-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Guía de Tallas | Y2K Fit Honduras",
+      description:
+        "Cómo medirte para elegir la talla correcta en compresión gótica.",
+      images: ["/opengraph-image.png"],
     },
   }
 }
