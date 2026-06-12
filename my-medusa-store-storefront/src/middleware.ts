@@ -137,13 +137,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // if one of the country codes is in the url and the cache id is not set, set the cache id and redirect
+  // if one of the country codes is in the url and the cache id is not set, set the cache id and continue.
+  // We must NOT redirect to the same URL here: social media crawlers (Facebook, Discord, Instagram) don't
+  // persist the cookie, so a same-URL redirect becomes an infinite loop and they bail before ever reading
+  // the page's OG/meta tags. Setting the cookie on a pass-through response avoids the loop.
   if (urlHasCountryCode && !cacheIdCookie) {
-    response.cookies.set("_medusa_cache_id", cacheId, {
+    const nextResponse = NextResponse.next()
+
+    nextResponse.cookies.set("_medusa_cache_id", cacheId, {
       maxAge: 60 * 60 * 24,
     })
 
-    return response
+    return nextResponse
   }
 
   // check if the url is a static asset
