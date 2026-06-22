@@ -204,8 +204,11 @@ const Payment = ({
 
           <div className="mt-8 pt-6 border-t border-brand-amethyst">
             <Text className="text-sm text-brand-silver-ash mb-3">
-              ¿Preferís pagar al recibir? Coordiná tu pedido por WhatsApp y pagá
-              contra entrega.
+              {`¿Preferís pagar al recibir? Coordiná tu pedido por WhatsApp y pagá contra entrega ${
+                cart.total
+                  ? `${(cart.total * 0.05).toFixed(2)} LPS`
+                  : "sin monto"
+              } de recargo.`}
             </Text>
             <a
               href={whatsappLink(buildContraEntregaMessage(cart))}
