@@ -39,9 +39,13 @@ const FounderStrip = ({
   productHandle,
   countryCode,
 }: FounderStripProps) => {
+  // `?ref=wa` doubles as attribution and, crucially, makes this a URL variant
+  // WhatsApp hasn't cached a preview for — so it re-scrapes fresh and picks up
+  // the product's JPEG og:image instead of any stale preview of the bare URL.
+  // The page ignores the param; canonical/og:url stay clean.
   const productLine =
     productHandle && countryCode
-      ? ` sobre "${productTitle}": ${getBaseURL()}/${countryCode}/products/${productHandle}`
+      ? ` sobre "${productTitle}": ${getBaseURL()}/${countryCode}/products/${productHandle}?ref=wa`
       : " sobre un producto de Y2K Fit."
 
   const message = `Hola ${BRAND.founderName}, tengo una pregunta${productLine}`
