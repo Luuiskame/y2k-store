@@ -96,7 +96,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
       </div>
 
       {/* Founder strip — closes the "¿quién está detrás?" gap before anything else */}
-      <FounderStrip />
+      <FounderStrip
+        productTitle={product.title}
+        productHandle={product.handle}
+        countryCode={countryCode}
+      />
 
       {/* Trust strip — payment-first signals for the Honduran buyer */}
       <div className="content-container pb-12">
