@@ -100,6 +100,19 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     product.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
     `${product.title} — camiseta de compresión gótica de Y2K Fit Honduras. Ropa deportiva oscura inspirada en Breathe Divinity. Envíos a toda Honduras.`
 
+  // Medusa serves thumbnails as WebP, which WhatsApp/Facebook crawlers can't
+  // render (they fall back to the site favicon). Route the thumbnail through
+  // /api/og, which re-encodes it to JPEG. Fall back to the branded share image.
+  const shareImages = product.thumbnail
+    ? [
+        {
+          url: `/api/og?u=${encodeURIComponent(product.thumbnail)}`,
+          type: "image/jpeg",
+          alt: product.title,
+        },
+      ]
+    : ["/opengraph-image.png"]
+
   return {
     title: metaTitle,
     description: metaDescription,
@@ -109,13 +122,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       description: metaDescription,
       type: "website",
       url: `/${params.countryCode}/products/${handle}`,
-      images: product.thumbnail ? [product.thumbnail] : [],
+      images: shareImages,
     },
     twitter: {
       card: "summary_large_image",
       title: `${product.title} | Y2K Fit Honduras`,
       description: metaDescription,
-      images: product.thumbnail ? [product.thumbnail] : [],
+      images: shareImages,
     },
   }
 }
