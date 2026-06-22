@@ -1,8 +1,7 @@
 "use client"
 
+import { whatsappLink } from "@lib/config/brand"
 import { convertToLocale } from "@lib/util/money"
-
-const WHATSAPP_NUMBER = "50432564101"
 
 type WhatsAppHelpLinkProps = {
   total?: number
@@ -28,8 +27,7 @@ const WhatsAppHelpLink = ({
     totalLabel ? `Total estimado: ${totalLabel}` : "",
   ].filter(Boolean)
 
-  const message = encodeURIComponent(lines.join("\n"))
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`
+  const href = whatsappLink(lines.join("\n"))
 
   return (
     <a
