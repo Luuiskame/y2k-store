@@ -3,6 +3,7 @@ import {
   socialUrls,
   whatsappLink,
 } from "@lib/config/brand"
+import { getBaseURL } from "@lib/util/env"
 import Image from "next/image"
 
 // Placeholder avatar. Replace the <PlaceholderAvatar /> below with an
@@ -27,8 +28,23 @@ const PlaceholderAvatar = () => (
   </div>
 )
 
-const FounderStrip = () => {
-  const message = `Hola ${BRAND.founderName}, tengo una pregunta sobre un producto de Y2K Fit.`
+type FounderStripProps = {
+  productTitle?: string
+  productHandle?: string
+  countryCode?: string
+}
+
+const FounderStrip = ({
+  productTitle,
+  productHandle,
+  countryCode,
+}: FounderStripProps) => {
+  const productLine =
+    productHandle && countryCode
+      ? ` sobre "${productTitle}": ${getBaseURL()}/${countryCode}/products/${productHandle}`
+      : " sobre un producto de Y2K Fit."
+
+  const message = `Hola ${BRAND.founderName}, tengo una pregunta${productLine}`
 
   return (
     <section
