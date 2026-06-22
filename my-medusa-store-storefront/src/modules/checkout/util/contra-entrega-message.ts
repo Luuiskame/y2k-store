@@ -42,13 +42,13 @@ export function buildContraEntregaMessage(cart: HttpTypes.StoreCart): string {
   }
 
   const sections: string[] = [
-    "Hola, quiero coordinar pago contra entrega 🖤",
-    `🛒 Mi pedido:\n${itemLines.join("\n")}`,
-    `💰 Total: ${total}`,
+    "Hola, quiero coordinar pago contra entrega",
+    `Mi pedido:\n${itemLines.join("\n")}`,
+    `Total: ${total}`,
   ]
 
   if (deliveryLines.length) {
-    sections.push(`📦 Entrega:\n${deliveryLines.join("\n")}`)
+    sections.push(`Entrega:\n${deliveryLines.join("\n")}`)
   }
 
   if (cart.id) {
