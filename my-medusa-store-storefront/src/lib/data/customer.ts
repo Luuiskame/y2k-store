@@ -127,6 +127,83 @@ export async function login(_currentState: unknown, formData: FormData) {
   }
 }
 
+export type ResetPasswordState = {
+  state: "initial" | "success" | "error"
+  message?: string
+} | null
+
+export async function requestPasswordReset(
+  _currentState: ResetPasswordState,
+  formData: FormData
+): Promise<ResetPasswordState> {
+  const email = (formData.get("email") as string)?.trim()
+
+  if (!email) {
+    return { state: "error", message: "Ingresa tu correo electrónico." }
+  }
+
+  // The backend returns 201 regardless of whether the account exists (to avoid
+  // leaking which emails are registered). We mirror that: always show the same
+  // confirmation, and swallow any error so nothing is revealed to the client.
+  try {
+    await sdk.auth.resetPassword("customer", "emailpass", { identifier: email })
+  } catch {
+    // Intentionally ignored — do not disclose account existence.
+  }
+
+  return {
+    state: "success",
+    message:
+      "Si existe una cuenta con ese correo, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y la carpeta de spam.",
+  }
+}
+
+export async function resetPassword(
+  _currentState: ResetPasswordState,
+  formData: FormData
+): Promise<ResetPasswordState> {
+  const token = formData.get("token") as string
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+  const confirmPassword = formData.get("confirm_password") as string
+
+  if (!token || !email) {
+    return {
+      state: "error",
+      message:
+        "El enlace de recuperación no es válido o está incompleto. Solicita uno nuevo.",
+    }
+  }
+
+  if (!password || password.length < 8) {
+    return {
+      state: "error",
+      message: "La contraseña debe tener al menos 8 caracteres.",
+    }
+  }
+
+  if (password !== confirmPassword) {
+    return { state: "error", message: "Las contraseñas no coinciden." }
+  }
+
+  try {
+    // The reset token carries the account identity; the body only needs the new
+    // password. The token is passed as the bearer credential.
+    await sdk.auth.updateProvider("customer", "emailpass", { password }, token)
+  } catch {
+    return {
+      state: "error",
+      message:
+        "No pudimos restablecer tu contraseña. Es posible que el enlace haya expirado. Solicita uno nuevo desde la página de inicio de sesión.",
+    }
+  }
+
+  return {
+    state: "success",
+    message: "Tu contraseña fue actualizada. Ya puedes iniciar sesión.",
+  }
+}
+
 export async function signout(countryCode: string) {
   await sdk.auth.logout()
 

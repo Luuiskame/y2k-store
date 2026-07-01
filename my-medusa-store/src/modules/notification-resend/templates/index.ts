@@ -4,6 +4,7 @@ import { bacPaymentVerifiedCustomer } from "./bac-payment-verified-customer"
 import { orderShippedCustomer } from "./order-shipped-customer"
 import { orderDeliveredCustomer } from "./order-delivered-customer"
 import { orderCanceledCustomer } from "./order-canceled-customer"
+import { passwordResetCustomer } from "./password-reset-customer"
 
 export type RenderedEmail = {
   subject: string
@@ -20,6 +21,7 @@ const registry: Record<string, Renderer> = {
   "order-shipped-customer": orderShippedCustomer,
   "order-delivered-customer": orderDeliveredCustomer,
   "order-canceled-customer": orderCanceledCustomer,
+  "password-reset-customer": passwordResetCustomer,
 }
 
 export async function renderTemplate(
