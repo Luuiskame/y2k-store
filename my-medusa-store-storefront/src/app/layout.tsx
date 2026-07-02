@@ -1,6 +1,7 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
 import { Cinzel, Inter, UnifrakturMaguntia } from "next/font/google"
+import MetaPixel from "@lib/analytics/meta-pixel"
 import "styles/globals.css"
 
 const unifraktur = UnifrakturMaguntia({
@@ -127,6 +128,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
       className={`${unifraktur.variable} ${cinzel.variable} ${inter.variable}`}
     >
       <body>
+        <MetaPixel />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
