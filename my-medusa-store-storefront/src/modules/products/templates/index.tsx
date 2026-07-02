@@ -12,6 +12,7 @@ import ProductTabs from "@modules/products/components/product-tabs"
 import RelatedProducts from "@modules/products/components/related-products"
 import ReviewsSection from "@modules/products/components/reviews-section"
 import SocialAnchor from "@modules/products/components/social-anchor"
+import ViewContentTracker from "@modules/products/components/view-content-tracker"
 import ProductInfo from "@modules/products/templates/product-info"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
@@ -64,6 +65,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
 
   return (
     <>
+      <ViewContentTracker product={product} />
       <div
         className="content-container py-8 small:py-12 relative"
         data-testid="product-container"

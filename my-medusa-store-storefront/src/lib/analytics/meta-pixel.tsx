@@ -14,10 +14,17 @@ const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID
 
 export function trackMetaEvent(
   event: string,
-  params?: Record<string, unknown>
+  params?: Record<string, unknown>,
+  options?: { eventID?: string }
 ) {
   if (typeof window !== "undefined" && window.fbq) {
-    window.fbq("track", event, params)
+    // Pass eventID when present so a future server-side Conversions API event
+    // with the same eventID is deduplicated against this browser event.
+    if (options?.eventID) {
+      window.fbq("track", event, params, options)
+    } else {
+      window.fbq("track", event, params)
+    }
   }
 }
 

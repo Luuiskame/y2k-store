@@ -1,6 +1,7 @@
 "use client"
 
 import { addToCart } from "@lib/data/cart"
+import { trackAddToCart } from "@lib/analytics/meta-events"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
@@ -125,6 +126,8 @@ export default function ProductActions({
       quantity: 1,
       countryCode,
     })
+
+    trackAddToCart({ product, variant: selectedVariant, quantity: 1 })
 
     setIsAdding(false)
   }

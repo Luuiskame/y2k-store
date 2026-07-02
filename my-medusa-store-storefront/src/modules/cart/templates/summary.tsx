@@ -1,6 +1,7 @@
 "use client"
 
 import { convertToLocale } from "@lib/util/money"
+import { trackInitiateCheckout } from "@lib/analytics/meta-events"
 import { HttpTypes } from "@medusajs/types"
 import PromoCode from "@modules/cart/components/promo-code"
 import WhatsAppHelpLink from "@modules/cart/components/whatsapp-help-link"
@@ -134,6 +135,7 @@ const Summary = ({ cart }: SummaryProps) => {
           type="button"
           className="btn-glow w-full text-center"
           style={{ width: "100%" }}
+          onClick={() => trackInitiateCheckout(cart)}
         >
           Elegir método de pago
         </button>

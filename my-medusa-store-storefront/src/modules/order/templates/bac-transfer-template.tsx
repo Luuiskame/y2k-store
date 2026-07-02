@@ -7,6 +7,7 @@ import OrderDetails from "@modules/order/components/order-details"
 import ShippingDetails from "@modules/order/components/shipping-details"
 import BacAccountCard from "@modules/order/components/bac-account-card"
 import BacProofUploader from "@modules/order/components/bac-proof-uploader"
+import PurchaseTracker from "@modules/order/components/purchase-tracker"
 
 type Props = {
   order: HttpTypes.StoreOrder
@@ -32,6 +33,7 @@ export default function BacTransferTemplate({ order }: Props) {
 
   return (
     <div className="py-10 min-h-[calc(100vh-64px)]">
+      <PurchaseTracker order={order} />
       <div className="content-container flex flex-col gap-y-8 max-w-4xl w-full mx-auto">
         <div
           className="rounded-large p-6 small:p-8 flex flex-col gap-y-3"
