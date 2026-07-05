@@ -1,10 +1,12 @@
 "use client"
 
-import { addToCart } from "@lib/data/cart"
+import { addToCart, retrieveCart } from "@lib/data/cart"
 import { trackAddToCart } from "@lib/analytics/meta-events"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
+import InlineAlert from "@modules/cart/components/inline-alert"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
+import { translateCartError } from "@modules/cart/util/translate-cart-error"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -37,6 +39,17 @@ export default function ProductActions({
 
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
+  // Snapshot of the current cart so we know how many of each variant are already
+  // in it — inventory_quantity is raw availability and doesn't account for that.
+  const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+  // Units added during this session that may not yet be reflected in `cart`,
+  // keyed by variant id. Prevents the button re-enabling before a refetch.
+  const [pendingByVariant, setPendingByVariant] = useState<
+    Record<string, number>
+  >({})
+  const [error, setError] = useState<{ message: string; signal: number } | null>(
+    null
+  )
   const countryCode = useParams().countryCode as string
 
   useEffect(() => {
@@ -45,6 +58,19 @@ export default function ProductActions({
       setOptions(variantOptions ?? {})
     }
   }, [product.variants])
+
+  // Load the cart once so we can cap adds against what's already in it.
+  useEffect(() => {
+    let active = true
+    retrieveCart()
+      .then((c) => {
+        if (active) setCart(c)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   const selectedVariant = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
@@ -107,41 +133,97 @@ export default function ProductActions({
     return false
   }, [selectedVariant])
 
-  const lowStock = useMemo(() => {
-    if (!selectedVariant?.manage_inventory) return false
-    const qty = selectedVariant?.inventory_quantity || 0
-    return qty > 0 && qty <= 5
+  // How many units of the selected variant can exist in the cart total.
+  // Infinity when inventory isn't managed or backorder is allowed.
+  const availableQty = useMemo(() => {
+    if (!selectedVariant) return 0
+    if (!selectedVariant.manage_inventory) return Number.POSITIVE_INFINITY
+    if (selectedVariant.allow_backorder) return Number.POSITIVE_INFINITY
+    return selectedVariant.inventory_quantity ?? 0
   }, [selectedVariant])
+
+  // Units of the selected variant already committed to the cart (server
+  // snapshot + optimistic adds not yet reflected in it).
+  const cartQtyForSelected = useMemo(() => {
+    if (!selectedVariant?.id) return 0
+    const fromCart = (cart?.items ?? [])
+      .filter((i) => i.variant_id === selectedVariant.id)
+      .reduce((sum, i) => sum + (i.quantity ?? 0), 0)
+    return fromCart + (pendingByVariant[selectedVariant.id] ?? 0)
+  }, [cart, pendingByVariant, selectedVariant])
+
+  // Remaining units we can still add for this variant.
+  const remaining = availableQty - cartQtyForSelected
+  // Everything that exists is already in the cart — block further adds.
+  const atMax = inStock && Number.isFinite(remaining) && remaining <= 0
+
+  const lowStock = useMemo(() => {
+    if (!Number.isFinite(remaining)) return false
+    return remaining > 0 && remaining <= 5
+  }, [remaining])
 
   const actionsRef = useRef<HTMLDivElement>(null)
   const inView = useIntersection(actionsRef, "0px")
 
   const handleAddToCart = async () => {
     if (!selectedVariant?.id) return null
+    // Guard against clicks that would exceed available stock.
+    if (atMax) return null
 
+    const variantId = selectedVariant.id
+    setError(null)
     setIsAdding(true)
 
-    await addToCart({
-      variantId: selectedVariant.id,
-      quantity: 1,
-      countryCode,
-    })
+    try {
+      await addToCart({
+        variantId,
+        quantity: 1,
+        countryCode,
+      })
 
-    trackAddToCart({ product, variant: selectedVariant, quantity: 1 })
+      // Optimistically count this unit so the button caps immediately, before
+      // the next cart refetch lands.
+      setPendingByVariant((prev) => ({
+        ...prev,
+        [variantId]: (prev[variantId] ?? 0) + 1,
+      }))
 
-    setIsAdding(false)
+      trackAddToCart({ product, variant: selectedVariant, quantity: 1 })
+    } catch (e: any) {
+      const friendly = translateCartError(e?.message)
+      setError({
+        message:
+          friendly?.message ?? "No pudimos añadir al carrito. Inténtalo de nuevo.",
+        signal: Date.now(),
+      })
+      // Our snapshot may be stale (e.g. stock changed) — resync from the server
+      // and drop optimistic counts so `atMax` reflects reality.
+      setPendingByVariant({})
+      retrieveCart()
+        .then((c) => setCart(c))
+        .catch(() => {})
+    } finally {
+      setIsAdding(false)
+    }
   }
 
   const buttonLabel = !selectedVariant
     ? "Selecciona una talla"
     : !inStock || !isValidVariant
     ? "Agotado"
+    : atMax
+    ? "Máximo disponible en carrito"
     : isAdding
     ? "Añadiendo..."
     : "Añadir al carrito"
 
   const buttonDisabled =
-    !inStock || !selectedVariant || !!disabled || isAdding || !isValidVariant
+    !inStock ||
+    !selectedVariant ||
+    !!disabled ||
+    isAdding ||
+    !isValidVariant ||
+    atMax
 
   return (
     <>
@@ -172,10 +254,10 @@ export default function ProductActions({
             style={{ color: "var(--brand-divine-lilac)" }}
           >
             <span aria-hidden>●</span>
-            Stock limitado · Quedan {selectedVariant?.inventory_quantity}
+            Stock limitado · Quedan {remaining}
           </div>
         )}
-        {selectedVariant && inStock && !lowStock && (
+        {selectedVariant && inStock && !lowStock && !atMax && (
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-brand-silver-ash">
             <span aria-hidden style={{ color: "var(--brand-sacred-violet)" }}>
               ●
@@ -195,6 +277,15 @@ export default function ProductActions({
           {buttonLabel}
         </button>
 
+        {error && (
+          <InlineAlert
+            message={error.message}
+            signal={error.signal}
+            variant="error"
+            data-testid="add-product-error-message"
+          />
+        )}
+
         <p className="text-[11px] uppercase tracking-[0.22em] text-brand-silver-ash/70 text-center">
           Pagos seguros · Envío a toda Honduras
         </p>
@@ -205,6 +296,7 @@ export default function ProductActions({
           options={options}
           updateOptions={setOptionValue}
           inStock={inStock}
+          atMax={atMax}
           handleAddToCart={handleAddToCart}
           isAdding={isAdding}
           show={!inView}

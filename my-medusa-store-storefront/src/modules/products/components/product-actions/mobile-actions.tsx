@@ -17,6 +17,7 @@ type MobileActionsProps = {
   options: Record<string, string | undefined>
   updateOptions: (title: string, value: string) => void
   inStock?: boolean
+  atMax?: boolean
   handleAddToCart: () => void
   isAdding?: boolean
   show: boolean
@@ -29,6 +30,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   options,
   updateOptions,
   inStock,
+  atMax,
   handleAddToCart,
   isAdding,
   show,
@@ -125,7 +127,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={!inStock || !variant || isAdding}
+                disabled={!inStock || !variant || isAdding || atMax}
                 className="btn-glow disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                 data-testid="mobile-cart-button"
                 aria-busy={isAdding}
@@ -134,6 +136,8 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   ? "Selecciona talla"
                   : !inStock
                   ? "Agotado"
+                  : atMax
+                  ? "Máximo"
                   : isAdding
                   ? "Añadiendo..."
                   : "Añadir"}
