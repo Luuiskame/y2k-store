@@ -87,3 +87,35 @@ export const removeCartId = async () => {
     maxAge: -1,
   })
 }
+
+// Remembers the last order placed with the BAC transfer provider so we can
+// remind the customer to upload their proof from any page — the whole point is
+// that they can close the browser mid-transfer and still find their way back.
+const PENDING_BAC_COOKIE = "_y2k_pending_bac_order"
+
+export const getPendingBacOrderId = async () => {
+  const cookies = await nextCookies()
+  return cookies.get(PENDING_BAC_COOKIE)?.value
+}
+
+export const setPendingBacOrderId = async (orderId: string) => {
+  const cookies = await nextCookies()
+  cookies.set(PENDING_BAC_COOKIE, orderId, {
+    // The order is only reserved for 24h, but late payers still deserve the
+    // reminder (and the upload form) for a few more days.
+    maxAge: 60 * 60 * 24 * 5,
+    httpOnly: true,
+    // "lax", not "strict" like the cart: customers very often come back through
+    // an Instagram/WhatsApp link, and a strict cookie isn't sent on those
+    // cross-site navigations — the reminder would silently never show.
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  })
+}
+
+export const removePendingBacOrderId = async () => {
+  const cookies = await nextCookies()
+  cookies.set(PENDING_BAC_COOKIE, "", {
+    maxAge: -1,
+  })
+}
