@@ -12,6 +12,7 @@ import {
   getCartId,
   removeCartId,
   setCartId,
+  setPendingBacOrderId,
 } from "./cookies"
 import { getRegion } from "./regions"
 import { getLocale } from "@lib/data/locale-actions"
@@ -427,6 +428,11 @@ export async function placeOrder(cartId?: string) {
     const providerId =
       cartRes.order.payment_collections?.[0]?.payment_sessions?.[0]?.provider_id
     if (providerId?.startsWith("pp_transferencia-bac")) {
+      // Payment isn't done yet — the customer still has to transfer and upload
+      // the proof. Remember the order so we can remind them from any page if
+      // they leave before finishing.
+      await setPendingBacOrderId(cartRes.order.id)
+
       redirect(
         `/${countryCode}/order/${cartRes?.order.id}/transferencia-bac`
       )

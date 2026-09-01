@@ -6,29 +6,18 @@ import Items from "@modules/order/components/items"
 import OrderDetails from "@modules/order/components/order-details"
 import ShippingDetails from "@modules/order/components/shipping-details"
 import BacAccountCard from "@modules/order/components/bac-account-card"
+import BacHelpButton from "@modules/order/components/bac-help-button"
 import BacProofUploader from "@modules/order/components/bac-proof-uploader"
 import PurchaseTracker from "@modules/order/components/purchase-tracker"
+import { getBacTransferProof } from "@modules/order/util/bac-transfer"
+import { BAC_ACCOUNT } from "@lib/config/bac-account"
 
 type Props = {
   order: HttpTypes.StoreOrder
 }
 
-const bacAccount = {
-  bankName: process.env.NEXT_PUBLIC_BAC_BANK_NAME ?? "BAC Credomatic",
-  holderName:
-    process.env.NEXT_PUBLIC_BAC_ACCOUNT_HOLDER ?? "Y2K Fit Honduras",
-  accountNumber:
-    process.env.NEXT_PUBLIC_BAC_ACCOUNT_NUMBER ?? "000-000-000",
-  accountType:
-    process.env.NEXT_PUBLIC_BAC_ACCOUNT_TYPE ?? "Cuenta de ahorros",
-  currency: process.env.NEXT_PUBLIC_BAC_ACCOUNT_CURRENCY ?? "HNL (Lempiras)",
-}
-
 export default function BacTransferTemplate({ order }: Props) {
-  const existingProof = (order.metadata?.bac_transfer_proof ?? []) as {
-    url: string
-    uploaded_at: string
-  }[]
+  const existingProof = getBacTransferProof(order)
   const hasUploaded = existingProof.length > 0
 
   return (
@@ -79,7 +68,7 @@ export default function BacTransferTemplate({ order }: Props) {
           >
             1. Transfiere el total
           </Heading>
-          <BacAccountCard account={bacAccount} totalLabel={undefined} order={order} />
+          <BacAccountCard account={BAC_ACCOUNT} totalLabel={undefined} order={order} />
         </div>
 
         <div
@@ -132,6 +121,9 @@ export default function BacTransferTemplate({ order }: Props) {
             verifiquemos el pago. Después de eso preparamos tu pedido para
             enviarlo.
           </p>
+          <div className="mt-3">
+            <BacHelpButton order={order} />
+          </div>
         </div>
 
         <div
