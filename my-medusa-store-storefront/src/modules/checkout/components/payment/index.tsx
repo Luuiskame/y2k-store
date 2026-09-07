@@ -106,7 +106,7 @@ const Payment = ({
   }, [isOpen])
 
   return (
-    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-6 text-brand-ghost-white">
+    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-4 small:p-6 text-brand-ghost-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
@@ -168,7 +168,7 @@ const Payment = ({
           )}
 
           {paidByGiftcard && (
-            <div className="flex flex-col w-1/3">
+            <div className="flex flex-col w-full small:w-1/3">
               <Text className="txt-medium-plus text-brand-ghost-white mb-1">
                 Método de pago
               </Text>
@@ -236,8 +236,8 @@ const Payment = ({
 
         <div className={isOpen ? "hidden" : "block"}>
           {cart && paymentReady && activeSession ? (
-            <div className="flex items-start gap-x-1 w-full">
-              <div className="flex flex-col w-1/3">
+            <div className="flex flex-col gap-y-6 small:flex-row small:items-start small:gap-x-1 small:gap-y-0 w-full">
+              <div className="flex flex-col w-full small:w-1/3">
                 <Text className="txt-medium-plus text-brand-ghost-white mb-1">
                   Método de pago
                 </Text>
@@ -249,7 +249,7 @@ const Payment = ({
                     activeSession?.provider_id}
                 </Text>
               </div>
-              <div className="flex flex-col w-1/3">
+              <div className="flex flex-col w-full small:w-1/3">
                 <Text className="txt-medium-plus text-brand-ghost-white mb-1">
                   Detalles de pago
                 </Text>
@@ -271,7 +271,7 @@ const Payment = ({
               </div>
             </div>
           ) : paidByGiftcard ? (
-            <div className="flex flex-col w-1/3">
+            <div className="flex flex-col w-full small:w-1/3">
               <Text className="txt-medium-plus text-brand-ghost-white mb-1">
                 Método de pago
               </Text>

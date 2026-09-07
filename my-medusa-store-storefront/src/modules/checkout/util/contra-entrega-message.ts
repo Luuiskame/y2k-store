@@ -6,8 +6,9 @@ import { HttpTypes } from "@medusajs/types"
 // payment step — no backend call, no order is created. The customer just taps
 // send and the owner gets the full order to coordinate delivery + cash payment.
 //
-// HN address mapping (see project memory): province = Departamento,
-// address_2 = Colonia, company = Referencias.
+// HN address mapping (see the checkout shipping-address component):
+// city = Poblado/Municipio, province = Departamento, address_1 = Dirección
+// exacta, address_2 = Referencia 1, company = Referencia 2.
 export function buildContraEntregaMessage(cart: HttpTypes.StoreCart): string {
   const currency_code = cart.currency_code
 
@@ -29,16 +30,16 @@ export function buildContraEntregaMessage(cart: HttpTypes.StoreCart): string {
     if (fullName) deliveryLines.push(fullName)
     if (addr.phone) deliveryLines.push(`Tel: ${addr.phone}`)
 
-    // Colonia (address_2) + street (address_1) on one line when present.
-    const streetLine = [addr.address_2, addr.address_1].filter(Boolean).join(", ")
-    if (streetLine) deliveryLines.push(streetLine)
+    // Dirección exacta (address_1).
+    if (addr.address_1) deliveryLines.push(addr.address_1)
 
-    // Ciudad + Departamento (province).
+    // Poblado/Municipio (city) + Departamento (province).
     const cityLine = [addr.city, addr.province].filter(Boolean).join(", ")
     if (cityLine) deliveryLines.push(cityLine)
 
-    // Referencias (company).
-    if (addr.company) deliveryLines.push(`Ref: ${addr.company}`)
+    // Referencias (address_2 + company).
+    const references = [addr.address_2, addr.company].filter(Boolean).join(" / ")
+    if (references) deliveryLines.push(`Ref: ${references}`)
   }
 
   const sections: string[] = [
