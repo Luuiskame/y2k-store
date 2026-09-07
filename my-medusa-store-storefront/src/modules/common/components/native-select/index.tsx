@@ -56,8 +56,13 @@ const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
           <select
             ref={innerRef}
             defaultValue={defaultValue}
+            data-brand-select
             {...props}
-            className="appearance-none flex-1 bg-transparent border-none px-4 py-2.5 transition-colors duration-150 outline-none text-inherit"
+            // El popup nativo se pinta con el color de fondo del propio
+            // <select>, no con el del contenedor: si queda transparente la
+            // lista sale blanca con texto ghost-white (ilegible).
+            style={{ backgroundColor: "var(--brand-void-black)" }}
+            className="appearance-none flex-1 w-full min-w-0 border-none pl-4 pr-10 py-2.5 transition-colors duration-150 outline-none text-inherit truncate"
           >
             <option disabled value="">
               {placeholder}

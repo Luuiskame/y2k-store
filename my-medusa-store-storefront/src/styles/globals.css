@@ -131,6 +131,17 @@
     background-color: var(--brand-sacred-violet);
     color: var(--brand-ghost-white);
   }
+
+  /* iOS Safari hace zoom automático al enfocar un campo con texto menor a
+     16px y después deja la página descuadrada. Debajo del breakpoint `small`
+     los controles van a 16px para que el checkout no salte de escala. */
+  @media (max-width: 1023px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
 }
 
 @layer utilities {
@@ -155,6 +166,25 @@
 
   input:focus ~ label {
     @apply left-0;
+  }
+
+  /* Native <select> dropdown — Chrome/Edge pintan el popup con los colores
+     del propio control, así que sin esto las opciones salen sobre blanco. */
+  select[data-brand-select] option {
+    background-color: var(--brand-abyss-purple);
+    color: var(--brand-ghost-white);
+  }
+
+  select[data-brand-select] option:disabled {
+    color: var(--brand-silver-ash);
+  }
+
+  select[data-brand-select] optgroup {
+    background-color: var(--brand-void-black);
+    color: var(--brand-divine-lilac);
+    font-family: var(--brand-font-heading);
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 
   /* Autofill — keep the dark surface, ghost-white ink. */

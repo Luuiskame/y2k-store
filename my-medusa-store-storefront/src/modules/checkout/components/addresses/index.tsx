@@ -39,20 +39,22 @@ const Addresses = ({
   const [message, formAction] = useActionState(setAddresses, null)
 
   return (
-    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-6 text-brand-ghost-white">
-      <div className="flex flex-row items-center justify-between mb-6">
+    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-4 small:p-6 text-brand-ghost-white">
+      <div className="flex flex-row items-center justify-between gap-x-4 mb-6">
         <Heading
           level="h2"
-          className="flex flex-row text-3xl-regular gap-x-2 items-baseline text-brand-ghost-white"
+          className="flex flex-row text-2xl-regular small:text-3xl-regular gap-x-2 items-baseline text-brand-ghost-white"
         >
           Dirección de envío
-          {!isOpen && <CheckCircleSolid className="text-brand-sacred-violet" />}
+          {!isOpen && (
+            <CheckCircleSolid className="text-brand-sacred-violet shrink-0" />
+          )}
         </Heading>
         {!isOpen && cart?.shipping_address && (
           <Text>
             <button
               onClick={handleEdit}
-              className="text-brand-sacred-violet hover:text-brand-divine-lilac transition-colors"
+              className="-mr-2 px-2 py-2 shrink-0 text-brand-sacred-violet hover:text-brand-divine-lilac transition-colors"
               data-testid="edit-address-button"
             >
               Editar
@@ -62,7 +64,7 @@ const Addresses = ({
       </div>
       {isOpen ? (
         <form action={formAction}>
-          <div className="pb-8">
+          <div className="pb-4 small:pb-8">
             <ShippingAddress
               customer={customer}
               checked={sameAsBilling}
@@ -74,7 +76,7 @@ const Addresses = ({
               <div>
                 <Heading
                   level="h2"
-                  className="text-3xl-regular gap-x-4 pb-6 pt-8 text-brand-ghost-white"
+                  className="text-2xl-regular small:text-3xl-regular gap-x-4 pb-6 pt-8 text-brand-ghost-white"
                 >
                   Dirección de facturación
                 </Heading>
@@ -82,7 +84,10 @@ const Addresses = ({
                 <BillingAddress cart={cart} />
               </div>
             )}
-            <SubmitButton className="mt-6" data-testid="submit-address-button">
+            <SubmitButton
+              className="mt-6 w-full small:w-auto"
+              data-testid="submit-address-button"
+            >
               Continuar a envío
             </SubmitButton>
             <ErrorMessage error={message} data-testid="address-error-message" />
@@ -93,9 +98,9 @@ const Addresses = ({
           <div className="text-small-regular">
             {cart && cart.shipping_address ? (
               <div className="flex items-start gap-x-8">
-                <div className="flex items-start gap-x-1 w-full">
+                <div className="flex flex-col gap-y-6 small:flex-row small:items-start small:gap-x-1 small:gap-y-0 w-full">
                   <div
-                    className="flex flex-col w-1/3"
+                    className="flex flex-col w-full small:w-1/3"
                     data-testid="shipping-address-summary"
                   >
                     <Text className="txt-medium-plus text-brand-ghost-white mb-1">
@@ -106,20 +111,30 @@ const Addresses = ({
                       {cart.shipping_address.last_name}
                     </Text>
                     <Text className="txt-medium text-brand-silver-ash">
-                      {cart.shipping_address.address_1}{" "}
-                      {cart.shipping_address.address_2}
+                      {cart.shipping_address.address_1}
                     </Text>
+                    {cart.shipping_address.address_2 && (
+                      <Text className="txt-medium text-brand-silver-ash">
+                        {cart.shipping_address.address_2}
+                      </Text>
+                    )}
+                    {cart.shipping_address.company && (
+                      <Text className="txt-medium text-brand-silver-ash">
+                        {cart.shipping_address.company}
+                      </Text>
+                    )}
                     <Text className="txt-medium text-brand-silver-ash">
-                      {cart.shipping_address.postal_code},{" "}
-                      {cart.shipping_address.city}
-                    </Text>
-                    <Text className="txt-medium text-brand-silver-ash">
-                      {cart.shipping_address.country_code?.toUpperCase()}
+                      {[
+                        cart.shipping_address.city,
+                        cart.shipping_address.province,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </Text>
                   </div>
 
                   <div
-                    className="flex flex-col w-1/3 "
+                    className="flex flex-col w-full small:w-1/3"
                     data-testid="shipping-contact-summary"
                   >
                     <Text className="txt-medium-plus text-brand-ghost-white mb-1">
@@ -128,13 +143,13 @@ const Addresses = ({
                     <Text className="txt-medium text-brand-silver-ash">
                       {cart.shipping_address.phone}
                     </Text>
-                    <Text className="txt-medium text-brand-silver-ash">
+                    <Text className="txt-medium text-brand-silver-ash break-words">
                       {cart.email}
                     </Text>
                   </div>
 
                   <div
-                    className="flex flex-col w-1/3"
+                    className="flex flex-col w-full small:w-1/3"
                     data-testid="billing-address-summary"
                   >
                     <Text className="txt-medium-plus text-brand-ghost-white mb-1">
@@ -152,15 +167,25 @@ const Addresses = ({
                           {cart.billing_address?.last_name}
                         </Text>
                         <Text className="txt-medium text-brand-silver-ash">
-                          {cart.billing_address?.address_1}{" "}
-                          {cart.billing_address?.address_2}
+                          {cart.billing_address?.address_1}
                         </Text>
+                        {cart.billing_address?.address_2 && (
+                          <Text className="txt-medium text-brand-silver-ash">
+                            {cart.billing_address.address_2}
+                          </Text>
+                        )}
+                        {cart.billing_address?.company && (
+                          <Text className="txt-medium text-brand-silver-ash">
+                            {cart.billing_address.company}
+                          </Text>
+                        )}
                         <Text className="txt-medium text-brand-silver-ash">
-                          {cart.billing_address?.postal_code},{" "}
-                          {cart.billing_address?.city}
-                        </Text>
-                        <Text className="txt-medium text-brand-silver-ash">
-                          {cart.billing_address?.country_code?.toUpperCase()}
+                          {[
+                            cart.billing_address?.city,
+                            cart.billing_address?.province,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
                         </Text>
                       </>
                     )}

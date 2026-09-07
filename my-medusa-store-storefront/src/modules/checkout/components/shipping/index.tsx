@@ -148,7 +148,7 @@ const Shipping: React.FC<ShippingProps> = ({
   }, [isOpen])
 
   return (
-    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-6 text-brand-ghost-white">
+    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-4 small:p-6 text-brand-ghost-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
@@ -383,7 +383,7 @@ const Shipping: React.FC<ShippingProps> = ({
         <div>
           <div className="text-small-regular">
             {cart && (cart.shipping_methods?.length ?? 0) > 0 && (
-              <div className="flex flex-col w-1/3">
+              <div className="flex flex-col w-full small:w-1/3">
                 <Text className="txt-medium-plus text-brand-ghost-white mb-1">
                   Método
                 </Text>

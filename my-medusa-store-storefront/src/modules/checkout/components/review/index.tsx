@@ -19,7 +19,7 @@ const Review = ({ cart }: { cart: any }) => {
     (cart.payment_collection || paidByGiftcard)
 
   return (
-    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-6 text-brand-ghost-white">
+    <div className="bg-brand-abyss-purple border border-brand-amethyst rounded-large p-4 small:p-6 text-brand-ghost-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
