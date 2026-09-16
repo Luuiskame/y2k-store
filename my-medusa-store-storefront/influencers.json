@@ -1,0 +1,68 @@
+[
+  {
+    "slug": "maria",
+    "name": "maria",
+    "city": "Tegucigalpa",
+    "tagline": "...",
+    "story": "...",
+    "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/maria/avatar.webp",
+    "socials": [
+      { "platform": "tiktok", "handle": "@maria", "url": "https://tiktok.com/@maria", "followers": 12000 }
+    ],
+    "media": [
+      {
+        "type": "image",
+        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/maria/01-producto.webp",
+        "alt": "Maria con...",
+        "postUrl": "https://tiktok.com/@maria/video/123",
+        "productHandles": ["nombre-del-producto"]
+      }
+    ],
+    "productHandles": ["nombre-del-producto"],
+    "featured": true
+  },
+  {
+    "slug": "erickk",
+    "name": "Erick Rodriguez",
+    "city": "Tegucigalpa",
+    "tagline": "...",
+    "story": "...",
+    "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/erick/avatar.webp",
+    "socials": [
+      { "platform": "tiktok", "handle": "@erick", "url": "https://tiktok.com/@erick", "followers": 12000 }
+    ],
+    "media": [
+      {
+        "type": "image",
+        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/erick/01-producto.webp",
+        "alt": "Erick Rodriguez con...",
+        "postUrl": "https://tiktok.com/@erick/video/123",
+        "productHandles": ["nombre-del-producto"]
+      }
+    ],
+    "productHandles": ["nombre-del-producto"],
+    "featured": true
+  },
+  {
+    "slug": "scott",
+    "name": "Scott",
+    "city": "Tegucigalpa",
+    "tagline": "...",
+    "story": "...",
+    "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/avatar.webp",
+    "socials": [
+      { "platform": "tiktok", "handle": "@scott", "url": "https://tiktok.com/@scott", "followers": 12000 }
+    ],
+    "media": [
+      {
+        "type": "image",
+        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/01-producto.webp",
+        "alt": "Scott con...",
+        "postUrl": "https://tiktok.com/@scott/video/123",
+        "productHandles": ["nombre-del-producto"]
+      }
+    ],
+    "productHandles": ["nombre-del-producto"],
+    "featured": true
+  }
+]

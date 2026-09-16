@@ -13,6 +13,7 @@ import {
   Sparkles,
   TruckFast,
   User,
+  Users,
   XMark,
 } from "@medusajs/icons"
 import { Text, clx, useToggleState } from "@medusajs/ui"
@@ -46,6 +47,7 @@ const SideMenuSections: MenuSection[] = [
     label: "Información",
     items: [
       { name: "Sobre Nosotros", href: "/sobre-nosotros", Icon: Sparkles },
+      { name: "Colaboraciones", href: "/colaboraciones", Icon: Users },
       { name: "Guía de Tallas", href: "/guia-de-tallas", Icon: AcademicCap },
       { name: "Envíos", href: "/envios", Icon: TruckFast },
       {

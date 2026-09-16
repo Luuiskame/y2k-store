@@ -66,10 +66,6 @@ export default function ProductPrice({
           </span>
         )}
       </div>
-
-      <span className="text-[11px] uppercase tracking-[0.2em] text-brand-silver-ash/70">
-        Envio gratis a todo Honduras
-      </span>
     </div>
   )
 }
