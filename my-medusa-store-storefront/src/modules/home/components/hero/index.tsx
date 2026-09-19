@@ -1,5 +1,6 @@
+import Image from "next/image"
+
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import Logo from "@modules/common/icons/logo"
 
 const Hero = () => {
   return (
@@ -23,15 +24,24 @@ const Hero = () => {
         />
       </div>
 
-      <div className="relative z-10 content-container min-h-[88vh] flex flex-col items-center justify-center text-center py-20 small:py-28 gap-8">
+      <div className="relative z-10 content-container flex flex-col items-center justify-center text-center py-10 small:py-16 gap-5 small:gap-7">
         {/* Scarcity + locality pill */}
         <span className="badge-glow tracking-[0.25em] text-[10px] small:text-xs">
           Y2K FIT
         </span>
 
-        <div>
-          <Logo/>
-        </div>
+        {/* Same asset the nav uses — cached file instead of an inlined SVG.
+            Sized off the artwork's 419:596 ratio so the box never letterboxes. */}
+        <span className="relative block h-[112px] w-[79px] small:h-[150px] small:w-[106px]">
+          <Image
+            src="/mainlogo.svg"
+            alt="Y2K Fit Honduras"
+            fill
+            priority
+            sizes="106px"
+            className="object-contain invert"
+          />
+        </span>
 
         <div className="flex flex-col gap-3 max-w-2xl">
           <h1 className="font-heading uppercase tracking-[0.18em] text-3xl small:text-5xl text-brand-ghost-white">
@@ -45,20 +55,25 @@ const Hero = () => {
           </p>
         </div>
 
-        <div className="flex flex-col small:flex-row items-center gap-4 mt-2">
-          <LocalizedClientLink href="/store" className="btn-glow">
-            Ver productos
-          </LocalizedClientLink>
+        {/* Collections lead — it tells a first-time visitor we carry several
+            lines. Swap the href to /collections once that page exists. */}
+        <div className="flex flex-col small:flex-row items-center gap-3 small:gap-4 w-full small:w-auto">
           <a
             href="#featured-collections"
-            className="font-heading uppercase tracking-[0.25em] text-xs text-brand-silver-ash hover:text-brand-divine-lilac transition-colors"
+            className="btn-glow w-full small:w-auto text-center"
           >
-            Explorar colecciones ↓
+            Ver colecciones ↓
           </a>
+          <LocalizedClientLink
+            href="/store"
+            className="btn-ghost w-full small:w-auto inline-flex items-center justify-center min-h-[44px] font-heading uppercase tracking-[0.18em] text-xs"
+          >
+            Ver todo
+          </LocalizedClientLink>
         </div>
 
         {/* Trust strip — three short signals, no claims we can't back */}
-        <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] small:text-xs uppercase tracking-[0.28em] text-brand-silver-ash/80">
+        <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] small:text-xs uppercase tracking-[0.28em] text-brand-silver-ash/80">
           <li>Envío a toda Honduras</li>
           <li aria-hidden className="hidden small:inline">
             ·

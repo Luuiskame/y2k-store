@@ -1,68 +1,43 @@
 [
   {
-    "slug": "maria",
-    "name": "maria",
-    "city": "Tegucigalpa",
-    "tagline": "...",
-    "story": "...",
-    "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/maria/avatar.webp",
-    "socials": [
-      { "platform": "tiktok", "handle": "@maria", "url": "https://tiktok.com/@maria", "followers": 12000 }
-    ],
-    "media": [
-      {
-        "type": "image",
-        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/maria/01-producto.webp",
-        "alt": "Maria con...",
-        "postUrl": "https://tiktok.com/@maria/video/123",
-        "productHandles": ["nombre-del-producto"]
-      }
-    ],
-    "productHandles": ["nombre-del-producto"],
-    "featured": true
-  },
-  {
-    "slug": "erickk",
-    "name": "Erick Rodriguez",
-    "city": "Tegucigalpa",
-    "tagline": "...",
-    "story": "...",
-    "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/erick/avatar.webp",
-    "socials": [
-      { "platform": "tiktok", "handle": "@erick", "url": "https://tiktok.com/@erick", "followers": 12000 }
-    ],
-    "media": [
-      {
-        "type": "image",
-        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/erick/01-producto.webp",
-        "alt": "Erick Rodriguez con...",
-        "postUrl": "https://tiktok.com/@erick/video/123",
-        "productHandles": ["nombre-del-producto"]
-      }
-    ],
-    "productHandles": ["nombre-del-producto"],
-    "featured": true
-  },
-  {
     "slug": "scott",
     "name": "Scott",
     "city": "Tegucigalpa",
-    "tagline": "...",
+    "tagline": "Fiel a Y2k Fit desde el primer día",
     "story": "...",
     "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/avatar.webp",
     "socials": [
-      { "platform": "tiktok", "handle": "@scott", "url": "https://tiktok.com/@scott", "followers": 12000 }
+      {
+        "platform": "instagram",
+        "handle": "@scottarceneauxx",
+        "url": "https://www.instagram.com/scott_arceneaux?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==",
+        "followers": 600
+      },
+      {
+        "platform": "tiktok",
+        "handle": "@scottarceneauxx",
+        "url": "https://www.tiktok.com/@scottarceneauxx?is_from_webapp=1&sender_device=pc",
+        "followers": 1400
+      }
     ],
     "media": [
       {
         "type": "image",
         "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/01-producto.webp",
         "alt": "Scott con...",
-        "postUrl": "https://tiktok.com/@scott/video/123",
-        "productHandles": ["nombre-del-producto"]
+        "postUrl": "https://www.instagram.com/reel/DcpRrbZMVLD/?utm_source=ig_web_copy_link&stkn=MzRlODBiNWFlZA==",
+        "productHandles": []
+      },
+      {
+        "type": "video",
+        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/clips/01.mp4",
+        "poster": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/clips/01-poster.webp",
+        "alt": "Scott con...",
+        "postUrl": "https://www.instagram.com/reel/DcpRrbZMVLD/?utm_source=ig_web_copy_link&stkn=MzRlODBiNWFlZA==",
+        "productHandles": []
       }
     ],
-    "productHandles": ["nombre-del-producto"],
+    "productHandles": [],
     "featured": true
   }
 ]

@@ -34,6 +34,8 @@ export type InfluencerMedia = {
   postUrl?: string
   /** Which product this specific shot shows. */
   productHandles?: string[]
+  /** Which collection this specific shot belongs to. */
+  collectionHandles?: string[]
 }
 
 export type Influencer = {
@@ -45,14 +47,23 @@ export type Influencer = {
   avatar?: string
   socials: InfluencerSocial[]
   media: InfluencerMedia[]
+  /** Products this creator is tied to. Empty + empty collections = everywhere. */
   productHandles: string[]
+  /** Collections this creator is tied to. */
+  collectionHandles: string[]
   featured?: boolean
   order?: number
 }
 
+/** What a product page is asking for. A product has at most one collection. */
+export type ProductTargeting = {
+  productHandle?: string | null
+  collectionHandle?: string | null
+}
+
 export type CreatorSelection = {
   items: Influencer[]
-  /** true = these creators wore *this* product; false = generic brand collabs. */
+  /** true = at least one shown creator is tied to *this* exact product. */
   matched: boolean
 }
 
@@ -155,6 +166,7 @@ const normalizeMedia = (
     alt: asText(input.alt) || `${influencerName} con Y2K Fit`,
     postUrl: asUrl(input.postUrl),
     productHandles: asHandles(input.productHandles),
+    collectionHandles: asHandles(input.collectionHandles),
   }
 }
 
@@ -192,6 +204,7 @@ const normalizeInfluencer = (raw: unknown): Influencer | null => {
           .filter((m): m is InfluencerMedia => m !== null)
       : [],
     productHandles: asHandles(input.productHandles),
+    collectionHandles: asHandles(input.collectionHandles),
     featured: input.featured === true,
     order,
   }
@@ -256,50 +269,121 @@ export const listInfluencers = async (): Promise<Influencer[]> => {
   }
 }
 
-/** Keeps only the media tagged for this product, when any is. */
-const narrowToProduct = (
-  influencer: Influencer,
-  handle: string
-): Influencer | null => {
-  const taggedMedia = influencer.media.filter((m) =>
-    m.productHandles?.includes(handle)
-  )
+/* ---------- targeting ------------------------------------------------------
+ *
+ * Three tiers, best first. Anything tied to *other* products or collections is
+ * excluded outright:
+ *
+ *   1  tied to this exact product
+ *   2  tied to this product's collection
+ *   3  tied to nothing at all → appears on every product
+ *
+ * Leaving both handle lists empty in the feed is therefore the "show this
+ * creator everywhere" switch. */
 
-  if (taggedMedia.length) {
-    return { ...influencer, media: taggedMedia }
+const TIER_PRODUCT = 1
+const TIER_COLLECTION = 2
+const TIER_UNTARGETED = 3
+
+const tierFor = (
+  productHandles: string[],
+  collectionHandles: string[],
+  target: ProductTargeting
+): number | null => {
+  if (target.productHandle && productHandles.includes(target.productHandle)) {
+    return TIER_PRODUCT
   }
-
-  // Wore the product but didn't tag individual shots — show what they have.
-  return influencer.productHandles.includes(handle) ? influencer : null
+  if (
+    target.collectionHandle &&
+    collectionHandles.includes(target.collectionHandle)
+  ) {
+    return TIER_COLLECTION
+  }
+  if (!productHandles.length && !collectionHandles.length) {
+    return TIER_UNTARGETED
+  }
+  return null
 }
 
 /**
- * Creators to show on a product page. Prefers people who actually wore this
- * product; falls back to featured collabs so a new product still carries proof
- * that the brand has collabs at all.
+ * Media for this product: shots tagged for it when there are any, otherwise the
+ * creator's untagged shots. Shots tagged for a *different* product never leak
+ * through.
+ */
+const narrowMedia = (
+  media: InfluencerMedia[],
+  target: ProductTargeting
+): InfluencerMedia[] => {
+  const withTier = media
+    .map((item) => ({
+      item,
+      tier: tierFor(
+        item.productHandles ?? [],
+        item.collectionHandles ?? [],
+        target
+      ),
+    }))
+    .filter((entry) => entry.tier !== null)
+
+  const explicit = withTier.filter((entry) => entry.tier !== TIER_UNTARGETED)
+  const chosen = explicit.length ? explicit : withTier
+
+  return chosen.map((entry) => entry.item)
+}
+
+/**
+ * Creators to show on a product page, best-targeted first.
+ *
+ * `limit` caps creators, not tiles — the caller decides how many tiles to draw.
+ * `onlyVideo` drops creators with no clip *before* the cap, so an image-only
+ * creator can't occupy a slot on a video-only wall.
  */
 export const listInfluencersForProduct = async (
-  handle?: string | null,
-  limit = 6
+  target: ProductTargeting = {},
+  options: { limit?: number; onlyVideo?: boolean } = {}
 ): Promise<CreatorSelection> => {
+  const { limit = 3, onlyVideo = false } = options
   const all = await listInfluencers()
 
   if (!all.length) {
     return { items: [], matched: false }
   }
 
-  if (handle) {
-    const matches = all
-      .map((influencer) => narrowToProduct(influencer, handle))
-      .filter((influencer): influencer is Influencer => influencer !== null)
+  const scored = all
+    .map((influencer) => {
+      const tier = tierFor(
+        influencer.productHandles,
+        influencer.collectionHandles,
+        target
+      )
 
-    if (matches.length) {
-      return { items: matches.slice(0, limit), matched: true }
-    }
+      if (tier === null) {
+        return null
+      }
+
+      const media = narrowMedia(influencer.media, target).filter(
+        (item) => !onlyVideo || item.type === "video"
+      )
+
+      return media.length ? { influencer: { ...influencer, media }, tier } : null
+    })
+    .filter(
+      (entry): entry is { influencer: Influencer; tier: number } =>
+        entry !== null
+    )
+
+  // Stable sort, so the feed's own `order` survives inside each tier.
+  scored.sort(
+    (a, b) =>
+      a.tier - b.tier ||
+      Number(Boolean(b.influencer.featured)) -
+        Number(Boolean(a.influencer.featured))
+  )
+
+  const shown = scored.slice(0, limit)
+
+  return {
+    items: shown.map((entry) => entry.influencer),
+    matched: shown.some((entry) => entry.tier === TIER_PRODUCT),
   }
-
-  const featured = all.filter((influencer) => influencer.featured)
-  const pool = featured.length ? featured : all
-
-  return { items: pool.slice(0, Math.min(limit, 3)), matched: false }
 }

@@ -50,12 +50,15 @@ type MediaTileProps = {
   name: string
   /** Drives next/image sizing; the wall and the collabs page differ. */
   sizes?: string
+  /** Clips are shot vertically — "portrait" crops far less of the frame. */
+  aspect?: "square" | "portrait"
 }
 
 const MediaTile = ({
   media,
   name,
   sizes = "(max-width: 640px) 60vw, 30vw",
+  aspect = "square",
 }: MediaTileProps) => {
   const [failed, setFailed] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -83,7 +86,9 @@ const MediaTile = ({
   const body = (
     <div
       ref={containerRef}
-      className="relative aspect-square w-full overflow-hidden rounded-rounded"
+      className={`relative w-full overflow-hidden rounded-rounded ${
+        aspect === "portrait" ? "aspect-[3/4]" : "aspect-square"
+      }`}
       style={{
         background: "var(--brand-abyss-purple)",
         border: "1px solid var(--brand-amethyst)",
@@ -99,7 +104,9 @@ const MediaTile = ({
           muted
           loop
           playsInline
-          preload="none"
+          // With no poster, "none" would leave a black box until playback
+          // starts — pull just enough to paint the first frame.
+          preload={media.poster ? "none" : "metadata"}
           aria-label={media.alt}
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"

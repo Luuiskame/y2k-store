@@ -3,16 +3,24 @@ import {
   listInfluencersForProduct,
   type Influencer,
   type InfluencerMedia,
+  type InfluencerSocial,
 } from "@lib/data/influencers"
 import { formatFollowers } from "@lib/util/format-followers"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { SOCIAL_ICONS } from "@modules/common/icons/social"
-
 import MediaTile from "@modules/influencers/components/media-tile"
 
-/* "Ya lo llevan puesto" — creators wearing the product, shown after the trust
-   strip. Server-rendered from the R2 feed, so there's no loading state and no
-   layout shift. Renders nothing at all when there's no content yet. */
+/* "Ya lo llevan puesto" — creator clips, shown after the trust strip.
+ *
+ * Clips only, three at most: on a product page a short video of someone moving
+ * in the shirt outsells a still, and more than three turns the section into a
+ * second gallery competing with the product's own. Photos still live on
+ * /colaboraciones.
+ *
+ * Server-rendered from the R2 feed, so there's no loading state and no layout
+ * shift. Renders nothing at all when no targeted creator has a clip. */
+
+const MAX_TILES = 3
 
 type Tile = {
   key: string
@@ -20,7 +28,7 @@ type Tile = {
   influencer: Influencer
 }
 
-/** Round-robin so one prolific creator can't fill the whole wall. */
+/** Round-robin so one prolific creator can't fill all three slots. */
 const flattenTiles = (influencers: Influencer[], limit: number): Tile[] => {
   const tiles: Tile[] = []
   const depth = Math.max(...influencers.map((i) => i.media.length), 0)
@@ -41,12 +49,26 @@ const flattenTiles = (influencers: Influencer[], limit: number): Tile[] => {
   return tiles
 }
 
+/* The tile has room for one platform, so show the creator's strongest: a 1.5M
+   TikTok shouldn't be hidden because a 600-follower Instagram is listed first. */
+const primarySocial = (influencer: Influencer) =>
+  influencer.socials.reduce<InfluencerSocial | undefined>(
+    (best, candidate) =>
+      (candidate.followers ?? -1) > (best?.followers ?? -1) ? candidate : best,
+    influencer.socials[0]
+  )
+
 const CreatorCaption = ({ influencer }: { influencer: Influencer }) => {
-  const social = influencer.socials[0]
+  const social = primarySocial(influencer)
   const Icon = social ? SOCIAL_ICONS[social.platform] : undefined
   const showFollowers =
     social?.followers !== undefined &&
     social.followers >= SOCIAL_FOLLOWER_THRESHOLD
+
+  const meta = [
+    influencer.city,
+    showFollowers ? `${formatFollowers(social!.followers!)} seguidores` : null,
+  ].filter(Boolean)
 
   return (
     <div className="mt-3 flex flex-col gap-0.5 min-w-0">
@@ -65,31 +87,33 @@ const CreatorCaption = ({ influencer }: { influencer: Influencer }) => {
         </span>
       </div>
 
-      <span className="text-[11px] text-brand-silver-ash truncate">
-        {[
-          influencer.city,
-          showFollowers
-            ? `${formatFollowers(social!.followers!)} seguidores`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </span>
+      {meta.length > 0 && (
+        <span className="text-[11px] text-brand-silver-ash truncate">
+          {meta.join(" · ")}
+        </span>
+      )}
     </div>
   )
 }
 
 type CreatorWallProps = {
   productHandle?: string
-  countryCode?: string
+  collectionHandle?: string
 }
 
-const CreatorWall = async ({ productHandle }: CreatorWallProps) => {
-  const { items, matched } = await listInfluencersForProduct(productHandle)
-  const tiles = flattenTiles(items, 6)
+const CreatorWall = async ({
+  productHandle,
+  collectionHandle,
+}: CreatorWallProps) => {
+  const { items, matched } = await listInfluencersForProduct(
+    { productHandle, collectionHandle },
+    { limit: MAX_TILES, onlyVideo: true }
+  )
 
-  // No collabs yet, or none with media — say nothing rather than showing an
-  // empty shell.
+  const tiles = flattenTiles(items, MAX_TILES)
+
+  // No targeted creator with a clip — say nothing rather than show an empty
+  // shell or fall back to stills.
   if (!tiles.length) {
     return null
   }
@@ -108,20 +132,25 @@ const CreatorWall = async ({ productHandle }: CreatorWallProps) => {
             {matched ? "Ya lo llevan puesto" : "Creadores que ya visten Y2K Fit"}
           </h2>
           <p className="text-sm text-brand-silver-ash leading-relaxed max-w-2xl">
-            {matched
-              ? "Creadores hondureños con esta prenda puesta. Tocá una foto para ver la publicación original."
-              : "Creadores hondureños que ya trabajan con la marca. Tocá una foto para ver la publicación original."}
+            Creadores hondureños en movimiento con la prenda. Tocá un video para
+            verlo completo en su perfil.
           </p>
         </header>
 
-        {/* Mobile: snap-scroll row. small+: fixed grid. */}
-        <ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 small:grid small:grid-cols-3 small:overflow-visible small:pb-0">
+        {/* Mobile: snap-scroll row. small+: up to three portrait tiles, capped
+            so they stay a supporting section, not a second gallery. */}
+        <ul className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 small:grid small:grid-cols-3 small:max-w-3xl small:overflow-visible small:pb-0">
           {tiles.map(({ key, media, influencer }) => (
             <li
               key={key}
-              className="snap-start shrink-0 w-[62%] xsmall:w-[46%] small:w-auto"
+              className="snap-start shrink-0 w-[58%] xsmall:w-[42%] small:w-auto"
             >
-              <MediaTile media={media} name={influencer.name} />
+              <MediaTile
+                media={media}
+                name={influencer.name}
+                aspect="portrait"
+                sizes="(max-width: 640px) 58vw, 250px"
+              />
               <CreatorCaption influencer={influencer} />
             </li>
           ))}

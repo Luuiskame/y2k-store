@@ -129,7 +129,10 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
       {/* Creator wall — proof that real people already wear this. Renders
           nothing until the R2 feed has collabs with media. */}
       <Suspense fallback={null}>
-        <CreatorWall productHandle={product.handle ?? undefined} />
+        <CreatorWall
+          productHandle={product.handle ?? undefined}
+          collectionHandle={product.collection?.handle ?? undefined}
+        />
       </Suspense>
 
       {/* Reviews — placeholder until the reviews module ships. Commented out for now. */}
