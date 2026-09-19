@@ -13,7 +13,10 @@ const SocialPills = ({ socials }: { socials: InfluencerSocial[] }) => {
   }
 
   return (
-    <ul className="flex flex-wrap gap-2">
+    /* Móvil: una pill por fila, alineadas a la izquierda y del mismo ancho —
+       en línea quedaban a medio ancho y se veían flotando al centro.
+       Desktop: vuelven a fluir una al lado de la otra. */
+    <ul className="flex flex-col xsmall:flex-row xsmall:flex-wrap gap-2 items-stretch xsmall:items-center">
       {socials.map((social) => {
         const Icon = SOCIAL_ICONS[social.platform]
         const showFollowers =
@@ -26,7 +29,7 @@ const SocialPills = ({ socials }: { socials: InfluencerSocial[] }) => {
               href={social.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-rounded px-3 py-2 text-xs transition-colors hover:text-brand-ghost-white"
+              className="flex xsmall:inline-flex items-center gap-2 rounded-rounded px-3 py-2 text-xs transition-colors hover:text-brand-ghost-white"
               style={{
                 border: "1px solid var(--brand-amethyst)",
                 color: "var(--brand-silver-ash)",
@@ -41,12 +44,15 @@ const SocialPills = ({ socials }: { socials: InfluencerSocial[] }) => {
                   <Icon size="14" />
                 </span>
               )}
-              <span className="truncate max-w-[12rem]">
+              <span className="truncate xsmall:max-w-[12rem]">
                 {social.handle || social.platform}
               </span>
               {showFollowers && (
-                <span className="text-brand-ghost-white/90">
-                  · {formatFollowers(social.followers as number)}
+                /* A ancho completo el contador se ancla a la derecha; en línea
+                   se queda pegado al handle como antes. */
+                <span className="ml-auto xsmall:ml-0 text-brand-ghost-white/90 shrink-0">
+                  <span className="hidden xsmall:inline">· </span>
+                  {formatFollowers(social.followers as number)}
                 </span>
               )}
             </a>

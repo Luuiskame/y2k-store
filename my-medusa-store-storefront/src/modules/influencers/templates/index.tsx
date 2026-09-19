@@ -3,6 +3,7 @@ import { listInfluencers, type Influencer } from "@lib/data/influencers"
 import CreatorAvatar from "@modules/influencers/components/creator-avatar"
 import MediaTile from "@modules/influencers/components/media-tile"
 import SocialPills from "@modules/influencers/components/social-pills"
+import VerifiedBadge from "@modules/influencers/components/verified-badge"
 
 /* /colaboraciones — the full creator roster. Reads the same R2 feed as the
    product-page wall. Every field except slug/name is optional, so each block
@@ -27,15 +28,19 @@ const CollabCta = () => (
   </a>
 )
 
-const CreatorCard = ({ influencer }: { influencer: Influencer }) => (
+const CreatorCard = ({ influencer }: { influencer: Influencer }) => {
+  const clips = influencer.media.filter((media) => media.type === "video")
+
+  return (
   <article className="surface-card p-6 small:p-8 flex flex-col gap-6">
     <div className="flex items-start gap-5 min-w-0">
       <CreatorAvatar src={influencer.avatar} name={influencer.name} />
 
       <div className="flex flex-col gap-2 min-w-0">
         <div className="flex flex-col gap-1">
-          <h2 className="font-heading uppercase tracking-[0.18em] text-lg small:text-xl text-brand-ghost-white">
+          <h2 className="font-heading uppercase tracking-[0.18em] text-lg small:text-xl text-brand-ghost-white flex items-center gap-2">
             {influencer.name}
+            <VerifiedBadge size={16} />
           </h2>
           {influencer.city && (
             <span className="text-xs text-brand-silver-ash">
@@ -50,8 +55,17 @@ const CreatorCard = ({ influencer }: { influencer: Influencer }) => (
           </p>
         )}
 
-        <SocialPills socials={influencer.socials} />
+        {/* Desktop: las redes caben junto al nombre. */}
+        <div className="hidden small:block">
+          <SocialPills socials={influencer.socials} />
+        </div>
       </div>
+    </div>
+
+    {/* Móvil: a lo ancho de la tarjeta. Dentro de la columna derecha quedaban
+        indentadas por el avatar y se empujaban hacia el centro. */}
+    <div className="small:hidden">
+      <SocialPills socials={influencer.socials} />
     </div>
 
     {influencer.story && (
@@ -60,13 +74,16 @@ const CreatorCard = ({ influencer }: { influencer: Influencer }) => (
       </p>
     )}
 
-    {influencer.media.length > 0 && (
+    {clips.length > 0 && (
+      /* Solo clips: el avatar de arriba ya muestra la cara del creador, así que
+         una foto extra al lado del video repetía lo mismo. */
       <ul className="grid grid-cols-2 small:grid-cols-3 gap-3 small:gap-4">
-        {influencer.media.map((media, index) => (
+        {clips.map((media, index) => (
           <li key={`${influencer.slug}-${index}`}>
             <MediaTile
               media={media}
               name={influencer.name}
+              aspect="portrait"
               sizes="(max-width: 640px) 45vw, 22vw"
             />
           </li>
@@ -74,7 +91,8 @@ const CreatorCard = ({ influencer }: { influencer: Influencer }) => (
       </ul>
     )}
   </article>
-)
+  )
+}
 
 const CollabsTemplate = async () => {
   const influencers = await listInfluencers()

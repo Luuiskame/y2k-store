@@ -3,6 +3,8 @@ import React, { Suspense } from "react"
 import Cash from "@modules/common/icons/cash"
 import FastDelivery from "@modules/common/icons/fast-delivery"
 import Refresh from "@modules/common/icons/refresh"
+import BuyerProofBar from "@modules/products/components/buyer-proof-bar"
+import ClientStories from "@modules/products/components/client-stories"
 import CreatorWall from "@modules/products/components/creator-wall"
 import FounderStrip from "@modules/products/components/founder-strip"
 import ImageGallery from "@modules/products/components/image-gallery"
@@ -82,6 +84,13 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
             <div className="lg:sticky lg:top-28 flex flex-col gap-y-8">
               <ProductOnboardingCta />
               <ProductInfo product={product} />
+
+              {/* Social proof beside the price — where hesitation happens.
+                  Links down to the client stories section. */}
+              <Suspense fallback={null}>
+                <BuyerProofBar />
+              </Suspense>
+
               <Suspense
                 fallback={
                   <ProductActions
@@ -133,6 +142,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           productHandle={product.handle ?? undefined}
           collectionHandle={product.collection?.handle ?? undefined}
         />
+      </Suspense>
+
+      {/* Client stories — target of the trust bar's anchor link. */}
+      <Suspense fallback={null}>
+        <ClientStories />
       </Suspense>
 
       {/* Reviews — placeholder until the reviews module ships. Commented out for now. */}

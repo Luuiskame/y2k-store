@@ -9,6 +9,7 @@ import { formatFollowers } from "@lib/util/format-followers"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { SOCIAL_ICONS } from "@modules/common/icons/social"
 import MediaTile from "@modules/influencers/components/media-tile"
+import VerifiedBadge from "@modules/influencers/components/verified-badge"
 
 /* "Ya lo llevan puesto" — creator clips, shown after the trust strip.
  *
@@ -85,6 +86,7 @@ const CreatorCaption = ({ influencer }: { influencer: Influencer }) => {
         <span className="font-heading uppercase tracking-[0.16em] text-[11px] text-brand-ghost-white truncate">
           {social?.handle || influencer.name}
         </span>
+        <VerifiedBadge size={13} />
       </div>
 
       {meta.length > 0 && (

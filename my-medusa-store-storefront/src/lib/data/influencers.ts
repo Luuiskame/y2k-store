@@ -61,6 +61,18 @@ export type ProductTargeting = {
   collectionHandle?: string | null
 }
 
+/**
+ * A face in the trust bar. Creators supply their own; plain clients who tagged
+ * us come from the feed's optional top-level `clients` list.
+ */
+export type ProofFace = {
+  key: string
+  name: string
+  avatar?: string
+  /** Creators we have an actual collab with; plain clients are never marked. */
+  verified?: boolean
+}
+
 export type CreatorSelection = {
   items: Influencer[]
   /** true = at least one shown creator is tied to *this* exact product. */
@@ -386,4 +398,89 @@ export const listInfluencersForProduct = async (
     items: shown.map((entry) => entry.influencer),
     matched: shown.some((entry) => entry.tier === TIER_PRODUCT),
   }
+}
+
+/* ---------- trust-bar faces ------------------------------------------------ */
+
+/** First name + last name, trimmed to two words. "maria" → "Maria". */
+const toDisplayName = (raw: string): string =>
+  raw
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) =>
+      word.length > 1
+        ? word[0].toLocaleUpperCase("es") + word.slice(1)
+        : word.toLocaleUpperCase("es")
+    )
+    .join(" ")
+
+/**
+ * Plain clients who tagged us — read from an optional top-level `clients` array
+ * in the feed. A bare array feed (what we have today) simply yields none.
+ */
+const normalizeClients = (raw: unknown): ProofFace[] => {
+  const list = Array.isArray((raw as Record<string, unknown>)?.clients)
+    ? ((raw as Record<string, unknown>).clients as unknown[])
+    : []
+
+  return list
+    .map((entry, index): ProofFace | null => {
+      const input = (entry && typeof entry === "object" ? entry : {}) as Record<
+        string,
+        unknown
+      >
+      const name = asText(input.name)
+      return name
+        ? {
+            key: asText(input.slug) || `client-${index}`,
+            name: toDisplayName(name),
+            avatar: asUrl(input.avatar),
+          }
+        : null
+    })
+    .filter((face): face is ProofFace => face !== null)
+}
+
+const fetchClients = async (): Promise<ProofFace[]> => {
+  try {
+    const res = await fetch(FEED_URL, {
+      next: { revalidate: REVALIDATE_SECONDS },
+    })
+    return res.ok ? normalizeClients(await res.json()) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Faces for the trust bar: named creators first (they carry the most weight),
+ * then tagged clients. Names are de-duplicated so two "Maria"s don't both show
+ * — repeated first names read as filler rather than proof.
+ */
+export const listProofFaces = async (limit = 5): Promise<ProofFace[]> => {
+  const [influencers, clients] = await Promise.all([
+    listInfluencers(),
+    fetchClients(),
+  ])
+
+  // Creators carry the badge; clients from the feed deliberately do not.
+  const creatorFaces: ProofFace[] = influencers.map((influencer) => ({
+    key: influencer.slug,
+    name: toDisplayName(influencer.name),
+    avatar: influencer.avatar,
+    verified: true,
+  }))
+
+  const seen = new Set<string>()
+
+  return [...creatorFaces, ...clients]
+    .filter((face) => {
+      const key = face.name.toLocaleLowerCase("es")
+      if (seen.has(key)) {
+        return false
+      }
+      seen.add(key)
+      return true
+    })
+    .slice(0, limit)
 }
