@@ -54,13 +54,11 @@ export default async function Home(props: {
     return null
   }
 
-  console.log(collections)
-
   return (
     <>
       <Hero />
       <div id="featured-collections" className="py-12 scroll-mt-16">
-        <ul className="flex flex-col gap-x-6">
+        <ul className="flex flex-col">
           <FeaturedProducts collections={collections} region={region} />
         </ul>
       </div>

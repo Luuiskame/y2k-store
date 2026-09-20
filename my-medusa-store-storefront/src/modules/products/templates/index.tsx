@@ -3,6 +3,9 @@ import React, { Suspense } from "react"
 import Cash from "@modules/common/icons/cash"
 import FastDelivery from "@modules/common/icons/fast-delivery"
 import Refresh from "@modules/common/icons/refresh"
+import BuyerProofBar from "@modules/products/components/buyer-proof-bar"
+import ClientStories from "@modules/products/components/client-stories"
+import CreatorWall from "@modules/products/components/creator-wall"
 import FounderStrip from "@modules/products/components/founder-strip"
 import ImageGallery from "@modules/products/components/image-gallery"
 import ProductActions from "@modules/products/components/product-actions"
@@ -10,7 +13,7 @@ import ProductFAQ from "@modules/products/components/product-faq"
 import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
 import ProductTabs from "@modules/products/components/product-tabs"
 import RelatedProducts from "@modules/products/components/related-products"
-import ReviewsSection from "@modules/products/components/reviews-section"
+// import ReviewsSection from "@modules/products/components/reviews-section"
 import SocialAnchor from "@modules/products/components/social-anchor"
 import ViewContentTracker from "@modules/products/components/view-content-tracker"
 import ProductInfo from "@modules/products/templates/product-info"
@@ -81,6 +84,13 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
             <div className="lg:sticky lg:top-28 flex flex-col gap-y-8">
               <ProductOnboardingCta />
               <ProductInfo product={product} />
+
+              {/* Social proof beside the price — where hesitation happens.
+                  Links down to the client stories section. */}
+              <Suspense fallback={null}>
+                <BuyerProofBar />
+              </Suspense>
+
               <Suspense
                 fallback={
                   <ProductActions
@@ -106,7 +116,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
 
       {/* Trust strip — payment-first signals for the Honduran buyer */}
       <div className="content-container pb-12">
-        <div className="grid grid-cols-1 small:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 small:grid-cols-2 gap-4 small:gap-10">
           <TrustItem
             icon={<Cash size="24" />}
             title="Pago Contra Entrega"
@@ -125,8 +135,22 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         </div>
       </div>
 
-      {/* Reviews — placeholder until the reviews module ships */}
-      <ReviewsSection />
+      {/* Creator wall — proof that real people already wear this. Renders
+          nothing until the R2 feed has collabs with media. */}
+      <Suspense fallback={null}>
+        <CreatorWall
+          productHandle={product.handle ?? undefined}
+          collectionHandle={product.collection?.handle ?? undefined}
+        />
+      </Suspense>
+
+      {/* Client stories — target of the trust bar's anchor link. */}
+      <Suspense fallback={null}>
+        <ClientStories />
+      </Suspense>
+
+      {/* Reviews — placeholder until the reviews module ships. Commented out for now. */}
+      {/* <ReviewsSection /> */}
 
       {/* Detail tabs — full width below the fold */}
       <div className="content-container pb-16 small:pb-24">
