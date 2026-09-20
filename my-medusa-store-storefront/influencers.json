@@ -1,6 +1,7 @@
 [
   {
     "slug": "scott",
+    "order": 1,
     "name": "Scott",
     "city": "Tegucigalpa",
     "tagline": "Beyond the limits",
@@ -34,6 +35,48 @@
         "poster": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/scott/clips/01-poster.webp",
         "alt": "Scott con...",
         "postUrl": "https://www.instagram.com/reel/DcpRrbZMVLD/?utm_source=ig_web_copy_link&stkn=MzRlODBiNWFlZA==",
+        "productHandles": []
+      }
+    ],
+    "productHandles": [],
+    "featured": true
+  },
+  {
+    "slug": "dixly",
+    "order": 2,
+    "name": "Dixly Sorel",
+    "city": "San Pedro Sula",
+    "tagline": "Fiel a y2k fit desde el primer día",
+    "story": "Modelo, apasionada de la moda y el fitness. Me encanta compartir mi estilo y motivar a otros a sentirse seguros y cómodos en su propia piel.",
+    "avatar": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/dixly/avatar.webp",
+    "socials": [
+      {
+        "platform": "instagram",
+        "handle": "@dixly",
+        "url": "https://www.instagram.com/dixly?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==",
+        "followers": 658000
+      },
+      {
+        "platform": "tiktok",
+        "handle": "@dixlysorel",
+        "url": "https://www.tiktok.com/@dixlysorel?is_from_webapp=1&sender_device=pc",
+        "followers": 110400
+      }
+    ],
+    "media": [
+      {
+        "type": "image",
+        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/dixly/01-producto.webp",
+        "alt": "Dixly con...",
+        "postUrl": "https://www.tiktok.com/@dixlysorel/photo/7649193777864707348?is_from_webapp=1&sender_device=pc&web_id=7681860739402204692",
+        "productHandles": []
+      },
+      {
+        "type": "video",
+        "url": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/dixly/clips/01.mp4",
+        "poster": "https://media.y2kfithn.com/y2k-fit-store-hn/influencers/dixly/clips/01-poster.webp",
+        "alt": "Dixly con...",
+        "postUrl": "https://www.tiktok.com/@dixlysorel/photo/7649193777864707348?is_from_webapp=1&sender_device=pc&web_id=7681860739402204692",
         "productHandles": []
       }
     ],
