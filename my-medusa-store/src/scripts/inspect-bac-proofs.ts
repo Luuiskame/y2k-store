@@ -22,9 +22,22 @@ export default async function inspectBacProofs({ container, args }: ExecArgs) {
     ...(onlyOrder ? { filters: { id: onlyOrder } } : {}),
   })
 
+  if (!orders?.length) {
+    logger.warn(
+      `No order matched${onlyOrder ? ` id ${onlyOrder}` : ""} — deleted, or the id is wrong.`
+    )
+    return
+  }
+
   for (const order of (orders ?? []) as any[]) {
     const proof = (order.metadata?.bac_transfer_proof ?? []) as ProofFile[]
     if (!Array.isArray(proof) || proof.length === 0) {
+      logger.info(
+        `Order #${order.display_id} (${order.id}): 0 proofs in metadata` +
+          ` — status ${order.status}, bac_transfer_status ${
+            order.metadata?.bac_transfer_status ?? "none"
+          }, pruned_at ${order.metadata?.bac_transfer_proof_pruned_at ?? "never"}`
+      )
       continue
     }
 
