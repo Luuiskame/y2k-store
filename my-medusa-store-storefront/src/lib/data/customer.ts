@@ -19,7 +19,20 @@ export const retrieveCustomer =
   async (): Promise<HttpTypes.StoreCustomer | null> => {
     const authHeaders = await getAuthHeaders()
 
-    if (!authHeaders) return null
+    // `getAuthHeaders()` devuelve `{}` cuando no hay sesión, y `{}` es truthy:
+    // el guard que había aquí (`if (!authHeaders)`) no saltaba NUNCA. Así que
+    // cada vista de página de un visitante anónimo gastaba una ida y vuelta a
+    // Railway para que el backend contestara 401.
+    //
+    // Y esa petición no se cachea por mucho que pida `force-cache`: el SDK
+    // lanza con 401 y una petición que lanza no entra en la caché de datos de
+    // Next. Fallaba, y volvía a fallar en cada render.
+    //
+    // Medido contra producción el 2026-09-21: dos `/store/customers/me` → 401
+    // por cada recarga de la home, con la tienda ya cacheada.
+    if (!("authorization" in authHeaders)) {
+      return null
+    }
 
     const headers = {
       ...authHeaders,
