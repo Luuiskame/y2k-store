@@ -8,7 +8,24 @@ import {
   MAX_FILE_SIZE,
   MAX_REQUESTS_PER_IP,
 } from "../lib/bac-proof"
-import { clientIp, consumeRateLimit } from "../lib/rate-limit"
+import {
+  AUTH_LIMIT,
+  GLOBAL_WINDOW_SECONDS,
+  GlobalLimit,
+  STORE_LIMIT,
+  clientIp,
+  consumeRateLimit,
+  identifyClient,
+  limitFor,
+} from "../lib/rate-limit"
+
+if (!process.env.STOREFRONT_SHARED_SECRET) {
+  // Not fatal by design (see `isInternalRequest`): the shop keeps serving, its
+  // own traffic just falls into the external class and gets the tighter limit.
+  console.warn(
+    "[rate-limit] STOREFRONT_SHARED_SECRET is not set. Storefront traffic will be rate limited as external, bucketed by Vercel's egress address. Set it on the Railway server and worker services, and on Vercel."
+  )
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -24,6 +41,40 @@ const upload = multer({
     cb(null, ACCEPTED_MIME_TYPES.includes(file.mimetype))
   },
 })
+
+/**
+ * Blanket per-IP throttle. Every other limiter stacks on top of this one.
+ *
+ * `keyPrefix` keeps each route family in its own bucket, so a visitor browsing
+ * the shop never eats into their own `/auth` or `bac-proof` allowance.
+ */
+const globalRateLimit =
+  (keyPrefix: string, limit: GlobalLimit) =>
+  async (
+    req: MedusaRequest,
+    res: MedusaResponse,
+    next: MedusaNextFunction
+  ) => {
+    const identity = identifyClient(req)
+
+    const { allowed, retryAfter } = await consumeRateLimit(
+      req,
+      `${keyPrefix}${identity.ip}`,
+      limitFor(limit, identity),
+      GLOBAL_WINDOW_SECONDS
+    )
+
+    if (!allowed) {
+      res.setHeader("Retry-After", String(retryAfter))
+      return res.status(429).json({
+        message:
+          "Demasiadas peticiones. Espera unos segundos e inténtalo de nuevo.",
+        retry_after: retryAfter,
+      })
+    }
+
+    return next()
+  }
 
 /**
  * Per-IP throttle for proof uploads. Runs *before* multer so a flood is
@@ -100,8 +151,24 @@ const uploadProofFiles = (
   })
 }
 
+/**
+ * Order in this array is NOT the registration order — Medusa runs it through
+ * `RoutesSorter`, which buckets by matcher shape and registers in the order
+ * `global > wildcard > regex > static > params`. An entry with no `method` is
+ * "global", so both throttles below land ahead of the `bac-proof` entry
+ * (a static matcher) and its limiter stacks on top of theirs. Verified against
+ * a running 2.13.1 server, not just read off the sorter.
+ */
 export default defineMiddlewares({
   routes: [
+    {
+      matcher: "/store/*",
+      middlewares: [globalRateLimit("store:ip:", STORE_LIMIT) as any],
+    },
+    {
+      matcher: "/auth/*",
+      middlewares: [globalRateLimit("auth:ip:", AUTH_LIMIT) as any],
+    },
     {
       matcher: "/store/orders/:id/bac-proof",
       method: ["POST"],

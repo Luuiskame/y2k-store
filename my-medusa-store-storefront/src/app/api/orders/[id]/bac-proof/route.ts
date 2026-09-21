@@ -9,9 +9,19 @@ import {
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL ?? "http://localhost:9000"
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 
+const STOREFRONT_SHARED_SECRET = process.env.STOREFRONT_SHARED_SECRET
+
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024
 // Headroom over the theoretical max payload for multipart boundaries/fields.
 const MAX_BODY_SIZE = MAX_FILES_PER_REQUEST * MAX_FILE_SIZE + 1024 * 1024
+
+/**
+ * Deliberately generous: this hop carries up to 24MB server-to-server and the
+ * backend still has to push it to R2. Short enough that a dead backend does not
+ * hold the function open until Vercel kills it, long enough that a slow upload
+ * on a real connection is never cut off.
+ */
+const BACKEND_TIMEOUT_MS = 20000
 
 const reject = (message: string, status = 400) =>
   NextResponse.json({ message }, { status })
@@ -70,20 +80,53 @@ export async function POST(
   if (PUBLISHABLE_KEY) {
     headers["x-publishable-api-key"] = PUBLISHABLE_KEY
   }
-  // Pass the caller's address through so the backend limiter buckets by the
-  // real client and not by this route handler's egress IP.
-  const forwardedFor = req.headers.get("x-forwarded-for")
-  if (forwardedFor) {
-    headers["x-forwarded-for"] = forwardedFor
+  // Identify this hop as the storefront and pass the caller's address along, so
+  // the backend limiter buckets by the real visitor and not by this route
+  // handler's egress IP.
+  //
+  // This used to forward `x-forwarded-for`, which never worked: Railway's edge
+  // overwrites that header, so the value was discarded before the backend saw
+  // it. `x-real-client-ip` is a header nothing in the path rewrites, and the
+  // backend only honours it when `x-storefront-secret` checks out.
+  if (STOREFRONT_SHARED_SECRET) {
+    headers["x-storefront-secret"] = STOREFRONT_SHARED_SECRET
+
+    const forwardedFor = req.headers.get("x-forwarded-for")
+    const realClientIp = forwardedFor?.split(",")[0]?.trim()
+    if (realClientIp) {
+      headers["x-real-client-ip"] = realClientIp
+    }
   }
 
-  const res = await fetch(`${BACKEND_URL}/store/orders/${id}/bac-proof`, {
-    method: "POST",
-    body: forwarded,
-    headers,
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BACKEND_URL}/store/orders/${id}/bac-proof`, {
+      method: "POST",
+      body: forwarded,
+      headers,
+      signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+    })
+  } catch {
+    // Says "no se subió" on purpose: the customer has to be able to retry
+    // without worrying about creating a duplicate proof.
+    return reject(
+      "No pudimos contactar con el servidor. Tu comprobante no se subió, inténtalo de nuevo.",
+      504
+    )
+  }
 
-  const text = await res.text()
+  let text: string
+  try {
+    text = await res.text()
+  } catch {
+    // Headers arrived but the body did not before the deadline. We genuinely do
+    // not know whether the backend stored the proof, so don't claim either way.
+    return reject(
+      "No pudimos confirmar si tu comprobante se subió. Revisa tu pedido antes de volver a intentarlo.",
+      504
+    )
+  }
+
   const responseHeaders: Record<string, string> = {
     "Content-Type": res.headers.get("Content-Type") ?? "application/json",
   }

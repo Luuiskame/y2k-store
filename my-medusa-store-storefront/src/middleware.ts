@@ -4,6 +4,15 @@ import { NextRequest, NextResponse } from "next/server"
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
+const STOREFRONT_SHARED_SECRET = process.env.STOREFRONT_SHARED_SECRET
+
+/**
+ * This matcher covers nearly the whole site, so a slow backend here is a slow
+ * *everything*. Without a deadline the fetch just hangs until Vercel kills the
+ * invocation at 25s and serves a 504 for every page. Fail fast instead and let
+ * `middleware()` fall back to the last known region map.
+ */
+const REGIONS_TIMEOUT_MS = 2500
 
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
@@ -23,16 +32,29 @@ async function getRegionMap(cacheId: string) {
     !regionMap.keys().next().value ||
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
+    const headers: Record<string, string> = {
+      "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+    }
+    // Identifies this request to the backend's rate limiter as storefront
+    // traffic. No `x-real-client-ip` here: this fetch is shared by every
+    // visitor through the region map cache, so there is no single visitor to
+    // attribute it to. It falls into the internal-without-real-ip bucket.
+    if (STOREFRONT_SHARED_SECRET) {
+      headers["x-storefront-secret"] = STOREFRONT_SHARED_SECRET
+    }
+
     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+    // `signal` does not opt this fetch out of the Next data cache: cacheability
+    // is decided by `cache`/`next.revalidate`/method/auth headers, and the
+    // cache key is built from url + method + headers + body only.
     const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
+      headers,
       next: {
         revalidate: 3600,
         tags: [`regions-${cacheId}`],
       },
       cache: "force-cache",
+      signal: AbortSignal.timeout(REGIONS_TIMEOUT_MS),
     }).then(async (response) => {
       const json = await response.json()
 
@@ -121,10 +143,18 @@ export async function middleware(request: NextRequest) {
   try {
     regionMap = await getRegionMap(cacheId)
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Middleware.ts: backend unreachable, redirecting to /maintenance", error)
+    // Always logged, not just in development: when this fires in production we
+    // need it in the Vercel logs. It is the first symptom of the backend going.
+    console.warn("Middleware.ts: region fetch failed", error)
+
+    // A slightly stale region map beats a 504 on the whole site, so keep
+    // serving from whatever this isolate fetched last and only fall back to
+    // /maintenance when we have never had a map at all.
+    if (regionMapCache.regionMap.size > 0) {
+      regionMap = regionMapCache.regionMap
+    } else {
+      return NextResponse.rewrite(new URL("/maintenance", request.url))
     }
-    return NextResponse.rewrite(new URL("/maintenance", request.url))
   }
 
   const countryCode = regionMap && (await getCountryCode(request, regionMap))

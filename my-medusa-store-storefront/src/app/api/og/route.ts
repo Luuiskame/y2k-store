@@ -6,6 +6,8 @@ export const runtime = "nodejs"
 // It's an immutable asset, so we lean on Cache-Control + the CDN instead.
 export const dynamic = "force-dynamic"
 
+const UPSTREAM_TIMEOUT_MS = 5000
+
 // Only proxy/transform images from hosts we control — never an open image proxy.
 const ALLOWED_HOSTS = new Set(
   [
@@ -43,6 +45,9 @@ export async function GET(req: NextRequest) {
   try {
     const upstream = await fetch(url.toString(), {
       next: { revalidate: 60 * 60 * 24 }, // source asset is immutable
+      // It's a link preview. A stalled origin must never hold a Vercel function
+      // open — the catch below already falls back to the static OG image.
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     })
     if (!upstream.ok) return fallback()
 
