@@ -248,32 +248,53 @@ const isInfrastructureIp = (ip: string): boolean => {
 }
 
 /**
- * Fixed position to read `x-forwarded-for` from, counted from the right. Unset
- * (the default) means "do not count hops at all" — see `clientFromForwardedFor`.
+ * How many entries the trusted edge appends to `x-forwarded-for`, counted from
+ * the right. The entry at that position is the address the outermost trusted
+ * proxy saw the caller connect from; everything to its right is our own
+ * plumbing and everything to its left is client-written and worthless.
+ *
+ * Two, on Railway. Measured from production logs on 2026-09-21 with
+ * `RATE_LIMIT_DEBUG=1`, across ~200 requests from one caller:
+ *
+ *   xff="206.203.54.52, 152.233.23.193"  socket=::ffff:100.64.0.3
+ *   xff="206.203.54.52, 152.233.23.194"  socket=::ffff:100.64.0.7
+ *
+ * The edge writes the caller's address, an internal hop appends the edge's own
+ * address, and the socket we are handed belongs to that internal hop. The list
+ * is two entries long on every single request — the hop count does NOT vary,
+ * which is what an earlier round of this investigation concluded and got wrong.
  */
-const trustedProxyHops = (): number | null => {
+const DEFAULT_TRUSTED_PROXY_HOPS = 2
+
+/**
+ * Position in `x-forwarded-for` to read the caller from, counted from the right
+ * (1 = the rightmost entry). `TRUSTED_PROXY_HOPS` overrides the default for an
+ * edge with a different shape.
+ */
+const trustedProxyHops = (): number => {
   const parsed = Number.parseInt(process.env.TRUSTED_PROXY_HOPS ?? "", 10)
-  return Number.isInteger(parsed) && parsed >= 1 ? parsed : null
+  return Number.isInteger(parsed) && parsed >= 1
+    ? parsed
+    : DEFAULT_TRUSTED_PROXY_HOPS
 }
 
 /**
- * The visitor's address out of `x-forwarded-for`.
+ * The caller's address out of `x-forwarded-for`.
  *
- * Scans from the RIGHT and returns the first entry that is not plumbing. Never
- * from the left: that end of the list is written by the client.
+ * Counted from the RIGHT, never from the left: the left end of the list is
+ * written by the client and a caller could pad it to mint a fresh bucket per
+ * request. Counting from the right is also stable under that padding — an extra
+ * client-supplied entry shifts the whole list, and the position we read shifts
+ * with it.
  *
- * It used to take a fixed position from the right instead, which assumes the
- * edge appends the same number of entries to every request. Railway does not.
- * Measured against production on 2026-09-21: one caller, one stable source
- * address, strictly sequential requests — and the effective limit came out at
- * exactly 2x the configured one (20 requests served against a limit of 10,
- * then a clean cut and 60 consecutive blocks with no leaks). A counter that
- * behaves perfectly but admits exactly twice as many callers is a counter being
- * asked about two different keys. Skipping the plumbing rather than counting it
- * gives the same answer whether the edge adds one hop, three, or none.
- *
- * `TRUSTED_PROXY_HOPS` still forces the old fixed-position behaviour when set,
- * for an edge that genuinely needs it.
+ * This deliberately does NOT try to recognise the caller by skipping entries
+ * that look like infrastructure. That was the previous implementation and it is
+ * why the limiter stayed broken: Railway's internal hop appends a *publicly
+ * routable* address (152.233.23.193 / .194), which no private-range test can
+ * tell apart from a visitor. Worse, there are two of them and they alternate
+ * per request, so one caller was still being counted in two buckets and the
+ * effective limit was still exactly 2x the configured one. Only the deployment
+ * knows how many entries its edge adds; it is configuration, not a heuristic.
  */
 const clientFromForwardedFor = (req: MedusaRequest): string | null => {
   const entries = forwardedForList(req)
@@ -281,28 +302,20 @@ const clientFromForwardedFor = (req: MedusaRequest): string | null => {
     return null
   }
 
-  const hops = trustedProxyHops()
-  if (hops !== null) {
-    return normalizeIp(entries[Math.max(0, entries.length - hops)])
-  }
-
   const parsed = entries.map(normalizeIp)
 
-  for (let i = parsed.length - 1; i >= 0; i--) {
-    const ip = parsed[i]
-    if (ip && !isInfrastructureIp(ip)) {
-      return ip
-    }
+  // Clamped rather than failed: a request that reached us through fewer hops
+  // than configured (an internal probe, a route that skips the edge) still has
+  // its leftmost entry written by a proxy we trust.
+  const index = Math.max(0, parsed.length - trustedProxyHops())
+  if (parsed[index]) {
+    return parsed[index]
   }
 
-  // Every entry was plumbing. Still prefer the rightmost one that parsed over
-  // inventing an address: it is edge-written and the client cannot choose it.
-  for (let i = parsed.length - 1; i >= 0; i--) {
-    if (parsed[i]) {
-      return parsed[i]
-    }
-  }
-
+  // The configured position held something that is not an address. Do not go
+  // looking for a substitute: to its left is client-written, to its right is our
+  // own plumbing, and both are wrong answers. Returning null hands the request
+  // to the socket fallback, which is at least honest about what it is.
   return null
 }
 
@@ -396,15 +409,70 @@ export const isInternalRequest = (req: MedusaRequest): boolean => {
 }
 
 /**
- * Set `RATE_LIMIT_DEBUG=1` on the Railway service to print, per request, what
- * the edge actually sent and which bucket it resolved to. That is the only way
- * to see the input `identifyClient` works from — the shape of `x-forwarded-for`
- * on Railway is undocumented and has already changed once under us. One line
- * per request, so turn it off again once the question is answered.
+ * Bucketing external traffic by an infrastructure address means every caller in
+ * the world shares a single counter: the limit stops being per-visitor, and
+ * legitimate customers collect 429s that somebody else earned.
+ *
+ * It is always a misconfiguration — a `TRUSTED_PROXY_HOPS` that does not match
+ * the edge, or an edge that stopped sending `x-forwarded-for` and left us on
+ * the socket address. It is also invisible from outside, which is how a
+ * one-bucket-for-everyone shape survived two rounds of black-box probing on
+ * 2026-09-21. Say it out loud, throttled like the fail-open line.
+ *
+ * It cannot catch the mirror-image mistake — reading an edge address that
+ * happens to be publicly routable, which is the other half of what went wrong
+ * that day. Nothing in the request can: only the deployment knows how many
+ * proxies sit in front of it.
  */
+let lastSharedBucketLog = 0
+
+const warnSharedBucket = (identity: ClientIdentity): void => {
+  if (identity.internal || !isInfrastructureIp(identity.ip)) {
+    return
+  }
+
+  const now = Date.now()
+  if (now - lastSharedBucketLog < 10_000) {
+    return
+  }
+  lastSharedBucketLog = now
+
+  console.warn(
+    `[rate-limit] external traffic is being bucketed by "${identity.bucket}", an infrastructure address — every caller is sharing one counter. Check TRUSTED_PROXY_HOPS against what the edge actually sends (RATE_LIMIT_DEBUG=1).`
+  )
+}
+
+/**
+ * Set `RATE_LIMIT_DEBUG=1` on the Railway service to print, per request, what
+ * the edge actually sent and which bucket it resolved to, plus the full set of
+ * `x-*` headers once at startup.
+ *
+ * This is the only way to see the input `identifyClient` works from, and the
+ * shape of `x-forwarded-for` on Railway is undocumented: both rounds of the
+ * 2026-09-21 investigation guessed at it from response codes alone, and both
+ * guessed wrong. Turn it on before theorising, not after. One line per request,
+ * so turn it off again once the question is answered.
+ */
+let dumpedHeaders = false
+
 const debugIdentity = (req: MedusaRequest, identity: ClientIdentity): void => {
   if (process.env.RATE_LIMIT_DEBUG !== "1") {
     return
+  }
+
+  // Once per process, the whole forwarding envelope. The per-request line below
+  // shows only the two headers we already decided to read, which is no help at
+  // all when the question is whether the edge offers something better to read.
+  if (!dumpedHeaders) {
+    dumpedHeaders = true
+    const forwarding = Object.fromEntries(
+      Object.entries(req.headers).filter(([name]) => name.startsWith("x-"))
+    )
+    console.log(
+      `[rate-limit] forwarding headers on first request: ${JSON.stringify(
+        forwarding
+      )}`
+    )
   }
 
   const xff = req.headers["x-forwarded-for"]
@@ -427,16 +495,17 @@ const debugIdentity = (req: MedusaRequest, identity: ClientIdentity): void => {
  *      storefront. Without that proof the header is ignored outright — it must
  *      not be usable to mint a fresh bucket per request.
  *   2. `cf-connecting-ip`, when `CLIENT_IP_SOURCE=cf`.
- *   3. `x-forwarded-for`, rightmost entry that is not infrastructure.
- *      Never the leftmost one: that end of the list is written by the client.
+ *   3. `x-forwarded-for`, at `TRUSTED_PROXY_HOPS` counted from the right
+ *      (default 2, Railway's shape). Never the leftmost entry: that end of the
+ *      list is written by the client.
  *   4. The socket address.
  *
- * >>> The day the API moves behind Cloudflare, set `CLIENT_IP_SOURCE=cf` on the
- * >>> Railway server and worker services. Cloudflare *appends* to
- * >>> `x-forwarded-for` instead of overwriting it, so without that flag the scan
- * >>> in step 3 starts reading a list the client can pad with public addresses,
- * >>> and the limiter becomes evadable. `cf-connecting-ip` is written by
- * >>> Cloudflare itself and cannot be spoofed through it.
+ * >>> The day the API moves behind Cloudflare, two things change and both need
+ * >>> doing. Cloudflare adds a hop, so `TRUSTED_PROXY_HOPS` becomes 3 — leave it
+ * >>> at 2 and every visitor buckets under a Cloudflare edge address. Better,
+ * >>> set `CLIENT_IP_SOURCE=cf` and read `cf-connecting-ip`, which Cloudflare
+ * >>> writes itself, cannot be spoofed through, and does not move when the
+ * >>> number of proxies changes underneath us.
  */
 export const identifyClient = (req: MedusaRequest): ClientIdentity => {
   const internal = isInternalRequest(req)
@@ -466,6 +535,7 @@ export const identifyClient = (req: MedusaRequest): ClientIdentity => {
   const { ip, realIp } = resolve()
   const identity = { ip, bucket: bucketForIp(ip), internal, realIp }
 
+  warnSharedBucket(identity)
   debugIdentity(req, identity)
 
   return identity
