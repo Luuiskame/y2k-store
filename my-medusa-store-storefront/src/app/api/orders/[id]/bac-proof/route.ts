@@ -13,6 +13,14 @@ const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024
 // Headroom over the theoretical max payload for multipart boundaries/fields.
 const MAX_BODY_SIZE = MAX_FILES_PER_REQUEST * MAX_FILE_SIZE + 1024 * 1024
 
+/**
+ * Deliberately generous: this hop carries up to 24MB server-to-server and the
+ * backend still has to push it to R2. Short enough that a dead backend does not
+ * hold the function open until Vercel kills it, long enough that a slow upload
+ * on a real connection is never cut off.
+ */
+const BACKEND_TIMEOUT_MS = 20000
+
 const reject = (message: string, status = 400) =>
   NextResponse.json({ message }, { status })
 
@@ -77,13 +85,35 @@ export async function POST(
     headers["x-forwarded-for"] = forwardedFor
   }
 
-  const res = await fetch(`${BACKEND_URL}/store/orders/${id}/bac-proof`, {
-    method: "POST",
-    body: forwarded,
-    headers,
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BACKEND_URL}/store/orders/${id}/bac-proof`, {
+      method: "POST",
+      body: forwarded,
+      headers,
+      signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+    })
+  } catch {
+    // Says "no se subió" on purpose: the customer has to be able to retry
+    // without worrying about creating a duplicate proof.
+    return reject(
+      "No pudimos contactar con el servidor. Tu comprobante no se subió, inténtalo de nuevo.",
+      504
+    )
+  }
 
-  const text = await res.text()
+  let text: string
+  try {
+    text = await res.text()
+  } catch {
+    // Headers arrived but the body did not before the deadline. We genuinely do
+    // not know whether the backend stored the proof, so don't claim either way.
+    return reject(
+      "No pudimos confirmar si tu comprobante se subió. Revisa tu pedido antes de volver a intentarlo.",
+      504
+    )
+  }
+
   const responseHeaders: Record<string, string> = {
     "Content-Type": res.headers.get("Content-Type") ?? "application/json",
   }
