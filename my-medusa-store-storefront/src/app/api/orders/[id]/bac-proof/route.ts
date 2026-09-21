@@ -9,6 +9,8 @@ import {
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL ?? "http://localhost:9000"
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 
+const STOREFRONT_SHARED_SECRET = process.env.STOREFRONT_SHARED_SECRET
+
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024
 // Headroom over the theoretical max payload for multipart boundaries/fields.
 const MAX_BODY_SIZE = MAX_FILES_PER_REQUEST * MAX_FILE_SIZE + 1024 * 1024
@@ -78,11 +80,22 @@ export async function POST(
   if (PUBLISHABLE_KEY) {
     headers["x-publishable-api-key"] = PUBLISHABLE_KEY
   }
-  // Pass the caller's address through so the backend limiter buckets by the
-  // real client and not by this route handler's egress IP.
-  const forwardedFor = req.headers.get("x-forwarded-for")
-  if (forwardedFor) {
-    headers["x-forwarded-for"] = forwardedFor
+  // Identify this hop as the storefront and pass the caller's address along, so
+  // the backend limiter buckets by the real visitor and not by this route
+  // handler's egress IP.
+  //
+  // This used to forward `x-forwarded-for`, which never worked: Railway's edge
+  // overwrites that header, so the value was discarded before the backend saw
+  // it. `x-real-client-ip` is a header nothing in the path rewrites, and the
+  // backend only honours it when `x-storefront-secret` checks out.
+  if (STOREFRONT_SHARED_SECRET) {
+    headers["x-storefront-secret"] = STOREFRONT_SHARED_SECRET
+
+    const forwardedFor = req.headers.get("x-forwarded-for")
+    const realClientIp = forwardedFor?.split(",")[0]?.trim()
+    if (realClientIp) {
+      headers["x-real-client-ip"] = realClientIp
+    }
   }
 
   let res: Response

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
+const STOREFRONT_SHARED_SECRET = process.env.STOREFRONT_SHARED_SECRET
 
 /**
  * This matcher covers nearly the whole site, so a slow backend here is a slow
@@ -31,14 +32,23 @@ async function getRegionMap(cacheId: string) {
     !regionMap.keys().next().value ||
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
+    const headers: Record<string, string> = {
+      "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+    }
+    // Identifies this request to the backend's rate limiter as storefront
+    // traffic. No `x-real-client-ip` here: this fetch is shared by every
+    // visitor through the region map cache, so there is no single visitor to
+    // attribute it to. It falls into the internal-without-real-ip bucket.
+    if (STOREFRONT_SHARED_SECRET) {
+      headers["x-storefront-secret"] = STOREFRONT_SHARED_SECRET
+    }
+
     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
     // `signal` does not opt this fetch out of the Next data cache: cacheability
     // is decided by `cache`/`next.revalidate`/method/auth headers, and the
     // cache key is built from url + method + headers + body only.
     const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
+      headers,
       next: {
         revalidate: 3600,
         tags: [`regions-${cacheId}`],
