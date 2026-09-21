@@ -48,18 +48,36 @@
 
     /* Dark Amethyst — heavier violet for borders, dividers on dark
        surfaces, secondary buttons, and hover backgrounds where
-       Sacred Violet would be too loud. */
+       Sacred Violet would be too loud. NON-TEXT ONLY: 2.46:1 on Void
+       Black, so it never carries copy. As a fill under Ghost White it
+       is fine (7.20:1). */
     --brand-amethyst:      #7B2D8E;
 
-    /* Sacred Violet — THE brand color. Use for the logo wordmark,
-       primary CTA buttons (Buy / Add to bag / Checkout), active links,
-       focus rings, and any "look here" UI element. White text on top. */
-    --brand-sacred-violet: #9B4DCA;
+    /* Sacred Violet — THE brand color, and the TEXT/identity violet.
+       Use for the logo wordmark, active links, focus rings, icons, and
+       any "look here" element drawn ON a dark surface.
+       5.00:1 on Void Black / 4.71:1 on Abyss Purple — clears WCAG AA
+       at any text size.
+       Do NOT use as a fill under Ghost White (4.41:1 — fails AA); that
+       is what --brand-violet-deep is for. */
+    --brand-sacred-violet: #A855F7;
+
+    /* Violet Deep — the FILL counterpart to Sacred Violet. Same hue,
+       one step down, dark enough to carry Ghost White labels at
+       5.13:1. Use for primary/CTA button backgrounds, badge fills, and
+       any solid violet block with text sitting on top of it.
+       It exists because no single violet can be both readable text on
+       black AND a readable backdrop for white — the two requirements
+       pull in opposite directions. */
+    --brand-violet-deep:   #8E42BD;
 
     /* Divine Lilac — the glow. Use for hover states (text + button
-       glow), focus halos, neon-style outlines on featured tiles,
-       and subtle drop-shadows behind hero artwork. Never as a fill
-       for blocks of text — too low contrast on Void Black. */
+       glow), focus halos, neon-style outlines on featured tiles, and
+       subtle drop-shadows behind hero artwork.
+       It is the most legible violet in the palette (7.49:1 on Void
+       Black), so it is safe for text; it stays reserved for hover so
+       the resting/hover delta survives. As a fill it takes Void Black
+       labels (7.49:1), never Ghost White. */
     --brand-divine-lilac:  #C084FC;
 
     /* ────────────────────── TEXT / METALLIC (20%) ──────────────────────
@@ -126,9 +144,9 @@
     text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
   }
 
-  /* Selection — Sacred Violet tint with Ghost White text. */
+  /* Selection — Violet Deep tint with Ghost White text (5.13:1). */
   ::selection {
-    background-color: var(--brand-sacred-violet);
+    background-color: var(--brand-violet-deep);
     color: var(--brand-ghost-white);
   }
 
@@ -213,6 +231,17 @@
   /* ─────────── Brand font helpers ───────────
      Use when an element needs a brand font without a heading tag. */
   .font-display { font-family: var(--brand-font-display); }
+
+  /* --brand-font-display is declared on :root, so its var(--font-unifraktur)
+     is resolved AT :root. The blackletter face is now loaded only on the
+     checkout route, where next/font defines --font-unifraktur on a nested
+     element — which :root cannot see. Re-declaring the token on that
+     subtree makes it resolve where the font variable actually exists.
+     Anywhere else .font-display falls through to the local/cursive stack,
+     which is what already happened in practice. */
+  .font-display-scope {
+    --brand-font-display: var(--font-unifraktur, 'UnifrakturMaguntia', cursive);
+  }
   .font-heading { font-family: var(--brand-font-heading); }
   .font-body    { font-family: var(--brand-font-body); }
 
@@ -248,12 +277,12 @@
   /* ─────────── BUTTONS ───────────
      btn-primary  → main conversion action (Sacred Violet + Ghost White).
      btn-ghost    → secondary action (Amethyst border, Sacred Violet text).
-     btn-glow     → hero / featured CTA (Sacred Violet + Divine Lilac glow).
+     btn-glow     → hero / featured CTA (Violet Deep + Divine Lilac glow).
      Use btn-primary by default. Reserve btn-glow for the one most-important
      action on a page (PDP "Add to bag", hero CTA). */
   .btn-primary {
     @apply px-5 py-2.5 rounded-rounded font-medium transition-all duration-200 ease-in;
-    background-color: var(--brand-sacred-violet);
+    background-color: var(--brand-violet-deep);
     color: var(--brand-ghost-white);
   }
   .btn-primary:hover {
@@ -275,7 +304,7 @@
 
   .btn-glow {
     @apply px-6 py-3 rounded-rounded font-semibold tracking-wide uppercase transition-all duration-200 ease-in;
-    background-color: var(--brand-sacred-violet);
+    background-color: var(--brand-violet-deep);
     color: var(--brand-ghost-white);
     box-shadow: 0 0 24px rgba(155, 77, 202, 0.4);
   }
@@ -287,7 +316,7 @@
 
   /* ─────────── BADGES ───────────
      badge-accent  → "new", "drop", category tags (Abyss bg + Sacred Violet).
-     badge-glow    → featured / limited (Sacred Violet bg + Ghost White). */
+     badge-glow    → featured / limited (Violet Deep bg + Ghost White). */
   .badge-accent {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
     background-color: var(--brand-abyss-purple);
@@ -297,7 +326,7 @@
 
   .badge-glow {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide;
-    background-color: var(--brand-sacred-violet);
+    background-color: var(--brand-violet-deep);
     color: var(--brand-ghost-white);
   }
 

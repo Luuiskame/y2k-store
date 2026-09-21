@@ -93,7 +93,7 @@ const CartDropdown = ({
             <ShoppingBag />
             {totalItems > 0 && (
               <span
-                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-heading font-semibold bg-brand-sacred-violet text-brand-ghost-white shadow-[0_0_10px_rgba(155,77,202,0.6)]"
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-heading font-semibold bg-brand-violet-deep text-brand-ghost-white shadow-[0_0_10px_rgba(155,77,202,0.6)]"
                 data-testid="nav-cart-count"
               >
                 {totalItems > 99 ? "99+" : totalItems}
