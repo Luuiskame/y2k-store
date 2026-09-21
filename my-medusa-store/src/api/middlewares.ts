@@ -13,7 +13,6 @@ import {
   GLOBAL_WINDOW_SECONDS,
   GlobalLimit,
   STORE_LIMIT,
-  clientIp,
   consumeRateLimit,
   identifyClient,
   limitFor,
@@ -59,7 +58,7 @@ const globalRateLimit =
 
     const { allowed, retryAfter } = await consumeRateLimit(
       req,
-      `${keyPrefix}${identity.ip}`,
+      `${keyPrefix}${identity.bucket}`,
       limitFor(limit, identity),
       GLOBAL_WINDOW_SECONDS
     )
@@ -87,7 +86,7 @@ const bacProofRateLimit = async (
 ) => {
   const { allowed, retryAfter } = await consumeRateLimit(
     req,
-    `bac-proof:ip:${clientIp(req)}`,
+    `bac-proof:ip:${identifyClient(req).bucket}`,
     MAX_REQUESTS_PER_IP,
     IP_WINDOW_SECONDS
   )
