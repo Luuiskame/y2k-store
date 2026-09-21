@@ -5,6 +5,11 @@ import { useState } from "react"
 
 type ProofFile = { url: string; uploaded_at: string }
 
+// Orders uploaded before the per-order cap existed can hold hundreds of files.
+// Render a page at a time so opening one of those does not fire hundreds of
+// image requests and lock up the admin.
+const PREVIEW_PAGE_SIZE = 12
+
 const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
   const proof = ((order.metadata?.bac_transfer_proof ?? []) as ProofFile[]) || []
   const status =
@@ -17,6 +22,7 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
 
   const [confirming, setConfirming] = useState(false)
   const [confirmed, setConfirmed] = useState(status === "verified")
+  const [visibleCount, setVisibleCount] = useState(PREVIEW_PAGE_SIZE)
 
   if (!isBac && proof.length === 0) {
     return null
@@ -70,7 +76,7 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
               {proof.length === 1 ? "" : "s"}
             </Text>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {proof.map((p, i) => {
+              {proof.slice(0, visibleCount).map((p, i) => {
                 const isPdf = p.url.toLowerCase().endsWith(".pdf")
                 return (
                   <a
@@ -100,6 +106,17 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
                 )
               })}
             </div>
+            {proof.length > visibleCount && (
+              <Button
+                variant="secondary"
+                size="small"
+                className="self-start"
+                onClick={() => setVisibleCount((c) => c + PREVIEW_PAGE_SIZE)}
+              >
+                Ver {Math.min(PREVIEW_PAGE_SIZE, proof.length - visibleCount)}{" "}
+                más ({proof.length - visibleCount} restantes)
+              </Button>
+            )}
           </div>
         )}
 
