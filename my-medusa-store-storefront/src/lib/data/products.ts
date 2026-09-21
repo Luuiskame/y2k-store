@@ -6,6 +6,7 @@ import { HttpTypes } from "@medusajs/types"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
+import { catalogFetchOptions } from "@lib/cache-policy"
 
 export const listProducts = async ({
   pageParam = 1,
@@ -49,10 +50,7 @@ export const listProducts = async ({
     ...(await getAuthHeaders()),
   }
 
-  const next = {
-    ...(await getCacheOptions("products")),
-    revalidate: 600,
-  }
+  const cacheOptions = catalogFetchOptions(await getCacheOptions("products"))
 
   return sdk.client
     .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
@@ -68,8 +66,7 @@ export const listProducts = async ({
           ...queryParams,
         },
         headers,
-        next,
-        cache: "no-cache",
+        ...cacheOptions,
       }
     )
     .then(({ products, count }) => {
