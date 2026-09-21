@@ -53,28 +53,51 @@ const bacProofRateLimit = async (
   return next()
 }
 
+const multerErrorMessage = (err: multer.MulterError): string => {
+  switch (err.code) {
+    case "LIMIT_FILE_SIZE":
+      return `Cada archivo debe pesar menos de ${
+        MAX_FILE_SIZE / (1024 * 1024)
+      }MB.`
+    case "LIMIT_FILE_COUNT":
+    case "LIMIT_PART_COUNT":
+    case "LIMIT_FIELD_COUNT":
+    case "LIMIT_UNEXPECTED_FILE":
+      return `Puedes enviar un máximo de ${MAX_FILES_PER_REQUEST} archivos a la vez.`
+    default:
+      return "No pudimos procesar el archivo. Intenta con otro."
+  }
+}
+
 /**
- * Turns multer's limit errors into the same Spanish 400s the route returns,
- * instead of letting them bubble up as a generic 500.
+ * Runs multer and turns its limit errors into the same Spanish 400s the route
+ * returns, instead of letting them bubble up as a generic 500.
+ *
+ * This wraps multer rather than being registered as a separate Express error
+ * handler. A 4-argument `(err, req, res, next)` function in this array is NOT
+ * treated as an error handler — Medusa invokes it like any other middleware,
+ * so it receives `(req, res, next)`, `next` lands in the 4th slot as
+ * `undefined`, and the fallthrough `next(err)` throws a TypeError. That turned
+ * EVERY request through this route into a 500, including valid uploads.
  */
-const handleUploadErrors = (
-  err: any,
-  _req: MedusaRequest,
+const uploadProofFiles = (
+  req: MedusaRequest,
   res: MedusaResponse,
   next: MedusaNextFunction
 ) => {
-  if (err instanceof multer.MulterError) {
-    const message =
-      err.code === "LIMIT_FILE_SIZE"
-        ? `Cada archivo debe pesar menos de ${MAX_FILE_SIZE / (1024 * 1024)}MB.`
-        : err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_PART_COUNT"
-        ? `Puedes enviar un máximo de ${MAX_FILES_PER_REQUEST} archivos a la vez.`
-        : "No pudimos procesar el archivo. Intenta con otro."
+  const run = upload.array("files", MAX_FILES_PER_REQUEST) as any
 
-    return res.status(400).json({ message })
-  }
+  run(req, res, (err: any) => {
+    if (!err) {
+      return next()
+    }
 
-  return next(err)
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ message: multerErrorMessage(err) })
+    }
+
+    return next(err)
+  })
 }
 
 export default defineMiddlewares({
@@ -82,11 +105,7 @@ export default defineMiddlewares({
     {
       matcher: "/store/orders/:id/bac-proof",
       method: ["POST"],
-      middlewares: [
-        bacProofRateLimit as any,
-        upload.array("files", MAX_FILES_PER_REQUEST) as any,
-        handleUploadErrors as any,
-      ],
+      middlewares: [bacProofRateLimit as any, uploadProofFiles as any],
     },
   ],
 })
