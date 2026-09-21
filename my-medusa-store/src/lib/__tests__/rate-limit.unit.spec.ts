@@ -114,7 +114,9 @@ describe("isInternalRequest", () => {
 })
 
 describe("clientIp", () => {
-  it("takes the RIGHTMOST entry of x-forwarded-for", () => {
+  it("reads x-forwarded-for two entries from the right, Railway's shape", () => {
+    // 203.0.113.9 is the internal hop's own address, 2.2.2.2 is what the edge
+    // saw the caller connect from, 1.1.1.1 is whatever the caller sent.
     expect(
       clientIp(
         req({
@@ -123,19 +125,21 @@ describe("clientIp", () => {
           },
         })
       )
-    ).toBe("203.0.113.9")
+    ).toBe("2.2.2.2")
   })
 
-  it("honours TRUSTED_PROXY_HOPS when counting from the right", () =>
-    withEnv({ TRUSTED_PROXY_HOPS: "2" }, () => {
-      expect(
-        clientIp(
-          req({
-            headers: { "x-forwarded-for": "1.1.1.1, 198.51.100.4, 203.0.113.9" },
-          })
-        )
-      ).toBe("198.51.100.4")
-    }))
+  it("honours TRUSTED_PROXY_HOPS over the default", () => {
+    const headers = {
+      "x-forwarded-for": "1.1.1.1, 198.51.100.4, 203.0.113.9",
+    }
+
+    withEnv({ TRUSTED_PROXY_HOPS: "1" }, () => {
+      expect(clientIp(req({ headers }))).toBe("203.0.113.9")
+    })
+    withEnv({ TRUSTED_PROXY_HOPS: "3" }, () => {
+      expect(clientIp(req({ headers }))).toBe("1.1.1.1")
+    })
+  })
 
   it("ignores x-real-client-ip without a valid secret", () => {
     // No secret configured at all.
@@ -218,25 +222,35 @@ describe("clientIp", () => {
   })
 
   /**
-   * The production bug of 2026-09-21: one caller, one stable source address,
-   * strictly sequential requests, and an effective limit of exactly 2x the
-   * configured one. Counting a fixed number of hops from the right assumes the
-   * edge appends the same number of entries every time; when it does not, one
-   * caller is split across two buckets.
+   * The production bug of 2026-09-21, and the reason the first attempt at
+   * fixing it did not work.
+   *
+   * Railway's internal hop appends its OWN address, and it is publicly routable
+   * and comes from a small pool: 152.233.23.193 and 152.233.23.194 alternating
+   * per request. Reading the rightmost non-private entry therefore bucketed one
+   * caller under two different keys — effective limit exactly 2x — and bucketed
+   * every caller in the world under one of those same two keys.
+   *
+   * The position from the right is what has to be right. The addresses at that
+   * position are irrelevant, public or private.
    */
-  it("resolves the same caller to one address however many hops the edge adds", () => {
+  it("resolves one caller to one bucket across Railway's alternating edges", () => {
     const shapes = [
-      "203.0.113.9",
-      "203.0.113.9, 10.0.0.1",
-      "203.0.113.9, 10.0.0.1, 172.16.4.4",
-      "1.1.1.1, 203.0.113.9, 100.64.0.7",
+      "206.203.54.52, 152.233.23.193",
+      "206.203.54.52, 152.233.23.194",
     ]
 
     for (const xff of shapes) {
       expect(clientIp(req({ headers: { "x-forwarded-for": xff } }))).toBe(
-        "203.0.113.9"
+        "206.203.54.52"
       )
     }
+  })
+
+  it("clamps to the leftmost entry when the chain is shorter than configured", () => {
+    expect(
+      clientIp(req({ headers: { "x-forwarded-for": "203.0.113.9" } }))
+    ).toBe("203.0.113.9")
   })
 
   it("does not split one caller between the header and the socket fallback", () => {
@@ -249,17 +263,30 @@ describe("clientIp", () => {
     ).toBe("203.0.113.9")
   })
 
-  it("keeps the rightmost entry when every hop is infrastructure", () => {
+  it("still refuses an address the client padded the list with", () => {
+    // The caller sent "6.6.6.6"; the edge appended the address it actually saw,
+    // and the internal hop appended the edge's. An extra entry on the left
+    // shifts the whole list, and the position we read shifts with it.
     expect(
-      clientIp(req({ headers: { "x-forwarded-for": "10.0.0.1, 10.0.0.2" } }))
-    ).toBe("10.0.0.2")
+      clientIp(
+        req({
+          headers: {
+            "x-forwarded-for": "6.6.6.6, 203.0.113.9, 192.0.2.50",
+          },
+        })
+      )
+    ).toBe("203.0.113.9")
   })
 
-  it("still refuses an address the client put to the left", () => {
-    // 6.6.6.6 is the attacker's; 203.0.113.9 is what the edge appended.
+  it("falls back to the socket rather than guess when the entry is junk", () => {
     expect(
-      clientIp(req({ headers: { "x-forwarded-for": "6.6.6.6, 203.0.113.9" } }))
-    ).toBe("203.0.113.9")
+      clientIp(
+        req({
+          headers: { "x-forwarded-for": "not-an-ip, 203.0.113.9" },
+          socket: { remoteAddress: "::ffff:100.64.0.7" },
+        })
+      )
+    ).toBe("100.64.0.7")
   })
 
   it("strips an IPv6 zone index", () => {
