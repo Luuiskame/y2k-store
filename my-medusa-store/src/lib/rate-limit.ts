@@ -31,6 +31,27 @@ export type RateLimitResult = {
  */
 const CACHE_TIMEOUT_MS = 250
 
+/**
+ * Failing open is the right call, but doing it silently means a limiter that has
+ * stopped counting looks exactly like a limiter nobody is testing. During a
+ * Redis outage every single request takes this path, so the line itself is
+ * throttled — one every 10s is plenty to spot it in the Railway logs.
+ */
+let lastFailOpenLog = 0
+
+const logFailOpen = (stage: string, key: string, error: unknown): void => {
+  const now = Date.now()
+  if (now - lastFailOpenLog < 10_000) {
+    return
+  }
+  lastFailOpenLog = now
+
+  const reason = error instanceof Error ? error.message : String(error)
+  console.warn(
+    `[rate-limit] cache ${stage} failed for "${key}" — request served without being counted: ${reason}`
+  )
+}
+
 const withDeadline = <T>(promise: Promise<T>, ms: number): Promise<T> =>
   new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
@@ -68,9 +89,10 @@ export const consumeRateLimit = async (
         Promise.resolve(cache.get<number>(cacheKey)),
         CACHE_TIMEOUT_MS
       )) ?? 0
-  } catch {
+  } catch (error) {
     // A cache outage must not take checkout down with it. Fail open here — the
     // per-order caps in the route are authoritative and read from the database.
+    logFailOpen("read", cacheKey, error)
     return { allowed: true, remaining: limit, retryAfter: 0 }
   }
 
@@ -88,8 +110,9 @@ export const consumeRateLimit = async (
       Promise.resolve(cache.set(cacheKey, count + 1, windowSeconds)),
       CACHE_TIMEOUT_MS
     )
-  } catch {
+  } catch (error) {
     // Same reasoning as above.
+    logFailOpen("write", cacheKey, error)
   }
 
   return { allowed: true, remaining: limit - count - 1, retryAfter: 0 }
@@ -112,8 +135,13 @@ export const consumeRateLimit = async (
  * one an attacker hitting the API directly does not get to choose.
  */
 export type ClientIdentity = {
-  /** Value to bucket this request under. Never empty. */
+  /** The address we resolved for this caller. Never empty. */
   ip: string
+  /**
+   * Value to bucket this request under: `ip`, collapsed to a /64 when it is
+   * IPv6. Always use this for the cache key, never `ip`.
+   */
+  bucket: string
   /** The caller proved it is the storefront. */
   internal: boolean
   /** We are bucketing by the visitor's own address, not by an egress address. */
@@ -143,6 +171,11 @@ const forwardedForList = (req: MedusaRequest): string[] => {
 /**
  * Whatever comes out of here ends up inside a Redis key, so only hand back
  * something that is genuinely an address.
+ *
+ * IPv4-mapped IPv6 (`::ffff:203.0.113.7`) collapses to plain IPv4. Node reports
+ * that form from `socket.remoteAddress` on a dual-stack listener while an edge
+ * writes the plain form into `x-forwarded-for`, so without this one caller lands
+ * in two different buckets depending on which source we happened to read.
  */
 const normalizeIp = (value: string | undefined | null): string | null => {
   if (!value) {
@@ -163,17 +196,170 @@ const normalizeIp = (value: string | undefined | null): string | null => {
     candidate = candidate.slice(0, candidate.lastIndexOf(":"))
   }
 
-  return net.isIP(candidate) ? candidate : null
+  // `fe80::1%eth0` — the zone index is meaningful only on the host that wrote it.
+  const zone = candidate.indexOf("%")
+  if (zone !== -1) {
+    candidate = candidate.slice(0, zone)
+  }
+
+  if (!net.isIP(candidate)) {
+    return null
+  }
+
+  const mapped = candidate.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i)
+  return mapped && net.isIPv4(mapped[1]) ? mapped[1] : candidate
 }
 
 /**
- * How many proxies sit between us and the client, i.e. how many entries the
- * edge appends to `x-forwarded-for`. Default 1 = the rightmost entry, which on
- * Railway today is the only one and is written by the edge itself.
+ * Addresses that belong to the plumbing rather than to a visitor: loopback, the
+ * RFC1918 blocks, link-local, carrier-grade NAT, IPv6 unique-local. An edge or
+ * an internal hop writes these into `x-forwarded-for`; a caller arriving over
+ * the public internet never does.
  */
-const trustedProxyHops = (): number => {
+const isInfrastructureIp = (ip: string): boolean => {
+  if (net.isIPv4(ip)) {
+    const [a, b] = ip.split(".").map(Number)
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) || // 100.64.0.0/10, CGNAT
+      (a === 169 && b === 254) || // 169.254.0.0/16, link-local
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 198 && (b === 18 || b === 19)) // 198.18.0.0/15, benchmarking
+    )
+  }
+
+  const lower = ip.toLowerCase()
+  if (lower === "::" || lower === "::1") {
+    return true
+  }
+
+  const head = Number.parseInt(lower.split(":")[0] || "0", 16)
+  if (!Number.isInteger(head)) {
+    return false
+  }
+
+  return (
+    (head & 0xfe00) === 0xfc00 || // fc00::/7, unique-local
+    (head & 0xffc0) === 0xfe80 // fe80::/10, link-local
+  )
+}
+
+/**
+ * Fixed position to read `x-forwarded-for` from, counted from the right. Unset
+ * (the default) means "do not count hops at all" — see `clientFromForwardedFor`.
+ */
+const trustedProxyHops = (): number | null => {
   const parsed = Number.parseInt(process.env.TRUSTED_PROXY_HOPS ?? "", 10)
-  return Number.isInteger(parsed) && parsed >= 1 ? parsed : 1
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : null
+}
+
+/**
+ * The visitor's address out of `x-forwarded-for`.
+ *
+ * Scans from the RIGHT and returns the first entry that is not plumbing. Never
+ * from the left: that end of the list is written by the client.
+ *
+ * It used to take a fixed position from the right instead, which assumes the
+ * edge appends the same number of entries to every request. Railway does not.
+ * Measured against production on 2026-09-21: one caller, one stable source
+ * address, strictly sequential requests — and the effective limit came out at
+ * exactly 2x the configured one (20 requests served against a limit of 10,
+ * then a clean cut and 60 consecutive blocks with no leaks). A counter that
+ * behaves perfectly but admits exactly twice as many callers is a counter being
+ * asked about two different keys. Skipping the plumbing rather than counting it
+ * gives the same answer whether the edge adds one hop, three, or none.
+ *
+ * `TRUSTED_PROXY_HOPS` still forces the old fixed-position behaviour when set,
+ * for an edge that genuinely needs it.
+ */
+const clientFromForwardedFor = (req: MedusaRequest): string | null => {
+  const entries = forwardedForList(req)
+  if (!entries.length) {
+    return null
+  }
+
+  const hops = trustedProxyHops()
+  if (hops !== null) {
+    return normalizeIp(entries[Math.max(0, entries.length - hops)])
+  }
+
+  const parsed = entries.map(normalizeIp)
+
+  for (let i = parsed.length - 1; i >= 0; i--) {
+    const ip = parsed[i]
+    if (ip && !isInfrastructureIp(ip)) {
+      return ip
+    }
+  }
+
+  // Every entry was plumbing. Still prefer the rightmost one that parsed over
+  // inventing an address: it is edge-written and the client cannot choose it.
+  for (let i = parsed.length - 1; i >= 0; i--) {
+    if (parsed[i]) {
+      return parsed[i]
+    }
+  }
+
+  return null
+}
+
+/**
+ * Expands an IPv6 address to its eight canonical groups, so that `2001:0db8::1`
+ * and `2001:db8:0:0:0:0:0:1` cannot end up as two different buckets.
+ */
+const expandIpv6 = (ip: string): string[] | null => {
+  const lower = ip.toLowerCase()
+  const short = lower.includes("::")
+  const [head, tail = ""] = lower.split("::")
+
+  // A trailing IPv4 literal (`2001:db8::203.0.113.7`) occupies two groups.
+  const spread = (groups: string[]): string[] => {
+    const last = groups[groups.length - 1]
+    if (!last || !net.isIPv4(last)) {
+      return groups
+    }
+    const [a, b, c, d] = last.split(".").map(Number)
+    return [
+      ...groups.slice(0, -1),
+      (((a << 8) | b) >>> 0).toString(16),
+      (((c << 8) | d) >>> 0).toString(16),
+    ]
+  }
+
+  const left = spread(head ? head.split(":").filter(Boolean) : [])
+  const right = spread(tail ? tail.split(":").filter(Boolean) : [])
+
+  if (!short) {
+    return left.length === 8 ? left.map((g) => Number.parseInt(g, 16).toString(16)) : null
+  }
+
+  const fill = 8 - left.length - right.length
+  if (fill < 0) {
+    return null
+  }
+
+  return [...left, ...Array<string>(fill).fill("0"), ...right].map((g) =>
+    Number.parseInt(g, 16).toString(16)
+  )
+}
+
+/**
+ * The value a caller is bucketed under.
+ *
+ * IPv4 buckets as itself. IPv6 buckets by its /64 prefix, because that is the
+ * smallest block an ISP hands to a single subscriber: bucketing the full
+ * address gives one customer 2^64 buckets, which is the same as no limit at all.
+ */
+export const bucketForIp = (ip: string): string => {
+  if (!net.isIPv6(ip)) {
+    return ip
+  }
+
+  const groups = expandIpv6(ip)
+  return groups ? `${groups.slice(0, 4).join(":")}::/64` : ip
 }
 
 /**
@@ -210,6 +396,29 @@ export const isInternalRequest = (req: MedusaRequest): boolean => {
 }
 
 /**
+ * Set `RATE_LIMIT_DEBUG=1` on the Railway service to print, per request, what
+ * the edge actually sent and which bucket it resolved to. That is the only way
+ * to see the input `identifyClient` works from — the shape of `x-forwarded-for`
+ * on Railway is undocumented and has already changed once under us. One line
+ * per request, so turn it off again once the question is answered.
+ */
+const debugIdentity = (req: MedusaRequest, identity: ClientIdentity): void => {
+  if (process.env.RATE_LIMIT_DEBUG !== "1") {
+    return
+  }
+
+  const xff = req.headers["x-forwarded-for"]
+
+  console.log(
+    `[rate-limit] xff=${JSON.stringify(xff ?? null)} socket=${
+      req.socket?.remoteAddress ?? null
+    } internal=${identity.internal} realIp=${identity.realIp} bucket=${
+      identity.bucket
+    }`
+  )
+}
+
+/**
  * Resolves the address this request should be bucketed under, and how much we
  * trust it.
  *
@@ -218,52 +427,57 @@ export const isInternalRequest = (req: MedusaRequest): boolean => {
  *      storefront. Without that proof the header is ignored outright — it must
  *      not be usable to mint a fresh bucket per request.
  *   2. `cf-connecting-ip`, when `CLIENT_IP_SOURCE=cf`.
- *   3. `x-forwarded-for`, taking the entry `TRUSTED_PROXY_HOPS` from the RIGHT.
+ *   3. `x-forwarded-for`, rightmost entry that is not infrastructure.
  *      Never the leftmost one: that end of the list is written by the client.
  *   4. The socket address.
  *
  * >>> The day the API moves behind Cloudflare, set `CLIENT_IP_SOURCE=cf` on the
  * >>> Railway server and worker services. Cloudflare *appends* to
- * >>> `x-forwarded-for` instead of overwriting it, so without that flag the hop
- * >>> arithmetic in step 3 starts counting over a list the client can pad, and
- * >>> the limiter becomes evadable. `cf-connecting-ip` is written by Cloudflare
- * >>> itself and cannot be spoofed through it.
+ * >>> `x-forwarded-for` instead of overwriting it, so without that flag the scan
+ * >>> in step 3 starts reading a list the client can pad with public addresses,
+ * >>> and the limiter becomes evadable. `cf-connecting-ip` is written by
+ * >>> Cloudflare itself and cannot be spoofed through it.
  */
 export const identifyClient = (req: MedusaRequest): ClientIdentity => {
   const internal = isInternalRequest(req)
 
-  if (internal) {
-    const real = normalizeIp(headerValue(req, "x-real-client-ip"))
-    if (real) {
-      return { ip: real, internal, realIp: true }
+  const resolve = (): Pick<ClientIdentity, "ip" | "realIp"> => {
+    if (internal) {
+      const real = normalizeIp(headerValue(req, "x-real-client-ip"))
+      if (real) {
+        return { ip: real, realIp: true }
+      }
     }
-  }
 
-  const fromEdge = (): string | null => {
     if (process.env.CLIENT_IP_SOURCE === "cf") {
       // Intentionally does NOT fall back to x-forwarded-for: behind Cloudflare
       // that list is client-paddable, so guessing from it would be worse than
       // sharing the socket bucket.
-      return normalizeIp(headerValue(req, "cf-connecting-ip"))
+      const cf = normalizeIp(headerValue(req, "cf-connecting-ip"))
+      return { ip: cf ?? normalizeIp(req.socket?.remoteAddress) ?? "unknown", realIp: false }
     }
 
-    const entries = forwardedForList(req)
-    if (!entries.length) {
-      return null
-    }
+    const edge =
+      clientFromForwardedFor(req) ?? normalizeIp(req.socket?.remoteAddress)
 
-    const index = Math.max(0, entries.length - trustedProxyHops())
-    return normalizeIp(entries[index])
+    return { ip: edge ?? "unknown", realIp: false }
   }
 
-  const ip = fromEdge() ?? normalizeIp(req.socket?.remoteAddress) ?? "unknown"
+  const { ip, realIp } = resolve()
+  const identity = { ip, bucket: bucketForIp(ip), internal, realIp }
 
-  return { ip, internal, realIp: false }
+  debugIdentity(req, identity)
+
+  return identity
 }
 
 /**
- * Best-effort client IP. Behind Railway/Cloudflare the socket address is the
- * proxy's, so prefer the forwarding headers and fall back to the socket.
+ * Best-effort client IP, for logging and audit trails. Behind Railway/Cloudflare
+ * the socket address is the proxy's, so prefer the forwarding headers and fall
+ * back to the socket.
+ *
+ * For a rate-limit key use `identifyClient(req).bucket` instead: an IPv6 caller
+ * has a whole /64 to spend, and this returns one address out of it.
  */
 export const clientIp = (req: MedusaRequest): string => identifyClient(req).ip
 

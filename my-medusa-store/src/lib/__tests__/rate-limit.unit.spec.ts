@@ -4,6 +4,7 @@ import {
   AUTH_LIMIT,
   RateLimitResult,
   STORE_LIMIT,
+  bucketForIp,
   clientIp,
   consumeRateLimit,
   identifyClient,
@@ -216,6 +217,57 @@ describe("clientIp", () => {
     expect(clientIp(req())).toBe("unknown")
   })
 
+  /**
+   * The production bug of 2026-09-21: one caller, one stable source address,
+   * strictly sequential requests, and an effective limit of exactly 2x the
+   * configured one. Counting a fixed number of hops from the right assumes the
+   * edge appends the same number of entries every time; when it does not, one
+   * caller is split across two buckets.
+   */
+  it("resolves the same caller to one address however many hops the edge adds", () => {
+    const shapes = [
+      "203.0.113.9",
+      "203.0.113.9, 10.0.0.1",
+      "203.0.113.9, 10.0.0.1, 172.16.4.4",
+      "1.1.1.1, 203.0.113.9, 100.64.0.7",
+    ]
+
+    for (const xff of shapes) {
+      expect(clientIp(req({ headers: { "x-forwarded-for": xff } }))).toBe(
+        "203.0.113.9"
+      )
+    }
+  })
+
+  it("does not split one caller between the header and the socket fallback", () => {
+    // Node reports an IPv4 peer as IPv4-mapped IPv6 on a dual-stack listener.
+    expect(
+      clientIp(req({ socket: { remoteAddress: "::ffff:203.0.113.9" } }))
+    ).toBe("203.0.113.9")
+    expect(
+      clientIp(req({ headers: { "x-forwarded-for": "203.0.113.9" } }))
+    ).toBe("203.0.113.9")
+  })
+
+  it("keeps the rightmost entry when every hop is infrastructure", () => {
+    expect(
+      clientIp(req({ headers: { "x-forwarded-for": "10.0.0.1, 10.0.0.2" } }))
+    ).toBe("10.0.0.2")
+  })
+
+  it("still refuses an address the client put to the left", () => {
+    // 6.6.6.6 is the attacker's; 203.0.113.9 is what the edge appended.
+    expect(
+      clientIp(req({ headers: { "x-forwarded-for": "6.6.6.6, 203.0.113.9" } }))
+    ).toBe("203.0.113.9")
+  })
+
+  it("strips an IPv6 zone index", () => {
+    expect(
+      clientIp(req({ headers: { "x-forwarded-for": "2001:db8::1%eth0" } }))
+    ).toBe("2001:db8::1")
+  })
+
   it("normalises a port suffix and IPv6 brackets", () => {
     expect(
       clientIp(req({ headers: { "x-forwarded-for": "203.0.113.9:54321" } }))
@@ -223,6 +275,37 @@ describe("clientIp", () => {
     expect(
       clientIp(req({ headers: { "x-forwarded-for": "[2001:db8::1]:443" } }))
     ).toBe("2001:db8::1")
+  })
+})
+
+describe("bucketForIp", () => {
+  it("buckets IPv4 as itself", () => {
+    expect(bucketForIp("203.0.113.9")).toBe("203.0.113.9")
+  })
+
+  /**
+   * An ISP hands a single subscriber a whole /64. Bucketing the full address
+   * gives that one customer 2^64 buckets, i.e. no limit at all.
+   */
+  it("collapses every address in one IPv6 /64 into a single bucket", () => {
+    const bucket = bucketForIp("2001:db8:85a3:1::1")
+
+    expect(bucketForIp("2001:db8:85a3:1::2")).toBe(bucket)
+    expect(bucketForIp("2001:db8:85a3:1:ffff:ffff:ffff:ffff")).toBe(bucket)
+    expect(bucketForIp("2001:0db8:85a3:0001::1")).toBe(bucket)
+  })
+
+  it("keeps a different /64 in a different bucket", () => {
+    expect(bucketForIp("2001:db8:85a3:2::1")).not.toBe(
+      bucketForIp("2001:db8:85a3:1::1")
+    )
+  })
+
+  it("handles the fully written form and a trailing IPv4 literal", () => {
+    expect(bucketForIp("2001:0db8:0000:0000:0000:0000:0000:0001")).toBe(
+      bucketForIp("2001:db8::1")
+    )
+    expect(bucketForIp("2001:db8::203.0.113.9")).toBe(bucketForIp("2001:db8::1"))
   })
 })
 
@@ -240,6 +323,7 @@ describe("identifyClient / limitFor", () => {
 
       expect(identity).toEqual({
         ip: "198.51.100.77",
+        bucket: "198.51.100.77",
         internal: true,
         realIp: true,
       })
@@ -260,6 +344,7 @@ describe("identifyClient / limitFor", () => {
 
       expect(identity).toEqual({
         ip: "203.0.113.9",
+        bucket: "203.0.113.9",
         internal: true,
         realIp: false,
       })
@@ -274,6 +359,7 @@ describe("identifyClient / limitFor", () => {
 
     expect(identity).toEqual({
       ip: "203.0.113.9",
+      bucket: "203.0.113.9",
       internal: false,
       realIp: false,
     })
