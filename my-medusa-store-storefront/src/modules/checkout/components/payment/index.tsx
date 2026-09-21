@@ -188,7 +188,7 @@ const Payment = ({
 
           <Button
             size="large"
-            className="mt-6 bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none"
+            className="mt-6 bg-brand-violet-deep hover:bg-brand-divine-lilac text-brand-ghost-white border-none"
             onClick={handleSubmit}
             isLoading={isLoading}
             disabled={

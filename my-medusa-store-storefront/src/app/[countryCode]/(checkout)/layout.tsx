@@ -1,6 +1,19 @@
+import { UnifrakturMaguntia } from "next/font/google"
+
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ChevronDown from "@modules/common/icons/chevron-down"
 import MedusaCTA from "@modules/layout/components/medusa-cta"
+
+/* The blackletter wordmark is the only thing on the site that uses this
+   face, and it only appears in this header — so the font is requested on
+   the checkout route instead of from the root layout, which used to
+   preload ~22 KB of it on every page (homepage included) for nothing. */
+const unifraktur = UnifrakturMaguntia({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-unifraktur",
+  display: "swap",
+})
 
 export default function CheckoutLayout({
   children,
@@ -8,7 +21,9 @@ export default function CheckoutLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="w-full bg-brand-void-black relative small:min-h-screen">
+    <div
+      className={`${unifraktur.variable} font-display-scope w-full bg-brand-void-black relative small:min-h-screen`}
+    >
       <div className="h-16 bg-brand-void-black border-b border-brand-amethyst">
         <nav className="flex h-full items-center content-container justify-between">
           <LocalizedClientLink

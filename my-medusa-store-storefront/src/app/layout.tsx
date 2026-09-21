@@ -1,15 +1,8 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
-import { Cinzel, Inter, UnifrakturMaguntia } from "next/font/google"
+import { Cinzel, Inter } from "next/font/google"
 import MetaPixel from "@lib/analytics/meta-pixel"
 import "styles/globals.css"
-
-const unifraktur = UnifrakturMaguntia({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-unifraktur",
-  display: "swap",
-})
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -125,7 +118,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
     <html
       lang="es-HN"
       data-mode="light"
-      className={`${unifraktur.variable} ${cinzel.variable} ${inter.variable}`}
+      className={`${cinzel.variable} ${inter.variable}`}
     >
       <body>
         <MetaPixel />

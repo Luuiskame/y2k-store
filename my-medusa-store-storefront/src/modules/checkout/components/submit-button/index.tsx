@@ -19,7 +19,7 @@ export function SubmitButton({
 
   const brandClasses =
     variant === "primary"
-      ? "bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none transition-colors"
+      ? "bg-brand-violet-deep hover:bg-brand-divine-lilac text-brand-ghost-white border-none transition-colors"
       : variant === "secondary"
         ? "bg-transparent border border-brand-amethyst text-brand-sacred-violet hover:bg-brand-abyss-purple hover:text-brand-divine-lilac transition-colors"
         : ""

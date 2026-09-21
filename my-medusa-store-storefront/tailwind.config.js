@@ -8,7 +8,9 @@ module.exports = {
     "./src/pages/**/*.{js,ts,jsx,tsx}",
     "./src/components/**/*.{js,ts,jsx,tsx}",
     "./src/modules/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@medusajs/ui/dist/**/*.{js,jsx,ts,tsx}",
+    // esm only: dist/ also ships a cjs copy of every component, so the
+    // default **/* glob scans each class twice for identical output.
+    "./node_modules/@medusajs/ui/dist/esm/**/*.js",
   ],
   theme: {
     extend: {
@@ -41,6 +43,8 @@ module.exports = {
           // Accent (10%) — violets
           amethyst:         "var(--brand-amethyst)",
           "sacred-violet":  "var(--brand-sacred-violet)",
+          // Violet Deep — fill-only counterpart; carries Ghost White text.
+          "violet-deep":    "var(--brand-violet-deep)",
           "divine-lilac":   "var(--brand-divine-lilac)",
           // Text / metallic (20%)
           "ghost-white":    "var(--brand-ghost-white)",

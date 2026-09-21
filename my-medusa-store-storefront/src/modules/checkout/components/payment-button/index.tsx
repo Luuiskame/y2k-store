@@ -45,7 +45,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       )
     default:
       return (
-        <Button disabled className="bg-brand-sacred-violet text-brand-ghost-white border-none">
+        <Button disabled className="bg-brand-violet-deep text-brand-ghost-white border-none">
           Seleccioná un método de pago
         </Button>
       )
@@ -147,7 +147,7 @@ const StripePaymentButton = ({
         onClick={handlePayment}
         size="large"
         isLoading={submitting}
-        className="bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
+        className="bg-brand-violet-deep hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
         data-testid={dataTestId}
       >
         Confirmar pedido
@@ -187,7 +187,7 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
-        className="bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
+        className="bg-brand-violet-deep hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
         data-testid="submit-order-button"
       >
         Confirmar pedido
@@ -228,7 +228,7 @@ const BacTransferPaymentButton = ({
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
-        className="bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
+        className="bg-brand-violet-deep hover:bg-brand-divine-lilac text-brand-ghost-white border-none shadow-[0_0_24px_rgba(155,77,202,0.4)] hover:shadow-[0_0_40px_rgba(192,132,252,0.6)] transition-all"
         data-testid={dataTestId ?? "submit-bac-transfer-button"}
       >
         Reservar pedido y ver datos de transferencia

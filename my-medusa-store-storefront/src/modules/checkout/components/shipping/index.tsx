@@ -369,7 +369,7 @@ const Shipping: React.FC<ShippingProps> = ({
             />
             <Button
               size="large"
-              className="mt-2 bg-brand-sacred-violet hover:bg-brand-divine-lilac text-brand-ghost-white border-none"
+              className="mt-2 bg-brand-violet-deep hover:bg-brand-divine-lilac text-brand-ghost-white border-none"
               onClick={handleSubmit}
               isLoading={isLoading}
               disabled={!cart.shipping_methods?.[0]}
