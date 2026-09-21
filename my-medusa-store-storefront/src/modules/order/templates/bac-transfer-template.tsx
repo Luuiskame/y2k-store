@@ -11,6 +11,10 @@ import BacProofUploader from "@modules/order/components/bac-proof-uploader"
 import PurchaseTracker from "@modules/order/components/purchase-tracker"
 import { getBacTransferProof } from "@modules/order/util/bac-transfer"
 import { BAC_ACCOUNT } from "@lib/config/bac-account"
+import {
+  MAX_FILES_PER_REQUEST,
+  MAX_PROOFS_PER_ORDER,
+} from "@lib/config/bac-proof"
 
 type Props = {
   order: HttpTypes.StoreOrder
@@ -90,7 +94,8 @@ export default function BacTransferTemplate({ order }: Props) {
             style={{ color: "var(--brand-silver-ash)" }}
           >
             Captura de pantalla o PDF del comprobante de transferencia. Puedes
-            subir hasta 3 archivos.
+            subir hasta {MAX_FILES_PER_REQUEST} archivos a la vez, y un máximo
+            de {MAX_PROOFS_PER_ORDER} en total para este pedido.
           </p>
           <BacProofUploader
             orderId={order.id}
