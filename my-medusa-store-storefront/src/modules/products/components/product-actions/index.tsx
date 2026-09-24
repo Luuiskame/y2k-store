@@ -5,6 +5,7 @@ import { trackAddToCart } from "@lib/analytics/meta-events"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
 import InlineAlert from "@modules/cart/components/inline-alert"
+import FitNote from "@modules/products/components/fit-note"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
 import { translateCartError } from "@modules/cart/util/translate-cart-error"
 import { isEqual } from "lodash"
@@ -244,6 +245,11 @@ export default function ProductActions({
                 />
               </div>
             ))}
+
+            {/* Fit advice sits with the sizes, not in the description —
+                it only means anything while a size is being picked. Gated
+                on there being more than one size to pick from. */}
+            <FitNote product={product} />
           </div>
         )}
 

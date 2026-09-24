@@ -3,6 +3,7 @@ import { getProductPrice } from "@lib/util/get-product-price"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import PlaceholderImage from "@modules/common/icons/placeholder-image"
+import { isBestSeller } from "@lib/util/product-tags"
 import PreviewPrice from "./price"
 
 export default async function ProductPreview({
@@ -17,6 +18,10 @@ export default async function ProductPreview({
   const { cheapestPrice } = getProductPrice({ product })
 
   const image = product.thumbnail ?? product.images?.[0]?.url
+
+  // "Más vendido" is social proof, which is what actually earns a tap on a
+  // grid. It sits top-left so it never collides with the "Destacado" badge.
+  const bestSeller = isBestSeller(product)
 
   return (
     <LocalizedClientLink href={`/products/${product.handle}`} className="group">
@@ -49,6 +54,15 @@ export default async function ProductPreview({
             >
               <PlaceholderImage size={32} />
             </div>
+          )}
+
+          {bestSeller && (
+            <span
+              className="badge-glow absolute top-2 left-2 text-[9px] tracking-[0.12em] px-2 py-0.5"
+              data-testid="best-seller-badge"
+            >
+              Más vendido
+            </span>
           )}
 
           {isFeatured && (

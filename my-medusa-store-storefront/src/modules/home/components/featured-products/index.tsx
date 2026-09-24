@@ -2,15 +2,15 @@ import { HttpTypes } from "@medusajs/types"
 import ProductRail from "@modules/home/components/featured-products/product-rail"
 
 export default async function FeaturedProducts({
-  collections,
+  categories,
   region,
 }: {
-  collections: HttpTypes.StoreCollection[]
+  categories: HttpTypes.StoreProductCategory[]
   region: HttpTypes.StoreRegion
 }) {
-  return collections.map((collection) => (
-    <li key={collection.id}>
-      <ProductRail collection={collection} region={region} />
+  return categories.map((category) => (
+    <li key={category.id}>
+      <ProductRail category={category} region={region} />
     </li>
   ))
 }

@@ -61,8 +61,12 @@ export const listProducts = async ({
           limit,
           offset,
           region_id: region?.id,
+          // `tags` is a relation, so it needs `*` to expand — with `+tags` the
+          // API returns an empty array, which is why product.tags was always
+          // empty (and why related-products silently fell back to collection
+          // matching only).
           fields:
-            "*variants.calculated_price,+variants.inventory_quantity,*variants.images,+metadata,+tags,",
+            "*variants.calculated_price,+variants.inventory_quantity,*variants.images,+metadata,*tags,",
           ...queryParams,
         },
         headers,
