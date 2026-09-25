@@ -10,6 +10,7 @@ import { getRegion } from "@lib/data/regions"
 import { sortEntries } from "@lib/util/catalog"
 import Hero from "@modules/home/components/hero"
 import HomeCollections, {
+  HomeCategory,
   HomeCollection,
 } from "@modules/home/components/home-collections"
 import ProductPreview from "@modules/products/components/product-preview"
@@ -60,7 +61,8 @@ export default async function Home(props: {
   }
 
   // The same cached catalog list the store reads, split by collection here —
-  // one request for the whole page instead of one per rail.
+  // one request for the whole page instead of one per rail. The category
+  // filter needs every product up front anyway: it runs in the browser.
   const [products, categories, collections] = await Promise.all([
     listCatalogProducts(region.id),
     listCategoryIndex(),
@@ -94,12 +96,27 @@ export default async function Home(props: {
           (entry) => entry.product.collection_id === collection.id
         ),
         "created_at"
-      ).map(({ product, id }) => ({
+      ).map(({ product, id, categoryIds }) => ({
         id,
+        categoryIds,
         card: <ProductPreview product={product} region={region} />,
       })),
     }))
     .filter((rail) => rail.items.length > 0)
+
+  const railItems = rails.flatMap((rail) => rail.items)
+
+  // Top-level categories only (a child would repeat its parent), in admin
+  // order, and only when a chip would show something.
+  const filters: HomeCategory[] = categories.topLevel
+    .map((category) => ({
+      id: category.id,
+      name: category.name,
+      handle: category.handle,
+      count: railItems.filter((item) => item.categoryIds.includes(category.id))
+        .length,
+    }))
+    .filter((category) => category.count > 0)
 
   return (
     <>
@@ -107,7 +124,7 @@ export default async function Home(props: {
       {/* The hero CTA anchors here. Id kept as-is so existing links and
           shares don't break. */}
       <div id="featured-collections" className="scroll-mt-16">
-        <HomeCollections collections={rails} />
+        <HomeCollections categories={filters} collections={rails} />
       </div>
     </>
   )

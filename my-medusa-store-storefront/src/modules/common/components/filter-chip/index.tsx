@@ -33,7 +33,7 @@ type FilterChipProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 /**
- * Toggle chip for the listing filters. `aria-pressed` carries
+ * Toggle chip shared by the home and listing filters. `aria-pressed` carries
  * the state for screen readers, the violet fill carries it for everyone else.
  * 44px tall: it's the main thing a thumb taps on these pages.
  */

@@ -38,8 +38,9 @@ export default function CollectionTemplate({
         </h1>
       </header>
 
-      {/* Category chips stay on for a collection that mixes cuts; with a
-          single category the row hides itself. */}
+      {/* Category chips stay on: the home links here with ?categoria= when a
+          filter is active. With a single category in the collection the
+          row hides itself, and the filter still applies. */}
       <Suspense fallback={<SkeletonProductGrid numberOfProducts={8} />}>
         <StoreCatalog
           countryCode={countryCode}
