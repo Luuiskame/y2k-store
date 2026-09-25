@@ -1,5 +1,6 @@
 "use client"
 
+import { isTightCompression } from "@lib/util/product-tags"
 import Back from "@modules/common/icons/back"
 import FastDelivery from "@modules/common/icons/fast-delivery"
 import Refresh from "@modules/common/icons/refresh"
@@ -19,7 +20,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
     },
     {
       label: "Guía de tallas",
-      component: <SizeGuideTab />,
+      component: <SizeGuideTab product={product} />,
     },
     {
       label: "Envío y cambios",
@@ -77,13 +78,18 @@ const ProductInfoTab = ({ product }: ProductTabsProps) => {
   )
 }
 
-const SizeGuideTab = () => {
+const SizeGuideTab = ({ product }: ProductTabsProps) => {
+  // Must agree with the fit note next to the size selector — telling someone
+  // to size up there and offering "size down for max compression" here is how
+  // you get a refused delivery.
+  const tight = isTightCompression(product)
+
   return (
     <div className="py-6 flex flex-col gap-4">
       <p className="text-sm text-brand-silver-ash leading-relaxed">
-        Nuestras prendas son de corte compresivo. Si dudas entre dos tallas,
-        elige la mayor para un fit más relajado o la menor para máxima
-        compresión.
+        {tight
+          ? "Esta prenda es de corte compresivo ajustado. Te recomendamos pedir una talla más de la que usas normalmente; si buscas máxima compresión, quédate en tu talla habitual."
+          : "Si dudas entre dos tallas, elige la mayor para un fit más relajado o la menor para un ajuste más ceñido."}
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

@@ -7,6 +7,7 @@ import ChevronDown from "@modules/common/icons/chevron-down"
 import X from "@modules/common/icons/x"
 
 import { getProductPrice } from "@lib/util/get-product-price"
+import FitNote from "@modules/products/components/fit-note"
 import OptionSelect from "./option-select"
 import { HttpTypes } from "@medusajs/types"
 import { isSimpleProduct } from "@lib/util/product"
@@ -212,6 +213,11 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                             />
                           </div>
                         ))}
+
+                        {/* Most phone buyers pick their size in here and never
+                            see the desktop column, so the fit advice has to be
+                            repeated inside the drawer. */}
+                        <FitNote product={product} />
                       </div>
                     )}
                   </div>

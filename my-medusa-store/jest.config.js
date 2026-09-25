@@ -23,5 +23,8 @@ if (process.env.TEST_TYPE === "integration:http") {
 } else if (process.env.TEST_TYPE === "integration:modules") {
   module.exports.testMatch = ["**/src/modules/*/__tests__/**/*.[jt]s"];
 } else if (process.env.TEST_TYPE === "unit") {
+  // Never put specs under src/subscribers, src/jobs, src/workflows or src/links:
+  // Medusa imports every file in those folders (subfolders included) on boot,
+  // and a spec there crashes `medusa develop`. Use src/lib/__tests__ instead.
   module.exports.testMatch = ["**/src/**/__tests__/**/*.unit.spec.[jt]s"];
 }
