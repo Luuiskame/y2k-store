@@ -1,12 +1,17 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
-import authPasswordResetHandler from "../auth-password-reset"
+import authPasswordResetHandler from "../../subscribers/auth-password-reset"
 
 /**
+ * This spec lives here and not in `src/subscribers/__tests__/` on purpose:
+ * Medusa imports every file under `src/subscribers/` (subfolders included) as
+ * a subscriber, and `describe` does not exist outside Jest, so a spec there
+ * crashes `medusa develop` on boot.
+ *
  * The handler only ever resolves four things out of the container, so a plain
  * object is enough — standing up a real Medusa container would drag in the
  * whole framework for no extra coverage. Same approach as
- * `src/lib/__tests__/rate-limit.unit.spec.ts`.
+ * `rate-limit.unit.spec.ts` next to this file.
  */
 const memoryCache = () => {
   const store = new Map<string, unknown>()
