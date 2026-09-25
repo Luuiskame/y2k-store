@@ -1,47 +1,52 @@
 import { Suspense } from "react"
 
-import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
-import RefinementList from "@modules/store/components/refinement-list"
-import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
-import PaginatedProducts from "@modules/store/templates/paginated-products"
+import { SortOptions } from "@lib/util/catalog"
 import { HttpTypes } from "@medusajs/types"
+import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
+import Breadcrumbs from "@modules/store/components/breadcrumbs"
+import StoreCatalog from "@modules/store/components/store-catalog"
 
 export default function CollectionTemplate({
   sortBy,
   collection,
-  page,
   countryCode,
 }: {
-  sortBy?: SortOptions
+  sortBy: SortOptions
   collection: HttpTypes.StoreCollection
-  page?: string
   countryCode: string
 }) {
-  const pageNumber = page ? parseInt(page) : 1
-  const sort = sortBy || "created_at"
-
   return (
-    <div className="flex flex-col small:flex-row small:items-start py-6 content-container">
-      <RefinementList sortBy={sort} />
-      <div className="w-full">
-        <div className="mb-8 text-2xl-semi">
-          <h1>{collection.title}</h1>
-        </div>
-        <Suspense
-          fallback={
-            <SkeletonProductGrid
-              numberOfProducts={collection.products?.length}
-            />
-          }
-        >
-          <PaginatedProducts
-            sortBy={sort}
-            page={pageNumber}
-            collectionId={collection.id}
-            countryCode={countryCode}
-          />
-        </Suspense>
-      </div>
+    <div
+      className="content-container pt-5 pb-16 small:pt-10 small:pb-24"
+      data-testid="collection-container"
+    >
+      <Breadcrumbs
+        countryCode={countryCode}
+        items={[
+          { label: "Inicio", href: "/" },
+          { label: "Tienda", href: "/store" },
+          { label: collection.title },
+        ]}
+      />
+
+      <header className="mt-3 mb-6 max-w-2xl small:mb-8">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-brand-sacred-violet">
+          Colección
+        </p>
+        <h1 className="mt-1 font-heading text-xl uppercase tracking-[0.12em] text-brand-ghost-white small:text-4xl">
+          {collection.title}
+        </h1>
+      </header>
+
+      {/* Category chips stay on for a collection that mixes cuts; with a
+          single category the row hides itself. */}
+      <Suspense fallback={<SkeletonProductGrid numberOfProducts={8} />}>
+        <StoreCatalog
+          countryCode={countryCode}
+          collectionId={collection.id}
+          sort={sortBy}
+        />
+      </Suspense>
     </div>
   )
 }

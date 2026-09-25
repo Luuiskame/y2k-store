@@ -22,7 +22,7 @@ export default function ProductCarousel({
       {/* Prev — hidden on desktop */}
       <button
         onClick={() => scroll("left")}
-        aria-label="Scroll left"
+        aria-label="Anteriores"
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10
           hidden group-hover/carousel:flex small:!hidden items-center justify-center
           w-9 h-9 rounded-full transition-all duration-200"
@@ -47,7 +47,7 @@ export default function ProductCarousel({
       {/* Next — hidden on desktop */}
       <button
         onClick={() => scroll("right")}
-        aria-label="Scroll right"
+        aria-label="Siguientes"
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10
           hidden group-hover/carousel:flex small:!hidden items-center justify-center
           w-9 h-9 rounded-full transition-all duration-200"

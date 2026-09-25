@@ -55,14 +55,14 @@ const Hero = () => {
           </p>
         </div>
 
-        {/* Categories lead — it tells a first-time visitor we carry several
-            lines, and lands them on the pill strip right below the fold. */}
+        {/* Collections lead — it tells a first-time visitor we carry several
+            lines, and lands them on the rails right below the fold. */}
         <div className="flex flex-col small:flex-row items-center gap-3 small:gap-4 w-full small:w-auto">
           <a
             href="#featured-collections"
             className="btn-glow w-full small:w-auto text-center"
           >
-            Ver categorías ↓
+            Ver colecciones ↓
           </a>
           <LocalizedClientLink
             href="/store"

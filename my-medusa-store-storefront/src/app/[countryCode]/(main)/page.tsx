@@ -1,10 +1,18 @@
 import { Metadata } from "next"
 
-import CategoryPills from "@modules/home/components/category-pills"
-import FeaturedProducts from "@modules/home/components/featured-products"
-import Hero from "@modules/home/components/hero"
-import { listCategories } from "@lib/data/categories"
+import {
+  listCatalogCollections,
+  listCatalogProducts,
+  listCategoryIndex,
+  toCatalogEntry,
+} from "@lib/data/catalog"
 import { getRegion } from "@lib/data/regions"
+import { sortEntries } from "@lib/util/catalog"
+import Hero from "@modules/home/components/hero"
+import HomeCollections, {
+  HomeCollection,
+} from "@modules/home/components/home-collections"
+import ProductPreview from "@modules/products/components/product-preview"
 
 export const revalidate = 600
 
@@ -47,42 +55,59 @@ export default async function Home(props: {
 
   const region = await getRegion(countryCode)
 
-  // One categories fetch feeds both the pill strip and the rails below it, so
-  // the two always show the same taxonomy in the same order. Internal
-  // categories aren't returned by the store API, so they self-exclude.
-  // `products.id` rather than `*products`: we only need to know whether a
-  // category is empty, and the id-only projection is ~15x smaller.
-  const categories = await listCategories({
-    fields: "id,name,handle,parent_category_id,rank,products.id",
-  })
-
-  if (!categories || !region) {
+  if (!region) {
     return null
   }
 
-  // Top-level only (children would repeat their parent's products) and never
-  // empty — a pill that lands on a page with nothing in it costs more trust
-  // than the shortcut earns. `rank` is the order set in the admin.
-  const topLevel = categories
-    .filter(
-      (category) =>
-        !category.parent_category_id && (category.products?.length ?? 0) > 0
+  // The same cached catalog list the store reads, split by collection here —
+  // one request for the whole page instead of one per rail.
+  const [products, categories, collections] = await Promise.all([
+    listCatalogProducts(region.id),
+    listCategoryIndex(),
+    listCatalogCollections(),
+  ])
+
+  const collectionTitles = new Map<string, string>(
+    collections.map((collection) => [collection.id, collection.title])
+  )
+
+  const entries = products.map((product) => ({
+    ...toCatalogEntry(product, { categories, collectionTitles }),
+    product,
+  }))
+
+  // Newest drop first. Inside each rail, newest product first, with sold-out
+  // pieces moved to the end so a rail never opens on "Agotado".
+  const rails: HomeCollection[] = collections
+    .slice()
+    .sort(
+      (a, b) =>
+        (Date.parse(b.created_at ?? "") || 0) -
+        (Date.parse(a.created_at ?? "") || 0)
     )
-    .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+    .map((collection) => ({
+      id: collection.id,
+      title: collection.title,
+      handle: collection.handle,
+      items: sortEntries(
+        entries.filter(
+          (entry) => entry.product.collection_id === collection.id
+        ),
+        "created_at"
+      ).map(({ product, id }) => ({
+        id,
+        card: <ProductPreview product={product} region={region} />,
+      })),
+    }))
+    .filter((rail) => rail.items.length > 0)
 
   return (
     <>
       <Hero />
-      {/* The hero CTA anchors here: the category chooser is a more useful
-          landing spot than the first rail. Id kept as-is so existing links
-          and shares don't break. */}
+      {/* The hero CTA anchors here. Id kept as-is so existing links and
+          shares don't break. */}
       <div id="featured-collections" className="scroll-mt-16">
-        <CategoryPills categories={topLevel} />
-      </div>
-      <div className="py-12">
-        <ul className="flex flex-col">
-          <FeaturedProducts categories={topLevel} region={region} />
-        </ul>
+        <HomeCollections collections={rails} />
       </div>
     </>
   )

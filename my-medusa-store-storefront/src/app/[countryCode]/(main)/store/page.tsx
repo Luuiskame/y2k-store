@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 
-import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+import { parseSort } from "@lib/util/catalog"
 import StoreTemplate from "@modules/store/templates"
 
 export const revalidate = 600
@@ -34,9 +34,10 @@ export async function generateMetadata(props: {
 }
 
 type Params = {
+  // Filters, search and paging are read in the browser (CatalogBrowser);
+  // the server only needs the order, to know which cards load first.
   searchParams: Promise<{
-    sortBy?: SortOptions
-    page?: string
+    sortBy?: string
   }>
   params: Promise<{
     countryCode: string
@@ -44,15 +45,10 @@ type Params = {
 }
 
 export default async function StorePage(props: Params) {
-  const params = await props.params;
-  const searchParams = await props.searchParams;
-  const { sortBy, page } = searchParams
+  const params = await props.params
+  const { sortBy } = await props.searchParams
 
   return (
-    <StoreTemplate
-      sortBy={sortBy}
-      page={page}
-      countryCode={params.countryCode}
-    />
+    <StoreTemplate sortBy={parseSort(sortBy)} countryCode={params.countryCode} />
   )
 }

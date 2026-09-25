@@ -1,8 +1,9 @@
 "use client"
 
+import { CATALOG_PARAMS } from "@lib/util/catalog"
 import Script from "next/script"
 import { usePathname, useSearchParams } from "next/navigation"
-import { Suspense, useEffect } from "react"
+import { Suspense, useEffect, useMemo } from "react"
 
 declare global {
   interface Window {
@@ -28,13 +29,29 @@ export function trackMetaEvent(
   }
 }
 
+// Listing filters, sort, search and "ver más" rewrite the query string in
+// place; counting each tap as a PageView would inflate what Meta reports and
+// builds audiences from. Every other key (checkout's ?step=) still counts.
+// This tracker is the only PageView source. The base code sets
+// `disablePushState` (otherwise fbevents.js fires its own PageView on every
+// history.replaceState and these exclusions would not matter) and
+// `allowDuplicatePageViews` (otherwise the pixel treats the whole visit as one
+// page and drops every PageView after the landing one).
+const IN_PAGE_PARAMS: string[] = Object.values(CATALOG_PARAMS)
+
 function PageViewTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
+  const pageQuery = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    IN_PAGE_PARAMS.forEach((key) => params.delete(key))
+    return params.toString()
+  }, [searchParams])
+
   useEffect(() => {
     trackMetaEvent("PageView")
-  }, [pathname, searchParams])
+  }, [pathname, pageQuery])
 
   return null
 }
@@ -56,6 +73,8 @@ export default function MetaPixel() {
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
+          fbq.disablePushState = true;
+          fbq.allowDuplicatePageViews = true;
           fbq('init', '${PIXEL_ID}');
         `}
       </Script>
