@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@lib/util/json-ld"
 import { Metadata } from "next"
 
 export async function generateMetadata(props: {
@@ -74,7 +75,7 @@ export default function FAQPage() {
     <section className="content-container py-20 small:py-28 text-brand-silver-ash">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
       />
 
       <header className="mb-12 max-w-3xl">
