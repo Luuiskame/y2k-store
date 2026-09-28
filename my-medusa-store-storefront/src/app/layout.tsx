@@ -3,6 +3,7 @@ import { serializeJsonLd } from "@lib/util/json-ld"
 import { Metadata } from "next"
 import { Cinzel, Inter } from "next/font/google"
 import MetaPixel from "@lib/analytics/meta-pixel"
+import VisitorTracker from "@lib/analytics/visitor-tracker"
 import "styles/globals.css"
 
 const cinzel = Cinzel({
@@ -123,6 +124,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
     >
       <body>
         <MetaPixel />
+        <VisitorTracker />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
