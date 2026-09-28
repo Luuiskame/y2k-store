@@ -56,7 +56,10 @@ export const getCollectionByHandle = async (
 
   return sdk.client
     .fetch<HttpTypes.StoreCollectionListResponse>(`/store/collections`, {
-      query: { handle, fields: "*products" },
+      // The collection page's grid comes from the shared catalog list, so it
+      // only needs the collection itself — not `*products`, which pulled every
+      // product in it on each revalidation.
+      query: { handle, fields: "id,title,handle" },
       next,
       cache: "force-cache",
     })

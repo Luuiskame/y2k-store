@@ -6,8 +6,10 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import MedusaCTA from "@modules/layout/components/medusa-cta"
 
 export default async function Footer() {
+  // Links only. This used to ask for `*products`: every product of every
+  // collection, on every page, to print six titles.
   const { collections } = await listCollections({
-    fields: "*products",
+    fields: "id,title,handle",
   })
   const productCategories = await listCategories()
 
@@ -34,7 +36,7 @@ export default async function Footer() {
                   data-testid="footer-categories"
                 >
                   {productCategories?.slice(0, 6).map((c) => {
-                    if (c.parent_category) {
+                    if (c.parent_category_id) {
                       return
                     }
 

@@ -2,6 +2,15 @@ import { sdk } from "@lib/config"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
+/**
+ * What the footer, the sitemap and `generateStaticParams` read: names, handles
+ * and the tree. This default used to include `*products` — every product of
+ * the catalog pulled again, per category, to render links — and nothing reads
+ * `category.products`. Pass `fields` per call if a page needs more.
+ */
+const CATEGORY_LIST_FIELDS =
+  "id,name,handle,rank,parent_category_id,*category_children"
+
 export const listCategories = async (query?: Record<string, any>) => {
   const next = {
     ...(await getCacheOptions("categories")),
@@ -15,8 +24,7 @@ export const listCategories = async (query?: Record<string, any>) => {
       "/store/product-categories",
       {
         query: {
-          fields:
-            "*category_children, *products, *parent_category, *parent_category.parent_category",
+          fields: CATEGORY_LIST_FIELDS,
           limit,
           ...query,
         },
@@ -40,7 +48,10 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       `/store/product-categories`,
       {
         query: {
-          fields: "*category_children, *products",
+          // Added to Medusa's defaults, which already bring the parent for the
+          // breadcrumbs. The category page never reads `products`: its grid
+          // comes from the shared catalog list.
+          fields: "*category_children",
           handle,
         },
         next,
