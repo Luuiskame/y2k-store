@@ -8,21 +8,21 @@ type Data = {
   customer_email?: string
   total_label?: string
   admin_url?: string
-  proof_urls?: string[]
+  /** Files in this upload. They open from the admin only: no links in mail. */
+  proof_count?: number
 }
+
+const filesLabel = (count: number) =>
+  `${count} archivo${count === 1 ? "" : "s"} adjunto${count === 1 ? "" : "s"}`
 
 export function bacProofReceivedOwner(data: Data): RenderedEmail {
   const subject = `🔔 Nuevo comprobante BAC — Pedido #${data.order_display_id}`
 
-  const proofList =
-    data.proof_urls && data.proof_urls.length
-      ? `<ul style="margin:0 0 16px;padding-left:18px;color:#e9e6f0;">${data.proof_urls
-          .map(
-            (u) =>
-              `<li><a href="${u}" style="color:#c084fc;">${u.split("/").pop()}</a></li>`
-          )
-          .join("")}</ul>`
-      : ""
+  const proofList = data.proof_count
+    ? `<p style="margin:0 0 16px;color:#e9e6f0;">📎 ${filesLabel(
+        data.proof_count
+      )} — ábrelos desde el pedido en el admin.</p>`
+    : ""
 
   const adminCta = data.admin_url
     ? `<p style="margin:24px 0 0;">
@@ -59,8 +59,10 @@ export function bacProofReceivedOwner(data: Data): RenderedEmail {
     (data.customer_name ? `Cliente: ${data.customer_name}\n` : "") +
     (data.customer_email ? `Correo: ${data.customer_email}\n` : "") +
     (data.total_label ? `Total: ${data.total_label}\n` : "") +
-    (data.admin_url ? `\nVer en admin: ${data.admin_url}\n` : "") +
-    (data.proof_urls?.length ? `\nArchivos:\n${data.proof_urls.join("\n")}` : "")
+    (data.proof_count
+      ? `Archivos: ${filesLabel(data.proof_count)} (ábrelos desde el admin)\n`
+      : "") +
+    (data.admin_url ? `\nVer en admin: ${data.admin_url}\n` : "")
 
   return { subject, html, text }
 }

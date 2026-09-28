@@ -1,4 +1,5 @@
 import { getBaseURL } from "@lib/util/env"
+import { serializeJsonLd } from "@lib/util/json-ld"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 type Crumb = {
@@ -63,10 +64,8 @@ const Breadcrumbs = ({
       </ol>
       <script
         type="application/ld+json"
-        // Names come from the admin; escaping "<" keeps one from closing the tag.
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
-        }}
+        // Names come from the admin.
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
     </nav>
   )

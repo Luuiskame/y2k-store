@@ -13,7 +13,8 @@ const LineItemUnitPrice = ({
   style = "default",
   currencyCode,
 }: LineItemUnitPriceProps) => {
-  const { total, original_total } = item
+  // Optional in the SDK types; always present on the carts and orders we fetch.
+  const { total = 0, original_total = 0 } = item
   const hasReducedPrice = total < original_total
 
   const percentage_diff = Math.round(

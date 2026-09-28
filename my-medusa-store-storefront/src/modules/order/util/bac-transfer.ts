@@ -12,7 +12,10 @@ export type BacTransferStatus =
   | "verified"
   | "rejected"
 
-export type BacProofFile = { url: string; uploaded_at: string }
+// Receipts are private: current entries only say where the file is (`key`),
+// older ones still carry the URL they were uploaded with. The storefront only
+// ever counts them and shows when they arrived.
+export type BacProofFile = { key?: string; url?: string; uploaded_at: string }
 
 export const getBacTransferStatus = (
   order: HttpTypes.StoreOrder

@@ -1,4 +1,5 @@
 import { getBaseURL } from "@lib/util/env"
+import { serializeJsonLd } from "@lib/util/json-ld"
 import { Metadata } from "next"
 import { Cinzel, Inter } from "next/font/google"
 import MetaPixel from "@lib/analytics/meta-pixel"
@@ -124,11 +125,11 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <MetaPixel />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }}
         />
         <main className="relative">{props.children}</main>
       </body>

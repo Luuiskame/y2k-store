@@ -1,11 +1,12 @@
 import { MedusaRequest } from "@medusajs/framework/http"
-import { Modules } from "@medusajs/framework/utils"
 import crypto from "crypto"
 import net from "net"
 
+import { Counter, sharedCounter } from "./counter"
+
 /**
- * Fixed-window counter on top of the Cache Module — Redis-backed in production
- * (so the limit holds across every server instance) and in-memory in dev.
+ * Fixed-window counter on Redis `INCR` (see `counter.ts`), so the limit holds
+ * across every server instance and under concurrent requests. In-memory in dev.
  *
  * A fixed window lets through at most 2x the limit across a window boundary.
  * That is fine here: these limits guard against floods of hundreds of
@@ -19,17 +20,18 @@ export type RateLimitResult = {
 }
 
 /**
- * A cache call that never comes back is a cache failure, and has to be treated
- * as one. ioredis queues commands while it reconnects instead of rejecting, so
- * a Redis outage does not surface as an error for a long time — measured at 84s
- * per call against a killed instance. Every `/store/*` and `/auth/*` request
- * goes through here, so without a deadline a Redis blip would hang the entire
- * shop rather than letting it through unprotected.
+ * A counter call that never comes back is a counter failure, and has to be
+ * treated as one. ioredis queues commands while it reconnects instead of
+ * rejecting, so a Redis outage does not surface as an error for a long time —
+ * measured at 84s per call against a killed instance. Every `/store/*`,
+ * `/admin/*` and `/auth/*` request goes through here, so without a deadline a
+ * Redis blip would hang the entire shop rather than letting it through
+ * unprotected.
  *
  * Generous next to a healthy Redis round trip (single-digit ms on Railway's
  * internal network) and short enough to be invisible if it ever fires.
  */
-const CACHE_TIMEOUT_MS = 250
+const COUNTER_TIMEOUT_MS = 250
 
 /**
  * Failing open is the right call, but doing it silently means a limiter that has
@@ -39,7 +41,7 @@ const CACHE_TIMEOUT_MS = 250
  */
 let lastFailOpenLog = 0
 
-const logFailOpen = (stage: string, key: string, error: unknown): void => {
+const logFailOpen = (key: string, error: unknown): void => {
   const now = Date.now()
   if (now - lastFailOpenLog < 10_000) {
     return
@@ -48,7 +50,7 @@ const logFailOpen = (stage: string, key: string, error: unknown): void => {
 
   const reason = error instanceof Error ? error.message : String(error)
   console.warn(
-    `[rate-limit] cache ${stage} failed for "${key}" — request served without being counted: ${reason}`
+    `[rate-limit] counter failed for "${key}" — request served without being counted: ${reason}`
   )
 }
 
@@ -71,32 +73,38 @@ const withDeadline = <T>(promise: Promise<T>, ms: number): Promise<T> =>
     )
   })
 
+/**
+ * Counts this request against `key` and says whether it may go ahead.
+ *
+ * The increment comes first and the comparison second, so concurrent requests
+ * each get a distinct count back and exactly `limit` of them are allowed per
+ * window. Rejected requests are counted too; that changes nothing for a fixed
+ * window, whose key expires with it.
+ */
 export const consumeRateLimit = async (
-  req: MedusaRequest,
   key: string,
   limit: number,
-  windowSeconds: number
+  windowSeconds: number,
+  counter: Counter = sharedCounter()
 ): Promise<RateLimitResult> => {
-  const cache = req.scope.resolve(Modules.CACHE)
-
   const window = Math.floor(Date.now() / (windowSeconds * 1000))
-  const cacheKey = `ratelimit:${key}:${window}`
+  const counterKey = `ratelimit:${key}:${window}`
 
-  let count = 0
+  let count: number
   try {
-    count =
-      (await withDeadline(
-        Promise.resolve(cache.get<number>(cacheKey)),
-        CACHE_TIMEOUT_MS
-      )) ?? 0
+    count = await withDeadline(
+      counter.increment(counterKey, windowSeconds),
+      COUNTER_TIMEOUT_MS
+    )
   } catch (error) {
-    // A cache outage must not take checkout down with it. Fail open here — the
-    // per-order caps in the route are authoritative and read from the database.
-    logFailOpen("read", cacheKey, error)
+    // A Redis outage must not take checkout down with it. Fail open here — the
+    // per-order caps in the bac-proof route are authoritative and read from
+    // the database.
+    logFailOpen(counterKey, error)
     return { allowed: true, remaining: limit, retryAfter: 0 }
   }
 
-  if (count >= limit) {
+  if (count > limit) {
     const elapsed = Date.now() - window * windowSeconds * 1000
     return {
       allowed: false,
@@ -105,17 +113,7 @@ export const consumeRateLimit = async (
     }
   }
 
-  try {
-    await withDeadline(
-      Promise.resolve(cache.set(cacheKey, count + 1, windowSeconds)),
-      CACHE_TIMEOUT_MS
-    )
-  } catch (error) {
-    // Same reasoning as above.
-    logFailOpen("write", cacheKey, error)
-  }
-
-  return { allowed: true, remaining: limit - count - 1, retryAfter: 0 }
+  return { allowed: true, remaining: limit - count, retryAfter: 0 }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -555,7 +553,7 @@ export const clientIp = (req: MedusaRequest): string => identifyClient(req).ip
 /*  Limits for the global throttles                                           */
 /* -------------------------------------------------------------------------- */
 
-/** Window shared by the `/store/*` and `/auth/*` throttles, in seconds. */
+/** Window shared by the `/store/*`, `/admin/*` and `/auth/*` throttles, in seconds. */
 export const GLOBAL_WINDOW_SECONDS = 60
 
 export type GlobalLimit = {
@@ -583,6 +581,19 @@ export const AUTH_LIMIT: GlobalLimit = {
   external: 10,
 }
 
+/**
+ * `/admin/*` is only ever called by the admin dashboard, from the owner's own
+ * browser, so in practice all of it is `external` and bucketed by the owner's
+ * address. One admin page fires 10–25 API calls, so the ceiling sits well above
+ * a person clicking around and only bites on a flood. The storefront classes
+ * get the same number: the storefront has no business calling the admin API.
+ */
+export const ADMIN_LIMIT: GlobalLimit = {
+  internal: 300,
+  internalShared: 300,
+  external: 300,
+}
+
 export const limitFor = (
   limit: GlobalLimit,
   identity: ClientIdentity
@@ -593,3 +604,49 @@ export const limitFor = (
 
   return identity.realIp ? limit.internal : limit.internalShared
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Per-account limit for /auth/*                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Attempts allowed against one account per window, whichever addresses they
+ * come from. The per-IP `/auth/*` limit does nothing against a botnet: every
+ * machine stays under it while together they try thousands of passwords on the
+ * same account.
+ *
+ * Ten in fifteen minutes is far more than a person mistyping their own password
+ * needs. The price is that someone who knows a customer's email can lock that
+ * customer out of logging in for up to fifteen minutes — the usual trade, and a
+ * much better one than leaving the account open to guessing.
+ */
+export const AUTH_IDENTIFIER_LIMIT = 10
+export const AUTH_IDENTIFIER_WINDOW_SECONDS = 15 * 60
+
+/**
+ * The account a `/auth/*` body acts on, normalised, or null when it names none:
+ * `email` for login, register and update, `identifier` for reset-password.
+ */
+export const authIdentifier = (body: unknown): string | null => {
+  if (!body || typeof body !== "object") {
+    return null
+  }
+
+  for (const field of ["email", "identifier"]) {
+    const value = (body as Record<string, unknown>)[field]
+    if (typeof value === "string" && value.trim()) {
+      return value.trim().toLowerCase()
+    }
+  }
+
+  return null
+}
+
+/**
+ * The identifier ends up inside a Redis key, so it goes in hashed, as in the
+ * password-reset subscriber: an email is personal data and does not belong in
+ * a key that shows up in `KEYS` or `MONITOR`. For counting, the digest is
+ * exactly as good.
+ */
+export const identifierBucket = (identifier: string): string =>
+  crypto.createHash("sha256").update(identifier).digest("hex").slice(0, 32)

@@ -11,12 +11,11 @@ import {
   MAX_PROOFS_PER_ORDER,
   UPLOAD_COOLDOWN_SECONDS,
 } from "@lib/config/bac-proof"
-
-type ProofFile = { url: string; uploaded_at: string }
+import { BacProofFile } from "@modules/order/util/bac-transfer"
 
 type Props = {
   orderId: string
-  initialProof: ProofFile[]
+  initialProof: BacProofFile[]
   hasUploaded: boolean
 }
 
@@ -30,7 +29,7 @@ const BacProofUploader = ({ orderId, initialProof, hasUploaded }: Props) => {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(hasUploaded)
-  const [proof, setProof] = useState<ProofFile[]>(initialProof)
+  const [proof, setProof] = useState<BacProofFile[]>(initialProof)
   const [cooldown, setCooldown] = useState(0)
 
   const remaining = Math.max(0, MAX_PROOFS_PER_ORDER - proof.length)
@@ -168,7 +167,7 @@ const BacProofUploader = ({ orderId, initialProof, hasUploaded }: Props) => {
           <ul className="flex flex-col gap-y-1 mt-2">
             {proof.map((p, i) => (
               <li
-                key={p.url || i}
+                key={p.key || p.url || i}
                 className="text-xs font-body"
                 style={{ color: "var(--brand-silver-ash)" }}
               >

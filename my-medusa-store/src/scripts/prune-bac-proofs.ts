@@ -6,7 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3"
 
-import { MAX_PROOFS_PER_ORDER, ProofFile } from "../lib/bac-proof"
+import { MAX_PROOFS_PER_ORDER, PROOF_FOLDER, ProofFile } from "../lib/bac-proof"
 
 /**
  * Trims BAC transfer proofs down to the per-order cap on orders that were
@@ -31,8 +31,6 @@ import { MAX_PROOFS_PER_ORDER, ProofFile } from "../lib/bac-proof"
  * before this file is ever loaded ("Unknown argument: apply"). Dashed spellings
  * are still accepted below for anyone who reaches for them out of habit.
  */
-
-const PROOF_FOLDER = "bank-transfers"
 
 /**
  * R2_ENDPOINT carries the bucket name in its PATH, not just its host:
@@ -71,6 +69,25 @@ const proofPrefix = (orderId: string) =>
   [ENDPOINT_PATH_PREFIX, PROOF_FOLDER, orderId]
     .filter(Boolean)
     .join("/") + "/"
+
+/**
+ * The real object key of a stored proof. Current entries keep the key passed
+ * to PutObject, so the endpoint path goes in front, as it did on upload. Older
+ * entries keep the public URL, whose path already is the real key.
+ */
+const realObjectKey = (proof: ProofFile): string => {
+  if (proof.key) {
+    return [ENDPOINT_PATH_PREFIX, proof.key].filter(Boolean).join("/")
+  }
+
+  try {
+    return decodeURIComponent(
+      new URL(proof.url ?? "").pathname.replace(/^\//, "")
+    )
+  } catch {
+    return ""
+  }
+}
 
 /**
  * Lists everything under `prefix` and removes whatever is not in `keptKeys`.
@@ -245,18 +262,10 @@ export default async function pruneBacProofs({ container, args }: ExecArgs) {
     }
 
     // Work from a listing of the order's prefix rather than from the stored
-    // URLs: the flood wrote objects that never made it into metadata (and an
-    // earlier `apply` already dropped most of those URLs), so the prefix is the
-    // only way to find them. It is scoped to this one order either way.
-    const keptKeys = new Set(
-      kept.map((p) => {
-        try {
-          return decodeURIComponent(new URL(p.url).pathname.replace(/^\//, ""))
-        } catch {
-          return ""
-        }
-      })
-    )
+    // entries: the flood wrote objects that never made it into metadata (and
+    // an earlier `apply` already dropped most of those entries), so the prefix
+    // is the only way to find them. It is scoped to this one order either way.
+    const keptKeys = new Set(kept.map(realObjectKey))
 
     const prefix = proofPrefix(order.id)
     const { objects, bytes, deleted } = await purgePrefix(
