@@ -18,8 +18,13 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
       authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET || "supersecret",
-      cookieSecret: process.env.COOKIE_SECRET || "supersecret",
+      // No fallback on purpose. Left unset, Medusa refuses to boot in
+      // production ("http.jwtSecret not found") and only falls back to its
+      // public default, with a warning, in development. A `|| "supersecret"`
+      // here hid that check: the store would start signing tokens and session
+      // cookies with a secret anyone can look up, and say nothing.
+      jwtSecret: process.env.JWT_SECRET,
+      cookieSecret: process.env.COOKIE_SECRET,
     }
   },
   admin: {
