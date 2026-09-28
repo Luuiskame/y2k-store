@@ -55,7 +55,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // A type error fails the build instead of reaching production, which is
+    // how a 500 once got there. `npx tsc --noEmit` has to stay clean.
+    ignoreBuildErrors: false,
   },
   images: {
     remotePatterns: [
