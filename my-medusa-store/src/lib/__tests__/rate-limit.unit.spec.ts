@@ -1,12 +1,16 @@
 import { MedusaRequest } from "@medusajs/framework/http"
 
+import { Counter, memoryCounter, redisCounter } from "../counter"
 import {
+  ADMIN_LIMIT,
   AUTH_LIMIT,
   RateLimitResult,
   STORE_LIMIT,
+  authIdentifier,
   bucketForIp,
   clientIp,
   consumeRateLimit,
+  identifierBucket,
   identifyClient,
   isInternalRequest,
   limitFor,
@@ -17,28 +21,31 @@ const SECRET = "a".repeat(48)
 type FakeRequest = {
   headers?: Record<string, string | string[] | undefined>
   socket?: { remoteAddress?: string }
-  cache?: { get: jest.Mock; set: jest.Mock }
 }
 
 /**
- * The helpers under test only ever touch `headers`, `socket` and `scope`, so a
- * plain object is enough — building a real MedusaRequest would drag in the
- * whole container for no extra coverage.
+ * The helpers under test only ever touch `headers` and `socket`, so a plain
+ * object is enough — building a real MedusaRequest would drag in the whole
+ * container for no extra coverage.
  */
-const req = ({ headers = {}, socket, cache }: FakeRequest = {}) =>
+const req = ({ headers = {}, socket }: FakeRequest = {}) =>
   ({
     headers,
     socket,
-    scope: { resolve: () => cache },
   }) as unknown as MedusaRequest
 
-const memoryCache = () => {
-  const store = new Map<string, number>()
+/**
+ * Atomic like the real ones, but each increment yields to the event loop for a
+ * random moment first, so concurrent callers genuinely interleave. That is the
+ * situation the old get → compare → set lost increments in.
+ */
+const interleavingCounter = (): Counter => {
+  const inner = memoryCounter()
   return {
-    get: jest.fn(async (key: string) => store.get(key)),
-    set: jest.fn(async (key: string, value: number) => {
-      store.set(key, value)
-    }),
+    increment: async (key, ttlSeconds) => {
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 5))
+      return inner.increment(key, ttlSeconds)
+    },
   }
 }
 
@@ -392,17 +399,18 @@ describe("identifyClient / limitFor", () => {
     })
     expect(limitFor(STORE_LIMIT, identity)).toBe(60)
     expect(limitFor(AUTH_LIMIT, identity)).toBe(10)
+    // The admin dashboard is always external: the owner's browser, not Vercel.
+    expect(limitFor(ADMIN_LIMIT, identity)).toBe(300)
   })
 })
 
 describe("consumeRateLimit", () => {
   it("lets exactly `limit` through and then blocks", async () => {
-    const cache = memoryCache()
-    const request = req({ cache })
+    const counter = memoryCounter()
 
     const results: RateLimitResult[] = []
     for (let i = 0; i < 5; i++) {
-      results.push(await consumeRateLimit(request, "store:ip:1.2.3.4", 3, 60))
+      results.push(await consumeRateLimit("store:ip:1.2.3.4", 3, 60, counter))
     }
 
     expect(results.map((r) => r.allowed)).toEqual([
@@ -418,65 +426,150 @@ describe("consumeRateLimit", () => {
   })
 
   it("keeps separate keys in separate buckets", async () => {
-    const cache = memoryCache()
-    const request = req({ cache })
+    const counter = memoryCounter()
 
-    await consumeRateLimit(request, "store:ip:1.2.3.4", 1, 60)
+    await consumeRateLimit("store:ip:1.2.3.4", 1, 60, counter)
 
     expect(
-      (await consumeRateLimit(request, "store:ip:1.2.3.4", 1, 60)).allowed
+      (await consumeRateLimit("store:ip:1.2.3.4", 1, 60, counter)).allowed
     ).toBe(false)
     expect(
-      (await consumeRateLimit(request, "auth:ip:1.2.3.4", 1, 60)).allowed
+      (await consumeRateLimit("auth:ip:1.2.3.4", 1, 60, counter)).allowed
     ).toBe(true)
   })
 
-  it("fails open when the cache throws", async () => {
-    const cache = {
-      get: jest.fn(async () => {
-        throw new Error("redis down")
-      }),
-      set: jest.fn(),
-    }
-    const request = req({ cache })
+  /**
+   * Why the counter moved to INCR. Every measurement against production was
+   * strictly sequential; a flood is not. With get → compare → set, requests
+   * landing in the gap between the read and the write all read the same count,
+   * and the effective limit grew with the concurrency.
+   */
+  it("lets exactly `limit` through when the requests arrive concurrently", async () => {
+    const counter = interleavingCounter()
 
-    for (let i = 0; i < 20; i++) {
-      const result = await consumeRateLimit(request, "store:ip:1.2.3.4", 1, 60)
-      expect(result.allowed).toBe(true)
-    }
-    expect(cache.set).not.toHaveBeenCalled()
+    const results = await Promise.all(
+      Array.from({ length: 50 }, () =>
+        consumeRateLimit("auth:ip:1.2.3.4", 10, 60, counter)
+      )
+    )
+
+    expect(results.filter((r) => r.allowed)).toHaveLength(10)
+    expect(
+      results
+        .filter((r) => r.allowed)
+        .map((r) => r.remaining)
+        .sort((a, b) => a - b)
+    ).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   })
 
-  it("fails open when the cache hangs instead of throwing", async () => {
-    // What a Redis outage actually looks like: ioredis queues the command while
-    // it reconnects, so the call neither resolves nor rejects for ~84s.
-    const cache = {
-      get: jest.fn(() => new Promise(() => {})),
-      set: jest.fn(() => new Promise(() => {})),
+  it("fails open when the counter throws", async () => {
+    const counter = {
+      increment: jest.fn(async () => {
+        throw new Error("redis down")
+      }),
     }
 
+    for (let i = 0; i < 20; i++) {
+      const result = await consumeRateLimit("store:ip:1.2.3.4", 1, 60, counter)
+      expect(result.allowed).toBe(true)
+    }
+    expect(counter.increment).toHaveBeenCalledTimes(20)
+  })
+
+  it("fails open when the counter hangs instead of throwing", async () => {
+    // What a Redis outage actually looks like: ioredis queues the command while
+    // it reconnects, so the call neither resolves nor rejects for ~84s.
+    const counter = { increment: jest.fn(() => new Promise<number>(() => {})) }
+
     const started = Date.now()
-    const result = await consumeRateLimit(
-      req({ cache: cache as any }),
-      "store:ip:1.2.3.4",
-      1,
-      60
-    )
+    const result = await consumeRateLimit("store:ip:1.2.3.4", 1, 60, counter)
 
     expect(result.allowed).toBe(true)
     expect(Date.now() - started).toBeLessThan(2000)
   })
 
-  it("still serves the request when only writing to the cache throws", async () => {
-    const cache = {
-      get: jest.fn(async () => 0),
-      set: jest.fn(async () => {
-        throw new Error("redis down")
-      }),
-    }
+  it("counts each window under its own key, with the window as TTL", async () => {
+    const counter = { increment: jest.fn(async () => 1) }
 
-    await expect(
-      consumeRateLimit(req({ cache }), "store:ip:1.2.3.4", 5, 60)
-    ).resolves.toEqual({ allowed: true, remaining: 4, retryAfter: 0 })
+    await consumeRateLimit("auth:id:abc", 10, 900, counter)
+
+    const window = Math.floor(Date.now() / 900_000)
+    expect(counter.increment).toHaveBeenCalledWith(
+      `ratelimit:auth:id:abc:${window}`,
+      900
+    )
+  })
+})
+
+describe("memoryCounter", () => {
+  it("counts per key and starts over once the key expires", async () => {
+    let now = 1_000_000
+    const counter = memoryCounter(() => now)
+
+    expect(await counter.increment("a", 60)).toBe(1)
+    expect(await counter.increment("a", 60)).toBe(2)
+    expect(await counter.increment("b", 60)).toBe(1)
+
+    now += 60_000
+    expect(await counter.increment("a", 60)).toBe(1)
+  })
+})
+
+describe("redisCounter", () => {
+  it("increments and sets the TTL in one script, and returns a number", async () => {
+    const client = { eval: jest.fn(async () => 7) }
+
+    const count = await redisCounter(client as any).increment("k", 60)
+
+    expect(count).toBe(7)
+    expect(client.eval).toHaveBeenCalledTimes(1)
+
+    const [script, keyCount, key, ttl] = (client.eval.mock.calls[0] as unknown) as [
+      string,
+      number,
+      string,
+      string
+    ]
+    expect(script).toContain('redis.call("INCR", KEYS[1])')
+    expect(script).toContain('redis.call("EXPIRE", KEYS[1], ARGV[1])')
+    expect([keyCount, key, ttl]).toEqual([1, "k", "60"])
+  })
+
+  it("never asks Redis for a TTL under one second", async () => {
+    const client = { eval: jest.fn(async () => 1) }
+
+    await redisCounter(client as any).increment("k", 0.2)
+
+    expect((client.eval.mock.calls[0] as unknown[])[3]).toBe("1")
+  })
+})
+
+describe("authIdentifier / identifierBucket", () => {
+  it("reads `email`, or `identifier` for reset-password, normalised", () => {
+    expect(authIdentifier({ email: "  Ada@Example.com ", password: "x" })).toBe(
+      "ada@example.com"
+    )
+    expect(authIdentifier({ identifier: "GRACE@example.com" })).toBe(
+      "grace@example.com"
+    )
+  })
+
+  it("returns null when the body names no account", () => {
+    expect(authIdentifier(undefined)).toBeNull()
+    expect(authIdentifier("email=ada@example.com")).toBeNull()
+    expect(authIdentifier({})).toBeNull()
+    expect(authIdentifier({ email: "   " })).toBeNull()
+    expect(authIdentifier({ email: ["ada@example.com"] })).toBeNull()
+  })
+
+  it("buckets one account under one hashed key, without the address in it", () => {
+    const bucket = identifierBucket("ada@example.com")
+
+    expect(bucket).toMatch(/^[0-9a-f]{32}$/)
+    expect(bucket).not.toContain("ada")
+    expect(identifierBucket(authIdentifier({ email: "ADA@example.com" })!)).toBe(
+      bucket
+    )
+    expect(identifierBucket("grace@example.com")).not.toBe(bucket)
   })
 })
