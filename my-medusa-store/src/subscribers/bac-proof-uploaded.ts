@@ -4,9 +4,11 @@ import {
   Modules,
 } from "@medusajs/framework/utils"
 
+import type { ProofFile } from "../lib/bac-proof"
+
 type EventData = {
   order_id: string
-  proof_files?: { url: string; uploaded_at: string }[]
+  proof_files?: ProofFile[]
 }
 
 /** At most one proof notification per order inside this window. */
@@ -26,7 +28,9 @@ export default async function bacProofUploadedHandler({
   container,
 }: SubscriberArgs<EventData>) {
   const orderId = event.data.order_id
-  const proofUrls = (event.data.proof_files ?? []).map((p) => p.url)
+  // A count, not links: receipts are only opened from the admin, through
+  // signed URLs. A link in an inbox would outlive any expiry we could give it.
+  const proofCount = (event.data.proof_files ?? []).length
 
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
@@ -142,7 +146,7 @@ export default async function bacProofUploadedHandler({
         customer_email: order.email,
         total_label: totalLabel,
         admin_url: adminUrl,
-        proof_urls: proofUrls,
+        proof_count: proofCount,
       },
     })
   }

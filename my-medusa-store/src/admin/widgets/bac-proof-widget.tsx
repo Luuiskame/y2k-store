@@ -1,9 +1,10 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import type { DetailWidgetProps, AdminOrder } from "@medusajs/framework/types"
 import { Container, Heading, Button, Badge, Text, toast } from "@medusajs/ui"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-type ProofFile = { url: string; uploaded_at: string }
+/** What `GET /admin/orders/:id/bac-proofs` returns per file. */
+type SignedProof = { url: string | null; uploaded_at: string; is_pdf: boolean }
 
 // Orders uploaded before the per-order cap existed can hold hundreds of files.
 // Render a page at a time so opening one of those does not fire hundreds of
@@ -11,7 +12,8 @@ type ProofFile = { url: string; uploaded_at: string }
 const PREVIEW_PAGE_SIZE = 12
 
 const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
-  const proof = ((order.metadata?.bac_transfer_proof ?? []) as ProofFile[]) || []
+  const stored = order.metadata?.bac_transfer_proof
+  const proofCount = Array.isArray(stored) ? stored.length : 0
   const status =
     (order.metadata?.bac_transfer_status as string | undefined) ?? null
 
@@ -24,7 +26,40 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
   const [confirmed, setConfirmed] = useState(status === "verified")
   const [visibleCount, setVisibleCount] = useState(PREVIEW_PAGE_SIZE)
 
-  if (!isBac && proof.length === 0) {
+  // Receipts are private: the metadata only says where they are, and the
+  // backend hands out signed URLs that expire after an hour. Reloading the
+  // page gets fresh ones.
+  const [proof, setProof] = useState<SignedProof[] | null>(null)
+  const [proofError, setProofError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (proofCount === 0) {
+      return
+    }
+
+    let cancelled = false
+    fetch(`/admin/orders/${order.id}/bac-proofs`, { credentials: "include" })
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(json.message ?? "No se pudieron cargar los comprobantes.")
+        }
+        if (!cancelled) {
+          setProof(json.proofs ?? [])
+        }
+      })
+      .catch((e: any) => {
+        if (!cancelled) {
+          setProofError(e.message ?? "No se pudieron cargar los comprobantes.")
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [order.id, proofCount])
+
+  if (!isBac && proofCount === 0) {
     return null
   }
 
@@ -65,48 +100,66 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       </div>
 
       <div className="px-6 py-4 flex flex-col gap-y-4">
-        {proof.length === 0 ? (
+        {proofCount === 0 ? (
           <Text size="small" className="text-ui-fg-subtle">
             Aún no se ha subido comprobante de transferencia.
           </Text>
         ) : (
           <div className="flex flex-col gap-y-3">
             <Text size="small" className="text-ui-fg-subtle">
-              {proof.length} archivo{proof.length === 1 ? "" : "s"} recibido
-              {proof.length === 1 ? "" : "s"}
+              {proofCount} archivo{proofCount === 1 ? "" : "s"} recibido
+              {proofCount === 1 ? "" : "s"}
             </Text>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {proof.slice(0, visibleCount).map((p, i) => {
-                const isPdf = p.url.toLowerCase().endsWith(".pdf")
-                return (
-                  <a
-                    key={p.url}
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block border rounded-md overflow-hidden hover:border-ui-border-interactive transition-colors"
-                  >
-                    {isPdf ? (
-                      <div className="flex items-center justify-center h-32 bg-ui-bg-subtle">
-                        <Text size="small">📄 PDF</Text>
+            {proofError ? (
+              <Text size="small" className="text-ui-fg-error">
+                {proofError}
+              </Text>
+            ) : !proof ? (
+              <Text size="small" className="text-ui-fg-subtle">
+                Cargando comprobantes…
+              </Text>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {proof.slice(0, visibleCount).map((p, i) =>
+                  p.url ? (
+                    <a
+                      key={i}
+                      href={p.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block border rounded-md overflow-hidden hover:border-ui-border-interactive transition-colors"
+                    >
+                      {p.is_pdf ? (
+                        <div className="flex items-center justify-center h-32 bg-ui-bg-subtle">
+                          <Text size="small">📄 PDF</Text>
+                        </div>
+                      ) : (
+                        <img
+                          src={p.url}
+                          alt={`Comprobante ${i + 1}`}
+                          className="w-full h-32 object-cover"
+                        />
+                      )}
+                      <div className="px-2 py-1.5">
+                        <Text size="xsmall" className="text-ui-fg-subtle">
+                          {new Date(p.uploaded_at).toLocaleString("es-HN")}
+                        </Text>
                       </div>
-                    ) : (
-                      <img
-                        src={p.url}
-                        alt={`Comprobante ${i + 1}`}
-                        className="w-full h-32 object-cover"
-                      />
-                    )}
-                    <div className="px-2 py-1.5">
+                    </a>
+                  ) : (
+                    <div
+                      key={i}
+                      className="flex items-center justify-center h-32 border rounded-md bg-ui-bg-subtle px-2 text-center"
+                    >
                       <Text size="xsmall" className="text-ui-fg-subtle">
-                        {new Date(p.uploaded_at).toLocaleString("es-HN")}
+                        Comprobante {i + 1}: no se encontró el archivo
                       </Text>
                     </div>
-                  </a>
-                )
-              })}
-            </div>
-            {proof.length > visibleCount && (
+                  )
+                )}
+              </div>
+            )}
+            {proof && proof.length > visibleCount && (
               <Button
                 variant="secondary"
                 size="small"
@@ -120,7 +173,7 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
           </div>
         )}
 
-        {proof.length > 0 && !confirmed && (
+        {proofCount > 0 && !confirmed && (
           <Button
             variant="primary"
             onClick={onConfirm}

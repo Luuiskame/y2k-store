@@ -1,6 +1,5 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules, ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 
 import {
   MAX_FILES_PER_REQUEST,
@@ -9,8 +8,9 @@ import {
   ProofFile,
   UPLOAD_COOLDOWN_SECONDS,
   detectProofType,
-  safeBaseName,
+  newProofKey,
 } from "../../../../../lib/bac-proof"
+import { putProof } from "../../../../../lib/bac-proof-storage"
 
 type UploadedFile = {
   fieldname: string
@@ -19,26 +19,6 @@ type UploadedFile = {
   buffer: Buffer
   size: number
 }
-
-// Folder (key prefix) inside the R2 bucket where transfer proofs live.
-const PROOF_FOLDER = "bank-transfers"
-
-// Reuse the same R2 connection settings as the Medusa file-s3 provider so the
-// public URLs resolve identically. We upload directly (instead of via the File
-// module) because the s3 provider strips directory paths from filenames, which
-// makes per-order folders impossible, and because it mis-decodes binary content
-// as utf8 — corrupting images. Uploading the raw Buffer here avoids both.
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY as string,
-  },
-})
-
-const publicUrl = (key: string) =>
-  `${process.env.R2_FILE_URL}/${key.split("/").map(encodeURIComponent).join("/")}`
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const orderId = req.params.id
@@ -64,7 +44,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   }
 
   // Validate the bytes, not the headers: `originalname` and `mimetype` come
-  // from the client, and these objects are served publicly from R2.
+  // from the client, and these objects sit next to the store's public media.
   const typed: { file: UploadedFile; mime: string; extension: string }[] = []
   for (const file of files) {
     const detected = detectProofType(file.buffer)
@@ -184,23 +164,15 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         }
 
         const now = new Date().toISOString()
-        const newProofEntries = await Promise.all(
+        // Only the key is kept, never a URL: these entries are readable by
+        // anyone who has the order id (`GET /store/orders/:id` returns the
+        // metadata). The admin gets signed URLs from
+        // `GET /admin/orders/:id/bac-proofs`.
+        const newProofEntries: ProofFile[] = await Promise.all(
           typed.map(async ({ file, mime, extension }) => {
-            const key = `${PROOF_FOLDER}/${orderId}/${Date.now()}-${safeBaseName(
-              file.originalname
-            )}.${extension}`
-            await s3.send(
-              new PutObjectCommand({
-                Bucket: process.env.R2_BUCKET,
-                Key: key,
-                Body: file.buffer,
-                // The sniffed type, never the client's — see detectProofType.
-                ContentType: mime,
-                ContentDisposition: "inline",
-                ACL: "public-read",
-              })
-            )
-            return { url: publicUrl(key), uploaded_at: now }
+            const key = newProofKey(orderId, file.originalname, extension)
+            await putProof(key, file.buffer, mime)
+            return { key, uploaded_at: now }
           })
         )
 
