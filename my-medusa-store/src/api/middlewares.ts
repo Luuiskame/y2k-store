@@ -4,9 +4,13 @@ import {
   MedusaNextFunction,
   MedusaRequest,
   MedusaResponse,
+  validateAndTransformBody,
+  validateAndTransformQuery,
 } from "@medusajs/framework/http"
 import multer from "multer"
 
+import { AnalyticsRangeSchema } from "./admin/analytics/validators"
+import { AnalyticsEventSchema } from "./store/analytics/events/validators"
 import {
   ACCEPTED_MIME_TYPES,
   IP_WINDOW_SECONDS,
@@ -304,6 +308,23 @@ export default defineMiddlewares({
       matcher: "/store/orders/:id/bac-proof",
       method: ["POST"],
       middlewares: [bacProofRateLimit as any, uploadProofFiles as any],
+    },
+    {
+      // A beacon is a few hundred bytes; anything near the cap is not one.
+      matcher: "/store/analytics/events",
+      method: ["POST"],
+      bodyParser: { sizeLimit: "4kb" },
+      middlewares: [validateAndTransformBody(AnalyticsEventSchema) as any],
+    },
+    {
+      matcher: "/admin/analytics/sales",
+      method: ["GET"],
+      middlewares: [validateAndTransformQuery(AnalyticsRangeSchema, {}) as any],
+    },
+    {
+      matcher: "/admin/analytics/traffic",
+      method: ["GET"],
+      middlewares: [validateAndTransformQuery(AnalyticsRangeSchema, {}) as any],
     },
   ],
 })
