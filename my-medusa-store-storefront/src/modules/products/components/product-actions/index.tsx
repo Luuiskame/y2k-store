@@ -2,6 +2,7 @@
 
 import { addToCart, retrieveCart } from "@lib/data/cart"
 import { trackAddToCart } from "@lib/analytics/meta-events"
+import { trackVisitorEvent } from "@lib/analytics/visitor-events"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
 import InlineAlert from "@modules/cart/components/inline-alert"
@@ -190,6 +191,7 @@ export default function ProductActions({
       }))
 
       trackAddToCart({ product, variant: selectedVariant, quantity: 1 })
+      trackVisitorEvent("add_to_cart")
     } catch (e: any) {
       const friendly = translateCartError(e?.message)
       setError({

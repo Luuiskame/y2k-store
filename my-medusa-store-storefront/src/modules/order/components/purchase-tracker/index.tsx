@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { trackPurchase } from "@lib/analytics/meta-events"
+import { trackVisitorEvent } from "@lib/analytics/visitor-events"
 
 /**
  * Fires a Meta Pixel `Purchase` event exactly once per placed order. Rendered on
@@ -37,6 +38,8 @@ export default function PurchaseTracker({
 
     fired.current = true
     trackPurchase(order)
+    // Same once-per-order guard, for the admin dashboard's "compraron en la web".
+    trackVisitorEvent("purchase")
   }, [order])
 
   return null
