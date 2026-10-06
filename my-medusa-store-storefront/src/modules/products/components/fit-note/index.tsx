@@ -2,6 +2,7 @@ import { HttpTypes } from "@medusajs/types"
 import { clx } from "@medusajs/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { isTightCompression } from "@lib/util/product-tags"
+import { guideHref } from "@lib/util/size-guide"
 
 type FitNoteProps = {
   product: HttpTypes.StoreProduct
@@ -54,7 +55,7 @@ const FitNote = ({ product, className }: FitNoteProps) => {
           de la que usas normalmente.
         </p>
         <LocalizedClientLink
-          href="/guia-de-tallas"
+          href={guideHref("premium")}
           className="self-start font-heading uppercase tracking-[0.18em] text-[11px] underline underline-offset-4"
           style={{ color: "var(--brand-sacred-violet)" }}
         >
