@@ -30,6 +30,21 @@ export const isTightCompression = (
   product: TaggableProduct | null | undefined
 ): boolean => hasAnyTag(product, "TightCompression")
 
+/** Cut that follows the muscle without compressing it. */
+export const isMediumMuscleFit = (
+  product: TaggableProduct | null | undefined
+): boolean => hasAnyTag(product, "MediumMuscleFit")
+
+/** Fabric that stretches enough to forgive the neighbouring size. */
+export const isHighElasticity = (
+  product: TaggableProduct | null | undefined
+): boolean => hasAnyTag(product, "HighElasticity")
+
+/** Standard quality is the absence of this tag, so it is only read to rule premium out. */
+export const isPremiumQuality = (
+  product: TaggableProduct | null | undefined
+): boolean => hasAnyTag(product, "PremiunQuality", "PremiumQuality")
+
 /** Social proof for the product card badge. */
 export const isBestSeller = (
   product: TaggableProduct | null | undefined
