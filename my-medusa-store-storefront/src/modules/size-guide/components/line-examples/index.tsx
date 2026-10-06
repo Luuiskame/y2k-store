@@ -32,7 +32,7 @@ const LineExamples = ({ products, region }: LineExamplesProps) => {
           Ver toda la tienda
         </LocalizedClientLink>
       </div>
-      <ul className="grid grid-cols-2 gap-4 small:grid-cols-4">
+      <ul className="grid max-w-2xl grid-cols-2 gap-4">
         {products.map((product) => (
           <li key={product.id}>
             <ProductPreview product={product} region={region} />

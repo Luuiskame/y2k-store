@@ -27,7 +27,7 @@ import { ReactNode } from "react"
 const H2_CLASS =
   "font-heading uppercase tracking-[0.18em] text-xl small:text-2xl text-brand-ghost-white"
 
-const EXAMPLES_PER_LINE = 4
+const EXAMPLES_PER_LINE = 2
 
 const LINE_IDS = Object.keys(LINES) as GarmentLine[]
 
@@ -173,6 +173,12 @@ const sizeForWaist = (inches: number): string => {
   return row ? row.size : "consúltanos"
 }
 
+/**
+ * Deliberately the same call the store listing makes, with the same fields:
+ * that is one shared data-cache entry, so a visit to the guide costs no
+ * backend request of its own while the catalog is warm. A leaner fetch would
+ * be a second entry and a second hit every 10 minutes.
+ */
 const loadCatalog = async (
   countryCode: string
 ): Promise<{
