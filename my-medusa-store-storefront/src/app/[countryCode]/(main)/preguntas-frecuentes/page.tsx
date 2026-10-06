@@ -40,7 +40,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Qué talla pido?",
-    a: "Tenemos una guía de tallas detallada con medidas en cm. Como es ropa de compresión, recomendamos seguir la guía y no pedir talla más grande de lo habitual.",
+    a: "Depende de la prenda. En las camisetas de calidad estándar (Medium Muscle Fit, alta elasticidad) pide tu talla habitual; en las premium de compresión ajustada, una talla más; y los joggers son baggy, así que tu talla habitual te da el look holgado. En la guía de tallas tienes una calculadora y las medidas en cm y pulgadas.",
   },
   {
     q: "¿Cuánto tardan los envíos?",

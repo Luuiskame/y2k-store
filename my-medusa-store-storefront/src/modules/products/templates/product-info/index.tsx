@@ -1,6 +1,8 @@
 import { HttpTypes } from "@medusajs/types"
+import { getFitProfile } from "@lib/util/fit-profile"
 import Check from "@modules/common/icons/check"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import FitRecommendation from "@modules/products/components/fit-recommendation"
 import RatingStars from "@modules/products/components/rating-stars"
 
 type ProductInfoProps = {
@@ -31,6 +33,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const benefits = parseBenefits(product.description)
   const showAsList = benefits.length > 1
   const hasEnoughReviews = REVIEW_COUNT >= MIN_REVIEWS_TO_SHOW_STARS
+  const hasFitRecommendation = getFitProfile(product) === "estandar"
 
   return (
     <div id="product-info" className="flex flex-col gap-y-5">
@@ -66,16 +69,23 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           </a>
         </div>
       ) : (
-        <a
-          href="#founder"
-          className="inline-flex items-center gap-2 self-start font-heading uppercase tracking-[0.18em] text-[11px] text-brand-silver-ash hover:text-brand-ghost-white transition-colors"
-        >
-          <span aria-hidden style={{ color: "var(--brand-sacred-violet)" }}>
-            ✦
-          </span>
-          Se de los primeros en probarlo
-        </a>
+        !hasFitRecommendation && (
+          <a
+            href="#founder"
+            className="inline-flex items-center gap-2 self-start font-heading uppercase tracking-[0.18em] text-[11px] text-brand-silver-ash hover:text-brand-ghost-white transition-colors"
+          >
+            <span aria-hidden style={{ color: "var(--brand-sacred-violet)" }}>
+              ✦
+            </span>
+            Se de los primeros en probarlo
+          </a>
+        )
       )}
+
+      {/* Takes the legend's place on the standard cut, and stays once there
+          are reviews: the stars answer "is it good", this answers "which size". */}
+      <FitRecommendation product={product} />
+
 
       {showAsList ? (
         <ul

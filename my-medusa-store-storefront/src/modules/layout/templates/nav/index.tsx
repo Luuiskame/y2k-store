@@ -53,7 +53,7 @@ export default async function Nav() {
           </div>
 
           {/* CENTER — desktop nav links */}
-          <ul className="hidden small:flex items-center gap-x-10 absolute left-1/2 -translate-x-1/2">
+          <ul className="hidden small:flex items-center medium:gap-x-10 gap-x-7 absolute left-1/2 -translate-x-1/2">
             <li>
               <LocalizedClientLink
                 href="/"
@@ -70,6 +70,15 @@ export default async function Nav() {
                 data-testid="nav-store-page-link"
               >
                 Tienda
+              </LocalizedClientLink>
+            </li>
+            <li>
+              <LocalizedClientLink
+                href="/guia-de-tallas"
+                className="font-heading uppercase tracking-widest text-sm text-brand-ghost-white hover:text-brand-divine-lilac transition-colors duration-200"
+                data-testid="nav-size-guide-link"
+              >
+                Guía&nbsp;de&nbsp;Tallas
               </LocalizedClientLink>
             </li>
             <li>
