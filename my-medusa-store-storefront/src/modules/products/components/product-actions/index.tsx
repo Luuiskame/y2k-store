@@ -3,7 +3,6 @@
 import { addToCart, retrieveCart } from "@lib/data/cart"
 import { trackAddToCart } from "@lib/analytics/meta-events"
 import { trackVisitorEvent } from "@lib/analytics/visitor-events"
-import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
 import InlineAlert from "@modules/cart/components/inline-alert"
 import FitNote from "@modules/products/components/fit-note"
@@ -11,9 +10,8 @@ import OptionSelect from "@modules/products/components/product-actions/option-se
 import { translateCartError } from "@modules/cart/util/translate-cart-error"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import ProductPrice from "../product-price"
-import MobileActions from "./mobile-actions"
 import { useRouter } from "next/navigation"
 
 type ProductActionsProps = {
@@ -164,9 +162,6 @@ export default function ProductActions({
     return remaining > 0 && remaining <= 5
   }, [remaining])
 
-  const actionsRef = useRef<HTMLDivElement>(null)
-  const inView = useIntersection(actionsRef, "0px")
-
   const handleAddToCart = async () => {
     if (!selectedVariant?.id) return null
     // Guard against clicks that would exceed available stock.
@@ -230,7 +225,7 @@ export default function ProductActions({
 
   return (
     <>
-      <div className="flex flex-col gap-y-6" ref={actionsRef}>
+      <div className="flex flex-col gap-y-6">
         <ProductPrice product={product} variant={selectedVariant} />
 
         {(product.variants?.length ?? 0) > 1 && (
@@ -297,19 +292,6 @@ export default function ProductActions({
         <p className="text-[11px] uppercase tracking-[0.22em] text-brand-silver-ash/70 text-center">
           Pagos seguros · Envío a toda Honduras
         </p>
-
-        <MobileActions
-          product={product}
-          variant={selectedVariant}
-          options={options}
-          updateOptions={setOptionValue}
-          inStock={inStock}
-          atMax={atMax}
-          handleAddToCart={handleAddToCart}
-          isAdding={isAdding}
-          show={!inView}
-          optionsDisabled={!!disabled || isAdding}
-        />
       </div>
     </>
   )
