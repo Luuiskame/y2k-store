@@ -1,6 +1,6 @@
+import Cash from "@modules/common/icons/cash"
 import FastDelivery from "@modules/common/icons/fast-delivery"
 import Refresh from "@modules/common/icons/refresh"
-import Package from "@modules/common/icons/package"
 
 const items = [
   {
@@ -9,9 +9,9 @@ const items = [
     body: "Entrega a toda Honduras",
   },
   {
-    icon: Package,
-    title: "Transferencia BAC sin recargo",
-    body: "Tarjeta o transferencia bancaria",
+    icon: Cash,
+    title: "Pago contra entrega",
+    body: "En Tegus y SPS, o transferencia BAC sin recargo",
   },
   {
     icon: Refresh,
