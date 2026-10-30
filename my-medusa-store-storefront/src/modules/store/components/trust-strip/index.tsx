@@ -16,8 +16,8 @@ const ITEMS = [
   },
   {
     Icon: CreditCard,
-    lead: "Transferencia BAC sin recargo",
-    rest: ", o tarjeta",
+    lead: "Transferencia BAC",
+    rest: " sin recargo",
   },
 ]
 

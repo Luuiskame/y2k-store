@@ -137,7 +137,10 @@ const Summary = ({ cart }: SummaryProps) => {
           style={{ width: "100%" }}
           onClick={() => trackInitiateCheckout(cart)}
         >
-          Elegir método de pago
+          {/* Name the step the link opens. For most buyers that's the
+              address form, and most of them pay on delivery, so no
+              "pago" until payment really is next. */}
+          {step === "payment" ? "Continuar al pago" : "Continuar con el envío"}
         </button>
       </LocalizedClientLink>
 
