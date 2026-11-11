@@ -1,8 +1,52 @@
+import path from 'path'
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
 const REDIS_URL = process.env.REDIS_URL
+
+/**
+ * Manifest and icons of the admin's Home Screen app, under the admin's path.
+ * The admin serves its static files with a one-year `immutable` cache, so to
+ * change any of them copy the folder to `pwa-v2/` and point this at it. The
+ * service worker (`sw.js`) stays where it is: browsers re-check it on their
+ * own, and its URL is what identifies the installed worker.
+ */
+const PWA_ASSETS = 'pwa-v1'
+
+/**
+ * Makes the admin installable as "Y2K Admin". That is how the owner's iPhone
+ * gets sales alerts: iOS only delivers Web Push to web apps opened from the
+ * Home Screen. The files live in src/admin/public (served at /app/...); this
+ * adds the tags that point at them to the admin's page.
+ *
+ * A Vite plugin, typed by hand: from this CommonJS file TypeScript resolves
+ * Vite's CJS typings, which do not export `Plugin`.
+ */
+type HtmlTag = {
+  tag: string
+  attrs: Record<string, string>
+  injectTo: 'head'
+}
+
+const adminPwa = () => {
+  let base = '/'
+  return {
+    name: 'y2k-admin-pwa',
+    configResolved(config: { base: string }) {
+      base = config.base
+    },
+    transformIndexHtml: (): HtmlTag[] => [
+      { tag: 'link', attrs: { rel: 'manifest', href: `${base}${PWA_ASSETS}/manifest.webmanifest` }, injectTo: 'head' },
+      { tag: 'link', attrs: { rel: 'apple-touch-icon', href: `${base}${PWA_ASSETS}/apple-touch-icon.png` }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: 'Y2K Admin' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#fafafa' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#18181b' }, injectTo: 'head' },
+    ],
+  }
+}
 
 module.exports = defineConfig({
   projectConfig: {
@@ -30,6 +74,10 @@ module.exports = defineConfig({
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
     backendUrl: process.env.MEDUSA_BACKEND_URL,
+    vite: () => ({
+      publicDir: path.join(process.cwd(), 'src/admin/public'),
+      plugins: [adminPwa()],
+    }),
   },
   modules: [
     {

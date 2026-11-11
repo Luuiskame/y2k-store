@@ -10,6 +10,7 @@ import {
 import multer from "multer"
 
 import { AnalyticsRangeSchema } from "./admin/analytics/validators"
+import { PushSubscriptionSchema } from "./admin/push/validators"
 import { AnalyticsEventSchema } from "./store/analytics/events/validators"
 import {
   ACCEPTED_MIME_TYPES,
@@ -325,6 +326,11 @@ export default defineMiddlewares({
       matcher: "/admin/analytics/traffic",
       method: ["GET"],
       middlewares: [validateAndTransformQuery(AnalyticsRangeSchema, {}) as any],
+    },
+    {
+      matcher: "/admin/push/subscriptions",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(PushSubscriptionSchema) as any],
     },
   ],
 })
