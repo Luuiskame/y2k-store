@@ -117,6 +117,10 @@ export const PendingWork = ({ sales }: { sales: Query<SalesResponse> }) => {
 
 /* ------------------------------------------------------------------------ */
 
+/**
+ * Visits and customers of the period. What was sold, how many orders and
+ * what was collected are in the hero above (hero.tsx).
+ */
 export const Summary = ({
   sales,
   traffic,
@@ -128,7 +132,6 @@ export const Summary = ({
 }) => {
   const s = sales.data
   const t = traffic.data
-  const money = (value: number) => (s ? formatMoney(value, s.currency) : null)
 
   const conversion = s && t ? ratioOf(s.totals.orders, t.totals.sessions) : null
   const previousConversion =
@@ -147,33 +150,6 @@ export const Summary = ({
           Los cambios se comparan {comparison.replace(/^vs\. /, "con ")}.
         </Text>
         <StatGrid>
-          <StatTile
-            label="Ventas"
-            value={s ? money(s.totals.sales) : null}
-            change={s ? changeOf(s.totals.sales, s.previous.sales) : null}
-            hint={s && `${formatNumber(s.totals.orders)} pedidos`}
-            help="Total de los pedidos del período, sin contar los cancelados. Incluye los pedidos que hacés vos desde tu cuenta."
-          />
-          <StatTile
-            label="Pedidos"
-            value={s ? formatNumber(s.totals.orders) : null}
-            change={s ? changeOf(s.totals.orders, s.previous.orders) : null}
-            hint={s && `${formatNumber(s.totals.units)} unidades`}
-            help="Pedidos no cancelados hechos en el período."
-          />
-          <StatTile
-            label="Ticket promedio"
-            value={s ? money(s.totals.average_order) : null}
-            change={s ? changeOf(s.totals.average_order, s.previous.average_order) : null}
-            help="Ventas ÷ pedidos."
-          />
-          <StatTile
-            label="Cobrado"
-            value={s ? money(s.totals.collected) : null}
-            change={s ? changeOf(s.totals.collected, s.previous.collected) : null}
-            hint={s && `${money(s.totals.outstanding)} por cobrar`}
-            help="Pagos confirmados de los pedidos del período (transferencias verificadas, pagos capturados), menos reembolsos."
-          />
           <StatTile
             label="Visitas"
             value={t ? formatNumber(t.totals.sessions) : null}

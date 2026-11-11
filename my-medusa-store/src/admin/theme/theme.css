@@ -1,0 +1,528 @@
+/*
+ * The admin's look, on top of Medusa UI. Loaded by theme/boot.ts on every
+ * page (see the note there on why that works).
+ *
+ * How it stays out of Medusa's way:
+ * - Colors are never set here. A palette re-issues Medusa's own color tokens
+ *   (--bg-base, --fg-base…) from a generated <style>; see palettes.ts.
+ * - Type is switched with one attribute on <html>, `data-y2k-font`. Without
+ *   it (the "Clásica" set) none of the font rules below match.
+ * - Everything else is behind a `y2k-` class or attribute of our own, or a
+ *   phone-width media query.
+ *
+ * Fonts are self-hosted (theme/fonts, SIL Open Font License; see the README
+ * there): the admin works with no third-party request, and the Home Screen
+ * app has them with no network.
+ */
+
+/* ---------------------------------------------------------------- fonts -- */
+
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/cinzel-latin-wght.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("./fonts/manrope-latin-wght.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("./fonts/unbounded-latin-wght.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("./fonts/space-grotesk-latin-wght.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/big-shoulders-display-latin-wght.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("./fonts/jetbrains-mono-latin-wght.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/instrument-serif-latin-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/instrument-serif-latin-400-italic.woff2") format("woff2");
+}
+
+/* The storefront's blackletter, for the wordmark only. */
+@font-face {
+  font-family: "UnifrakturMaguntia";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/unifrakturmaguntia-latin-400.woff2") format("woff2");
+}
+
+/* ------------------------------------------------------------ fallbacks -- */
+
+/*
+ * What our own components read. A palette overrides these; with "Medusa
+ * clásico" they fall back to Medusa's blue, so nothing of ours is ever
+ * unstyled.
+ */
+:root {
+  --y2k-accent: var(--fg-interactive);
+  --y2k-accent-2: var(--fg-interactive-hover);
+  --y2k-fill: var(--bg-interactive);
+  --y2k-canvas: var(--bg-subtle);
+  --y2k-glow: rgba(59, 130, 246, 0.28);
+  --y2k-wash: rgba(59, 130, 246, 0.1);
+  --y2k-aura: none;
+  --y2k-whatsapp: #128c4a;
+  --y2k-whatsapp-hover: #0f7a40;
+  --y2k-tabbar-height: 60px;
+}
+
+/* ----------------------------------------------------------------- type -- */
+
+/*
+ * Medusa's text classes each name Inter themselves, so inheriting from
+ * <body> changes nothing: the family has to be set on every element. This
+ * selector out-ranks those classes; the two rules after it out-rank this.
+ */
+html[data-y2k-font] body,
+html[data-y2k-font] body * {
+  font-family: var(--y2k-font-body);
+}
+
+html[data-y2k-font] :is(code, pre, kbd, samp, .font-mono, .code-label, .code-label-plus, .code-paragraph, .code-paragraph-plus),
+html[data-y2k-font] :is(code, pre, kbd, samp, .font-mono) * {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html[data-y2k-font] :is(.h1-core, .h2-core, .h3-core, .h1-docs, .h2-docs, .h3-docs, .y2k-display),
+html[data-y2k-font] .y2k-display * {
+  font-family: var(--y2k-font-display);
+  font-weight: var(--y2k-display-weight);
+  letter-spacing: var(--y2k-display-tracking);
+  text-transform: var(--y2k-display-case);
+}
+
+html[data-y2k-font] .h1-core {
+  font-size: calc(1.125rem * var(--y2k-display-scale));
+}
+
+html[data-y2k-font] .h2-core {
+  font-size: calc(1rem * var(--y2k-display-scale));
+}
+
+html[data-y2k-font] .h3-core {
+  font-size: calc(0.875rem * var(--y2k-display-scale));
+}
+
+/* Big figures: the display face, digits of equal width so they don't jump. */
+.y2k-num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+html[data-y2k-font] .y2k-num,
+html[data-y2k-font] .y2k-num * {
+  font-family: var(--y2k-font-display);
+  font-weight: var(--y2k-display-weight);
+  letter-spacing: var(--y2k-display-tracking);
+}
+
+.y2k-wordmark,
+html[data-y2k-font] .y2k-wordmark {
+  font-family: "UnifrakturMaguntia", "Cinzel", serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+/* --------------------------------------------------------------- canvas -- */
+
+html.y2k-aura body {
+  background-image: var(--y2k-aura);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+html[data-y2k-palette]:not([data-y2k-palette="clasico"]) ::selection {
+  background-color: var(--y2k-fill);
+  color: #fff;
+}
+
+/* ---------------------------------------------------- our own components -- */
+
+/* The headline figure of a page: a gradient of the two accents, with a glow. */
+.y2k-hero-number {
+  background-image: linear-gradient(120deg, var(--y2k-accent) 10%, var(--y2k-accent-2) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 22px var(--y2k-glow));
+  line-height: 1.05;
+}
+
+/* A card that carries the palette: a wash of the accent and a lit edge. */
+.y2k-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(120% 90% at 100% 0%, var(--y2k-wash), transparent 60%),
+    radial-gradient(90% 70% at 0% 100%, var(--y2k-wash), transparent 65%);
+  box-shadow:
+    var(--elevation-card-rest),
+    0 18px 50px -28px var(--y2k-glow);
+}
+
+.y2k-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, transparent, var(--y2k-accent), var(--y2k-accent-2), transparent);
+  opacity: 0.9;
+}
+
+/* Filter pills: one row, scrolled sideways with the thumb. */
+.y2k-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px;
+  margin: -2px;
+}
+
+.y2k-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.y2k-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background-color: var(--bg-base);
+  color: var(--fg-subtle);
+  box-shadow: var(--borders-base);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.y2k-chip:hover {
+  background-color: var(--bg-base-hover);
+}
+
+.y2k-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--borders-interactive-with-focus);
+}
+
+.y2k-chip[aria-pressed="true"],
+.y2k-chip.is-on {
+  background-color: var(--y2k-fill);
+  color: #fff;
+  box-shadow: 0 6px 18px -10px var(--y2k-glow);
+}
+
+.y2k-chip-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* WhatsApp's own green, darkened until white text passes 4.5:1 on it. */
+.y2k-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background-color: var(--y2k-whatsapp);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 120ms ease, transform 80ms ease;
+}
+
+.y2k-whatsapp:hover {
+  background-color: var(--y2k-whatsapp-hover);
+}
+
+.y2k-whatsapp:active {
+  transform: scale(0.98);
+}
+
+.y2k-whatsapp:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--y2k-whatsapp);
+}
+
+.y2k-whatsapp[data-size="icon"] {
+  min-height: 40px;
+  width: 40px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+/* The chosen option among cards (Apariencia). */
+.y2k-selected {
+  box-shadow: 0 0 0 2px var(--y2k-accent);
+}
+
+.y2k-selected-glow {
+  box-shadow:
+    0 0 0 2px var(--y2k-accent),
+    0 14px 40px -18px var(--y2k-glow);
+}
+
+/* A tappable card in the phone lists. */
+.y2k-tap {
+  transition: background-color 120ms ease, transform 80ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.y2k-tap:active {
+  transform: scale(0.992);
+  background-color: var(--bg-base-hover);
+}
+
+/* Bottom action bar of our own long forms, above the tab bar on phones. */
+.y2k-actionbar {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -12px -12px;
+  padding: 12px;
+  background: var(--bg-subtle);
+  background: color-mix(in srgb, var(--bg-subtle) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border-base);
+}
+
+/*
+ * Estadísticas as a poster ("Modo foto"): the palette at full strength over
+ * the whole screen, for a photo or a screenshot.
+ */
+.y2k-photo {
+  padding: max(22px, env(safe-area-inset-top, 0px)) 24px max(22px, env(safe-area-inset-bottom, 0px));
+  color: var(--fg-base);
+  background-color: var(--y2k-canvas);
+  background-image:
+    radial-gradient(90% 55% at 88% -5%, var(--y2k-glow), transparent 62%),
+    radial-gradient(75% 50% at -5% 105%, var(--y2k-wash), transparent 68%),
+    radial-gradient(60% 42% at 105% 100%, color-mix(in srgb, var(--y2k-accent-2) 26%, transparent), transparent 66%);
+}
+
+.y2k-photo-controls {
+  padding: 28px 16px max(16px, env(safe-area-inset-bottom, 0px));
+  background-image: linear-gradient(to top, var(--y2k-canvas) 55%, transparent);
+}
+
+.y2k-desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .y2k-mobile-only {
+    display: none !important;
+  }
+
+  .y2k-desktop-only {
+    display: revert;
+  }
+}
+
+/* -------------------------------------------------------------- tab bar -- */
+
+.y2k-tabbar {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  html.y2k-tabbar-on .y2k-tabbar:not([hidden]) {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    height: calc(var(--y2k-tabbar-height) + env(safe-area-inset-bottom, 0px));
+    padding: 0 6px env(safe-area-inset-bottom, 0px);
+    background: var(--bg-base);
+    background: color-mix(in srgb, var(--bg-base) 84%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    border-top: 1px solid var(--border-base);
+  }
+
+  /* Medusa's modals and drawers keep their buttons at the bottom. */
+  html.y2k-tabbar-on body:has([role="dialog"], [role="alertdialog"]) .y2k-tabbar {
+    display: none !important;
+  }
+
+  /* Room for the bar under the last card of every page. */
+  html.y2k-tabbar-on main {
+    padding-bottom: calc(var(--y2k-tabbar-height) + 12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Our own sticky action bars rest on top of it, not behind it. */
+  html.y2k-tabbar-on .y2k-actionbar {
+    bottom: calc(var(--y2k-tabbar-height) + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Toasts sit above the bar instead of under it. */
+  html.y2k-tabbar-on [data-sonner-toaster] {
+    --offset-bottom: calc(var(--y2k-tabbar-height) + 16px + env(safe-area-inset-bottom, 0px)) !important;
+    --mobile-offset-bottom: calc(var(--y2k-tabbar-height) + 12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+.y2k-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  color: var(--fg-muted);
+  -webkit-tap-highlight-color: transparent;
+  transition: color 120ms ease;
+}
+
+.y2k-tab:focus-visible {
+  outline: none;
+  color: var(--fg-base);
+}
+
+.y2k-tab.is-active {
+  color: var(--y2k-accent);
+}
+
+.y2k-tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.y2k-tab-plus {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  margin-top: -18px;
+  border-radius: 18px;
+  background-color: var(--y2k-fill);
+  background-image: linear-gradient(140deg, var(--y2k-fill), color-mix(in srgb, var(--y2k-fill) 55%, var(--y2k-accent-2)));
+  color: #fff;
+  box-shadow:
+    0 0 0 4px var(--bg-base),
+    0 10px 26px -8px var(--y2k-glow);
+  transition: transform 100ms ease;
+}
+
+.y2k-tab-primary:active .y2k-tab-plus {
+  transform: scale(0.94);
+}
+
+.y2k-tab-primary.is-active .y2k-tab-plus {
+  box-shadow:
+    0 0 0 4px var(--bg-base),
+    0 0 0 6px var(--y2k-accent),
+    0 10px 26px -8px var(--y2k-glow);
+}
+
+/* ---------------------------------------------------------------- phone -- */
+
+@media (max-width: 767px) {
+  /*
+   * A widget that takes a list page over on phones puts this class on its
+   * root; Medusa's own table, which follows it in the page, is hidden.
+   * Anything else that must stay carries `data-y2k-keep`.
+   */
+  .y2k-m-takeover ~ *:not([data-y2k-keep]) {
+    display: none !important;
+  }
+
+  /*
+   * Medusa's order page lays each line out as two halves side by side:
+   * the product, and price · quantity · status · total. On a phone the
+   * second half is too narrow and the status badge runs over the total.
+   * Stacked, each half gets the full width. (Matches the row markup of
+   * order-summary-section in @medusajs/dashboard 2.13.1; if an upgrade
+   * changes it, this simply stops matching.)
+   */
+  .grid.grid-cols-2:has(> .grid.grid-cols-3) {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 12px;
+  }
+
+  /*
+   * iOS zooms the page in when a field with text under 16px takes focus, and
+   * leaves it zoomed. Medusa's fields are 13px.
+   */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .y2k-tap,
+  .y2k-chip,
+  .y2k-whatsapp,
+  .y2k-tab,
+  .y2k-tab-plus {
+    transition: none;
+  }
+}

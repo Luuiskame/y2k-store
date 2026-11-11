@@ -4,7 +4,9 @@ import { Container, Heading, IconButton, Select, Text, Tooltip } from "@medusajs
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 
+import { SalesHero } from "../../components/analytics/hero"
 import { LivePanel } from "../../components/analytics/live-panel"
+import { PhotoMode } from "../../components/analytics/photo-mode"
 import {
   Audience,
   Behavior,
@@ -22,25 +24,29 @@ import {
 } from "../../components/analytics/sections"
 import { PRESETS, Preset, useLive, useSales, useTraffic } from "../../lib/analytics"
 import { formatRange } from "../../lib/analytics-format"
+import { useAccountTheme } from "../../lib/theme-sync"
+import { useIsPhone } from "../../lib/use-media"
 
 /** The chosen period is remembered per browser; losing it costs nothing. */
 const PRESET_KEY = "y2k-analytics-preset"
 
 /**
- * Chart colors. The blue is the admin's own accent and the grays are one step
- * off its surfaces; all were run through the palette validator for lightness
- * and 3:1 contrast against white and against the dark theme's #212124.
+ * Chart colors. The series takes the palette's accent (every palette's
+ * accent is checked for 4.5:1 against its cards, well over the 3:1 a chart
+ * mark needs; see theme/__tests__), with Medusa's blue as the value when no
+ * palette is on. The grays for the comparison line are one step off the
+ * surfaces in each mode. Green stays green: it means "live", not "brand".
  */
 const CHART_COLORS = `
 .y2k-analytics {
-  --an-series: #3b82f6;
+  --an-series: var(--y2k-accent, #3b82f6);
   --an-context: #8e8e96;
-  --an-track: rgba(59, 130, 246, 0.14);
+  --an-track: var(--y2k-wash, rgba(59, 130, 246, 0.14));
   --an-live: #0ca30c;
 }
 .dark .y2k-analytics {
   --an-context: #71717a;
-  --an-track: rgba(59, 130, 246, 0.24);
+  --an-live: #22c55e;
 }
 `
 
@@ -58,7 +64,10 @@ const readPreset = (): Preset => {
 
 const AnalyticsPage = () => {
   const [preset, setPreset] = useState<Preset>(readPreset)
+  const [photo, setPhoto] = useState(false)
   const queryClient = useQueryClient()
+  const phone = useIsPhone()
+  useAccountTheme()
 
   const sales = useSales(preset)
   const traffic = useTraffic(preset)
@@ -77,53 +86,92 @@ const AnalyticsPage = () => {
   const range = sales.data?.range ?? traffic.data?.range
   const refreshing = sales.isFetching || traffic.isFetching
 
+  const refresh = (
+    <Tooltip content="Actualizar ahora">
+      <IconButton
+        size="small"
+        aria-label="Actualizar ahora"
+        onClick={() => queryClient.invalidateQueries({ queryKey: ["y2k-analytics"] })}
+      >
+        <ArrowPath className={refreshing ? "animate-spin" : undefined} />
+      </IconButton>
+    </Tooltip>
+  )
+
   return (
-    <div className="y2k-analytics flex flex-col gap-y-3">
+    <div className="y2k-analytics flex flex-col gap-y-3" data-y2k-ready>
       <style>{CHART_COLORS}</style>
 
-      <Container className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
-        <div className="flex flex-col gap-y-1">
-          <Heading>Estadísticas</Heading>
-          <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            {range ? formatRange(range.from, range.to) : "Ventas y visitas de la tienda"}{" "}
-            · hora de Honduras
-          </Text>
+      {phone ? (
+        // On a phone the period is a row of pills under the title: one tap,
+        // no menu to open.
+        <div className="flex flex-col gap-3 px-1 pt-1">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <Heading>Estadísticas</Heading>
+              <Text size="xsmall" leading="compact" className="text-ui-fg-subtle truncate">
+                {range ? formatRange(range.from, range.to) : "Ventas y visitas"} · hora
+                de Honduras
+              </Text>
+            </div>
+            {refresh}
+          </div>
+          <div className="y2k-chips" role="group" aria-label="Período">
+            {PRESETS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                className="y2k-chip"
+                aria-pressed={p.value === preset}
+                onClick={() => setPreset(p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-x-2">
-          <Select
-            size="small"
-            value={preset}
-            onValueChange={(value) => setPreset(value as Preset)}
-          >
-            <Select.Trigger className="w-[190px]" aria-label="Período">
-              <Select.Value />
-            </Select.Trigger>
-            <Select.Content>
-              {PRESETS.map((p) => (
-                <Select.Item key={p.value} value={p.value}>
-                  {p.label}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select>
-          <Tooltip content="Actualizar ahora">
-            <IconButton
+      ) : (
+        <Container className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
+          <div className="flex flex-col gap-y-1">
+            <Heading>Estadísticas</Heading>
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              {range ? formatRange(range.from, range.to) : "Ventas y visitas de la tienda"}{" "}
+              · hora de Honduras
+            </Text>
+          </div>
+          <div className="flex items-center gap-x-2">
+            <Select
               size="small"
-              aria-label="Actualizar ahora"
-              onClick={() =>
-                queryClient.invalidateQueries({ queryKey: ["y2k-analytics"] })
-              }
+              value={preset}
+              onValueChange={(value) => setPreset(value as Preset)}
             >
-              <ArrowPath className={refreshing ? "animate-spin" : undefined} />
-            </IconButton>
-          </Tooltip>
-        </div>
-      </Container>
+              <Select.Trigger className="w-[190px]" aria-label="Período">
+                <Select.Value />
+              </Select.Trigger>
+              <Select.Content>
+                {PRESETS.map((p) => (
+                  <Select.Item key={p.value} value={p.value}>
+                    {p.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select>
+            {refresh}
+          </div>
+        </Container>
+      )}
 
-      <LivePanel />
+      <SalesHero
+        sales={sales}
+        live={live}
+        periodLabel={option.label}
+        comparison={option.comparison}
+        onPhoto={() => setPhoto(true)}
+      />
       <PendingWork sales={sales} />
       <Summary sales={sales} traffic={traffic} comparison={option.comparison} />
       <Trend sales={sales} traffic={traffic} />
+      <LivePanel />
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <Behavior traffic={traffic} />
@@ -144,6 +192,17 @@ const AnalyticsPage = () => {
       </div>
 
       <Notes storefrontUrl={live.data?.storefront_url ?? null} />
+
+      {photo && (
+        <PhotoMode
+          sales={sales.data}
+          traffic={traffic.data}
+          live={live.data}
+          preset={preset}
+          onPreset={setPreset}
+          onClose={() => setPhoto(false)}
+        />
+      )}
     </div>
   )
 }

@@ -245,6 +245,9 @@ export const paymentMethodLabel = (providerId: string | null) => {
   if (providerId.startsWith("pp_transferencia-bac")) {
     return "Transferencia BAC"
   }
+  if (providerId.startsWith("pp_contra-entrega")) {
+    return "Contra entrega"
+  }
   if (providerId.startsWith("pp_system_default")) {
     return "Pago manual"
   }

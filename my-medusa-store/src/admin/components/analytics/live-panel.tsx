@@ -32,7 +32,7 @@ const LiveDot = () => (
 
 const MiniStat = ({ label, value }: { label: string; value: number }) => (
   <div className="flex flex-col gap-y-1">
-    <span className="text-ui-fg-base text-xl font-medium leading-7">
+    <span className="y2k-num text-ui-fg-base text-xl font-medium leading-7">
       {formatNumber(value)}
     </span>
     <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
@@ -146,7 +146,7 @@ export const LivePanel = () => {
         <>
           <div className="grid gap-6 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-center">
             <div className="flex flex-col gap-y-2">
-              <span className="text-ui-fg-base text-[56px] font-medium leading-none">
+              <span className="y2k-num text-ui-fg-base text-[56px] font-medium leading-none">
                 {formatNumber(data.active)}
               </span>
               <Text size="small" leading="compact" weight="plus">
