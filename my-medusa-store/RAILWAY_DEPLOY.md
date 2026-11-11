@@ -120,7 +120,12 @@ After deploy, verify by uploading a product image in admin → URL should be `ht
 | `R2_ACCESS_KEY_ID` | from R2 token |
 | `R2_SECRET_ACCESS_KEY` | from R2 token |
 | `R2_FILE_URL` | `https://media.y2kfithn.com` |
+| `WEB_PUSH_PUBLIC_KEY` | sales alerts on the admin's devices; from `npx web-push generate-vapid-keys` (run once) |
+| `WEB_PUSH_PRIVATE_KEY` | the private half of that same pair |
+| `WEB_PUSH_SUBJECT` | `mailto:` + the owner's email (Apple rejects pushes without a real contact) |
 | `NODE_OPTIONS` | `--max-old-space-size=4096` (medusa build is memory-hungry) |
+
+> **Web Push keys:** the same pair goes on the server (it gives the public key to the browser and sends test alerts) and on the worker (it sends the order and receipt alerts). Never change it casually: every device subscribed with the old pair stops receiving alerts until it is turned on again from the admin.
 
 > **⚠️ Neon DATABASE_URL — use the NON-POOLED connection string.** Neon offers two URLs: pooled (host contains `-pooler`) and non-pooled. The pooled one is a PgBouncer transaction-mode pooler, which breaks the prepared statements MikroORM uses → you'll see `Knex: Timeout acquiring a connection. The pool is probably full` during `predeploy`. Medusa manages its own pool, so use the direct (non-pooled) endpoint.
 
@@ -151,7 +156,7 @@ Copy everything from the server service, **with two changes**:
 | `MEDUSA_WORKER_MODE` | `server` | **`worker`** |
 | `DISABLE_MEDUSA_ADMIN` | `false` | **`true`** |
 
-All other vars (DB, Redis, secrets, CORS, R2, `MEDUSA_BACKEND_URL`) are identical. The worker needs CORS and `MEDUSA_BACKEND_URL` set so its config tree hydrates cleanly without warnings, even though it doesn't serve HTTP.
+All other vars (DB, Redis, secrets, CORS, R2, `WEB_PUSH_*`, `MEDUSA_BACKEND_URL`) are identical. The worker needs CORS and `MEDUSA_BACKEND_URL` set so its config tree hydrates cleanly without warnings, even though it doesn't serve HTTP.
 
 > Tip: Railway lets you copy variables between services. Set up the server first, then duplicate to the worker and edit just those two values.
 
