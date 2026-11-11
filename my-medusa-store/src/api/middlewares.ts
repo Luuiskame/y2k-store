@@ -10,6 +10,17 @@ import {
 import multer from "multer"
 
 import { AnalyticsRangeSchema } from "./admin/analytics/validators"
+import { AppearanceSchema } from "./admin/appearance/validators"
+import {
+  CompactOrdersQuerySchema,
+  CompactProductsQuerySchema,
+} from "./admin/compact/validators"
+import {
+  CompleteManualOrderSchema,
+  CreateManualOrderCartSchema,
+  SetManualOrderShippingMethodSchema,
+  StoreCartsQuerySchema,
+} from "./admin/manual-orders/validators"
 import { PushSubscriptionSchema } from "./admin/push/validators"
 import { AnalyticsEventSchema } from "./store/analytics/events/validators"
 import {
@@ -331,6 +342,46 @@ export default defineMiddlewares({
       matcher: "/admin/push/subscriptions",
       method: ["POST"],
       middlewares: [validateAndTransformBody(PushSubscriptionSchema) as any],
+    },
+    {
+      matcher: "/admin/manual-orders/store-carts",
+      method: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreCartsQuerySchema, {}) as any],
+    },
+    {
+      matcher: "/admin/appearance",
+      method: ["POST"],
+      bodyParser: { sizeLimit: "2kb" },
+      middlewares: [validateAndTransformBody(AppearanceSchema) as any],
+    },
+    {
+      matcher: "/admin/compact/orders",
+      method: ["GET"],
+      middlewares: [validateAndTransformQuery(CompactOrdersQuerySchema, {}) as any],
+    },
+    {
+      matcher: "/admin/compact/products",
+      method: ["GET"],
+      middlewares: [
+        validateAndTransformQuery(CompactProductsQuerySchema, {}) as any,
+      ],
+    },
+    {
+      matcher: "/admin/manual-orders/carts",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(CreateManualOrderCartSchema) as any],
+    },
+    {
+      matcher: "/admin/manual-orders/carts/:id/shipping-method",
+      method: ["POST"],
+      middlewares: [
+        validateAndTransformBody(SetManualOrderShippingMethodSchema) as any,
+      ],
+    },
+    {
+      matcher: "/admin/manual-orders/carts/:id/complete",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(CompleteManualOrderSchema) as any],
     },
   ],
 })

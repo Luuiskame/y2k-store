@@ -363,6 +363,14 @@ export const listUserDevices = async (
 }
 
 /**
+ * The lock every writer of an admin user's metadata takes. Medusa merges
+ * metadata key by key, but it does so by reading the whole column and
+ * writing it back, so two writers at once can lose each other's key even
+ * when they touch different ones (`lib/admin-appearance.ts` writes here too).
+ */
+export const userMetadataLock = (userId: string): string => `admin-push:${userId}`
+
+/**
  * Read-modify-write of one user's devices. The lock keeps two devices of the
  * same person, or the worker dropping an expired one, from undoing each
  * other's change; only `push_subscriptions` is written, the rest of the
@@ -376,7 +384,7 @@ export const updateStoredSubscriptions = async (
   const locking = container.resolve(Modules.LOCKING)
 
   return await locking.execute(
-    `admin-push:${userId}`,
+    userMetadataLock(userId),
     async () => {
       const current = await listUserDevices(container, userId)
       const next = change(current)

@@ -28,10 +28,11 @@ type TrendProps = {
   label: string
 }
 
-const PLOT_HEIGHT = 220
 const AXIS_BAND = 28
-const PAD = { top: 12, right: 12, left: 64 }
 const TOOLTIP_WIDTH = 200
+
+/** Under this width (a phone) the plot is shorter and its axis narrower. */
+const NARROW = 480
 
 /** Axis from zero to a round number, with about four steps. */
 const niceScale = (max: number, integer: boolean) => {
@@ -173,6 +174,10 @@ export const TrendChart = ({
     return () => observer.disconnect()
   }, [])
 
+  const narrow = width > 0 && width < NARROW
+  const PLOT_HEIGHT = narrow ? 180 : 220
+  const PAD = { top: 12, right: narrow ? 6 : 12, left: narrow ? 46 : 64 }
+
   const count = Math.max(current.values.length, previous.values.length)
   const plotWidth = Math.max(0, width - PAD.left - PAD.right)
   const baseline = PAD.top + PLOT_HEIGHT
@@ -249,7 +254,7 @@ export const TrendChart = ({
       <TrendLegend />
       <div
         ref={wrapper}
-        className="relative w-full rounded-md outline-none focus-visible:shadow-borders-interactive-with-focus"
+        className="relative w-full touch-pan-y rounded-md outline-none focus-visible:shadow-borders-interactive-with-focus"
         style={{ height: PLOT_HEIGHT + PAD.top + AXIS_BAND }}
         tabIndex={0}
         role="group"

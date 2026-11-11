@@ -116,6 +116,13 @@ module.exports = defineConfig({
             resolve: "./src/modules/transferencia-bac",
             id: "transferencia-bac",
           },
+          // Cash on delivery, for orders registered from the admin ("Nuevo
+          // pedido"). Registered here, but NOT enabled on the region: there
+          // it would show up as a payment method in the storefront checkout.
+          {
+            resolve: "./src/modules/contra-entrega",
+            id: "contra-entrega",
+          },
         ],
       },
     },

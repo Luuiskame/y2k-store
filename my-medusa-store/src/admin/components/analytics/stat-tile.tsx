@@ -44,7 +44,7 @@ export const StatTile = ({
   hint?: ReactNode
   help?: string
 }) => (
-  <div className="bg-ui-bg-base flex min-w-0 flex-col gap-y-2 px-6 py-4">
+  <div className="bg-ui-bg-base flex min-w-0 flex-col gap-y-2 px-4 py-4 md:px-6">
     <div className="flex items-center gap-x-1">
       <Text size="small" leading="compact" className="text-ui-fg-subtle">
         {label}
@@ -57,7 +57,7 @@ export const StatTile = ({
         </Tooltip>
       )}
     </div>
-    <span className="text-ui-fg-base truncate text-[26px] font-medium leading-8">
+    <span className="y2k-num text-ui-fg-base truncate text-[22px] font-medium leading-8 md:text-[26px]">
       {value ?? "—"}
     </span>
     <div className="flex min-h-5 flex-wrap items-center gap-x-2 gap-y-1">
@@ -71,9 +71,12 @@ export const StatTile = ({
   </div>
 )
 
-/** Tiles on a hairline grid: the gap shows the border color between them. */
+/**
+ * Tiles on a hairline grid: the gap shows the border color between them. Two
+ * across even on a phone, so the page is not one long column of numbers.
+ */
 export const StatGrid = ({ children }: { children: ReactNode }) => (
-  <div className="bg-ui-border-base grid grid-cols-1 gap-px overflow-hidden rounded-lg shadow-elevation-card-rest sm:grid-cols-2 xl:grid-cols-4">
+  <div className="bg-ui-border-base grid grid-cols-2 gap-px overflow-hidden rounded-lg shadow-elevation-card-rest xl:grid-cols-4">
     {children}
   </div>
 )
