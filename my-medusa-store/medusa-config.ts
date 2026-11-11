@@ -69,7 +69,16 @@ module.exports = defineConfig({
       // cookies with a secret anyone can look up, and say nothing.
       jwtSecret: process.env.JWT_SECRET,
       cookieSecret: process.env.COOKIE_SECRET,
-    }
+    },
+    // The admin lives on the owner's phone as a Home Screen app. Medusa's
+    // default session is a fixed 10 hours, so a sales alert tapped the next
+    // morning opened the login screen. Rolling 30 days instead: every use
+    // pushes the expiry forward, and a month without opening the admin signs
+    // that device out.
+    sessionOptions: {
+      rolling: true,
+      ttl: 30 * 24 * 60 * 60 * 1000,
+    },
   },
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
