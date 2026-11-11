@@ -13,6 +13,11 @@ import {
 /**
  * Sends a sample alert to the signed-in user's devices only, so turning
  * alerts on can be checked end to end without waiting for a sale.
+ *
+ * The folder is `sample/`, never `test/`: `medusa build` leaves out of the
+ * server every file whose path contains "test", so the route worked under
+ * `medusa develop` and answered 404 in production. `build-paths.unit.spec.ts`
+ * guards against that.
  */
 export async function POST(
   req: AuthenticatedMedusaRequest,
