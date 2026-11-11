@@ -128,13 +128,32 @@ const saveSubscription = (subscription: PushSubscription) =>
   )
 
 const sendTest = () =>
-  sdk.client.fetch<AlertDelivery>("/admin/push/test", { method: "POST" })
+  sdk.client.fetch<AlertDelivery>("/admin/push/sample", { method: "POST" })
 
 const deleteDevice = (id: string) =>
   sdk.client.fetch(`/admin/push/subscriptions/${id}`, { method: "DELETE" })
 
-const errorMessage = (error: unknown, fallback: string): string =>
-  error instanceof Error && error.message ? error.message : fallback
+/**
+ * The server's own message when it sent one, the fallback otherwise, plus
+ * the HTTP status when there is one. The SDK's FetchError falls back to the
+ * status text when the body carries no message (an HTML 404, a proxy 502),
+ * and over HTTP/2, which is how Railway serves the admin, that text is
+ * empty. Without the code, a 404 read as an unexplained failure.
+ */
+const errorMessage = (error: unknown, fallback: string): string => {
+  const { message, status, statusText } = (error ?? {}) as {
+    message?: unknown
+    status?: unknown
+    statusText?: unknown
+  }
+  const detail =
+    typeof message === "string" && message && message !== statusText
+      ? message
+      : ""
+  const text = detail || fallback
+  const code = typeof status === "number" ? ` (${status})` : ""
+  return text.endsWith(".") ? `${text.slice(0, -1)}${code}.` : `${text}${code}`
+}
 
 /**
  * State and actions for alerts on this device. When the browser already holds
@@ -261,15 +280,31 @@ export const useDevicePush = (status: PushStatus | undefined) => {
       setEndpoint(current.endpoint)
       setState("on")
 
-      return sendTest().catch(() => null)
+      // Alerts are on at this point; the sample only proves delivery, so a
+      // failure is reported but does not undo anything. It used to be
+      // swallowed, which is how a 404 on the sample route went unnoticed.
+      try {
+        return { delivery: await sendTest(), sampleError: null }
+      } catch (error) {
+        return { delivery: null, sampleError: error }
+      }
     },
-    onSuccess: (delivery) => {
+    onSuccess: ({ delivery, sampleError }) => {
       refresh()
-      toast.success(
-        delivery?.sent
-          ? "Alertas activadas. Te enviamos una de prueba."
-          : "Alertas activadas en este dispositivo."
-      )
+      if (sampleError) {
+        toast.warning("Alertas activadas, pero la prueba no se pudo enviar.", {
+          description: errorMessage(
+            sampleError,
+            "Vuelve a intentarlo con «Enviar prueba» en Ajustes → Perfil."
+          ),
+        })
+      } else if (!delivery?.sent) {
+        toast.warning(
+          "Alertas activadas, pero la prueba no llegó a ningún dispositivo."
+        )
+      } else {
+        toast.success("Alertas activadas. Te enviamos una de prueba.")
+      }
     },
     onError: (error) => {
       toast.error(errorMessage(error, "No se pudieron activar las alertas."))
