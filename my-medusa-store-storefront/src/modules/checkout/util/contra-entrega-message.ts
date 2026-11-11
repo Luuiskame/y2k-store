@@ -1,6 +1,16 @@
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 
+// The delivery company charges 5% on cash-on-delivery orders. Shared by the
+// checkout warning and the WhatsApp message so both always quote the same figure.
+export const CONTRA_ENTREGA_SURCHARGE_RATE = 0.05
+
+// Rounded to 2 decimals so what the warning shows and what the message sends
+// can never differ by a float artefact. Cart amounts are in major units.
+export function contraEntregaSurcharge(total: number | null | undefined) {
+  return Math.round((total ?? 0) * CONTRA_ENTREGA_SURCHARGE_RATE * 100) / 100
+}
+
 // Builds the pre-filled WhatsApp message for the "coordinar pago contra
 // entrega" flow. Everything comes from the cart that's already in memory at the
 // payment step — no backend call, no order is created. The customer just taps
@@ -17,10 +27,20 @@ export function buildContraEntregaMessage(cart: HttpTypes.StoreCart): string {
     return `${item.quantity}× ${item.product_title}${talla}`
   })
 
-  const total = convertToLocale({
-    amount: cart.total ?? 0,
-    currency_code,
-  })
+  const money = (amount: number) => convertToLocale({ amount, currency_code })
+
+  // The cart total doesn't include the delivery company's cash-on-delivery
+  // fee, so it's added here as its own line and folded into the final total.
+  const baseTotal = cart.total ?? 0
+  const surcharge = contraEntregaSurcharge(baseTotal)
+  const totalLines =
+    surcharge > 0
+      ? [
+          `Total sin recargo: ${money(baseTotal)}`,
+          `Recargo contra entrega (${CONTRA_ENTREGA_SURCHARGE_RATE * 100}%): ${money(surcharge)}`,
+          `Total a pagar: ${money(baseTotal + surcharge)}`,
+        ]
+      : [`Total: ${money(baseTotal)}`]
 
   const addr = cart.shipping_address
   const deliveryLines: string[] = []
@@ -45,7 +65,7 @@ export function buildContraEntregaMessage(cart: HttpTypes.StoreCart): string {
   const sections: string[] = [
     "Hola, quiero coordinar pago contra entrega",
     `Mi pedido:\n${itemLines.join("\n")}`,
-    `Total: ${total}`,
+    totalLines.join("\n"),
   ]
 
   if (deliveryLines.length) {

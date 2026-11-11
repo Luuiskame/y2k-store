@@ -6,7 +6,10 @@ import { isStripeLike, paymentInfoMap } from "@lib/constants"
 import { initiatePaymentSession } from "@lib/data/cart"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
-import { buildContraEntregaMessage } from "@modules/checkout/util/contra-entrega-message"
+import {
+  buildContraEntregaMessage,
+  contraEntregaSurcharge,
+} from "@modules/checkout/util/contra-entrega-message"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import PaymentContainer, {
   StripeCardContainer,
@@ -206,7 +209,7 @@ const Payment = ({
             <Text className="text-sm text-brand-silver-ash mb-3">
               {`¿Preferís pagar al recibir? Coordiná tu pedido por WhatsApp y pagá contra entrega ${
                 cart.total
-                  ? `${(cart.total * 0.05).toFixed(2)} LPS`
+                  ? `${contraEntregaSurcharge(cart.total).toFixed(2)} LPS`
                   : "sin monto"
               } de recargo.`}
             </Text>
