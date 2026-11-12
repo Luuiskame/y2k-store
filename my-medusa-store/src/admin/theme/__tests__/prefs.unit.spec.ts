@@ -4,11 +4,18 @@ import {
   DEFAULT_MOTTO,
   DEFAULT_PREFS,
   MOTTO_MAX_LENGTH,
+  PHRASES_MAX,
+  PHRASE_MAX_LENGTH,
+  PHRASE_SIZES,
   cleanMotto,
+  cleanOpener,
+  cleanPhrases,
   hasPrefs,
+  isPhraseSize,
   parsePrefs,
   resolveTheme,
   sameLook,
+  samePhrases,
   samePrefs,
 } from "../prefs"
 
@@ -22,6 +29,12 @@ describe("parsePrefs", () => {
       lang: "en",
       unified: true,
       motto: "Primero lo hago, después tengo miedo.",
+      mottoOn: false,
+      mottoSize: "md",
+      opener: "Hoy también se vende.",
+      openerOn: false,
+      openerSize: "xl",
+      phrases: ["Vendo ropa, no excusas", "Hecho en Tegus"],
       hype: false,
     }
     expect(parsePrefs(saved)).toEqual(saved)
@@ -58,9 +71,58 @@ describe("parsePrefs", () => {
       // Nobody chose a language yet: Medusa's own is not to be touched.
       unified: false,
       motto: DEFAULT_MOTTO,
+      mottoOn: true,
+      mottoSize: "xl",
+      opener: "",
+      openerOn: true,
+      openerSize: "lg",
+      phrases: null,
       hype: true,
     })
     expect(parsePrefs({ ...before, lang: "es", unified: "sí" }).unified).toBe(false)
+  })
+
+  it("gives a look saved before the phrases had switches what it showed", () => {
+    // What the second release stored: the motto closed Estadísticas while
+    // larp mode was on, at its biggest, and there was nothing above.
+    const before = {
+      palette: "cine",
+      font: "auto",
+      aura: true,
+      tabbar: true,
+      lang: "es",
+      unified: true,
+      motto: "Lock in.",
+      hype: true,
+    }
+    expect(parsePrefs(before)).toMatchObject({
+      mottoOn: true,
+      mottoSize: "xl",
+      opener: "",
+      phrases: null,
+    })
+    // With larp mode off the motto was not there, and it still is not.
+    expect(parsePrefs({ ...before, hype: false }).mottoOn).toBe(false)
+    // Once it has a switch of its own, that is what counts.
+    expect(parsePrefs({ ...before, hype: false, mottoOn: true }).mottoOn).toBe(true)
+    expect(parsePrefs({ ...before, hype: true, mottoOn: false }).mottoOn).toBe(false)
+  })
+
+  it("takes a size it knows and nothing else", () => {
+    expect(PHRASE_SIZES).toEqual(["sm", "md", "lg", "xl"])
+    for (const size of PHRASE_SIZES) {
+      expect(isPhraseSize(size)).toBe(true)
+      expect(parsePrefs({ mottoSize: size, openerSize: size })).toMatchObject({
+        mottoSize: size,
+        openerSize: size,
+      })
+    }
+    expect(isPhraseSize("xxl")).toBe(false)
+    expect(isPhraseSize(undefined)).toBe(false)
+    expect(parsePrefs({ mottoSize: "xxl", openerSize: 3 })).toMatchObject({
+      mottoSize: DEFAULT_PREFS.mottoSize,
+      openerSize: DEFAULT_PREFS.openerSize,
+    })
   })
 
   it("knows the two new palettes", () => {
@@ -107,6 +169,75 @@ describe("cleanMotto", () => {
   })
 })
 
+describe("cleanOpener", () => {
+  it("is cleaned like the motto, and may be nothing at all", () => {
+    expect(cleanOpener("  Hoy también   se vende.  ")).toBe("Hoy también se vende.")
+    expect(cleanOpener(["uno", "dos"].join(String.fromCharCode(10)))).toBe("uno dos")
+    expect(Array.from(cleanOpener("ñ".repeat(MOTTO_MAX_LENGTH + 9)))).toHaveLength(MOTTO_MAX_LENGTH)
+    // No original to go back to: an empty one is no opening line.
+    expect(cleanOpener("")).toBe("")
+    expect(cleanOpener("   ")).toBe("")
+    expect(cleanOpener(undefined)).toBe("")
+    expect(cleanOpener(42)).toBe("")
+    expect(DEFAULT_PREFS.opener).toBe("")
+  })
+})
+
+describe("cleanPhrases", () => {
+  it("keeps the owner's lines as written and in their order", () => {
+    const mine = ["Vendo ropa, no excusas", "Hecho en Tegus 🇭🇳", "Y2K o nada"]
+    expect(cleanPhrases(mine)).toEqual(mine)
+  })
+
+  it("cleans each line, drops the blank ones and what is not text", () => {
+    const twoLines = ["dos", "tres"].join(String.fromCharCode(10))
+    expect(cleanPhrases(["  uno  ", "", "   ", twoLines, 7, null, "cuatro"])).toEqual([
+      "uno",
+      "dos tres",
+      "cuatro",
+    ])
+    expect(Array.from(cleanPhrases(["x".repeat(PHRASE_MAX_LENGTH + 30)])![0])).toHaveLength(
+      PHRASE_MAX_LENGTH
+    )
+    // An emoji is never cut in half.
+    expect(cleanPhrases(["💸".repeat(PHRASE_MAX_LENGTH + 3)])![0]).toBe(
+      "💸".repeat(PHRASE_MAX_LENGTH)
+    )
+  })
+
+  it("holds no more than fit on the ticker", () => {
+    const many = Array.from({ length: PHRASES_MAX + 5 }, (_, index) => "frase " + (index + 1))
+    expect(cleanPhrases(many)).toEqual(many.slice(0, PHRASES_MAX))
+  })
+
+  it("tells no phrases from the originals", () => {
+    // An empty list is a choice: a ticker with the motto and the figures only.
+    expect(cleanPhrases([])).toEqual([])
+    expect(cleanPhrases(["", "  "])).toEqual([])
+    // Anything that is not a list means the originals.
+    expect(cleanPhrases(null)).toBeNull()
+    expect(cleanPhrases(undefined)).toBeNull()
+    expect(cleanPhrases("Locked in")).toBeNull()
+    expect(cleanPhrases({ 0: "Locked in" })).toBeNull()
+    expect(DEFAULT_PREFS.phrases).toBeNull()
+    expect(parsePrefs({ phrases: [] }).phrases).toEqual([])
+    expect(parsePrefs({ phrases: null }).phrases).toBeNull()
+    expect(parsePrefs({}).phrases).toBeNull()
+  })
+})
+
+describe("samePhrases", () => {
+  it("compares line by line, and the originals only with the originals", () => {
+    expect(samePhrases(null, null)).toBe(true)
+    expect(samePhrases([], [])).toBe(true)
+    expect(samePhrases(["a", "b"], ["a", "b"])).toBe(true)
+    expect(samePhrases(["a", "b"], ["b", "a"])).toBe(false)
+    expect(samePhrases(["a"], ["a", "b"])).toBe(false)
+    expect(samePhrases(null, [])).toBe(false)
+    expect(samePhrases([], null)).toBe(false)
+  })
+})
+
 describe("hasPrefs", () => {
   it("tells a saved look from nothing", () => {
     expect(hasPrefs({ palette: "roatan" })).toBe(true)
@@ -131,12 +262,37 @@ describe("samePrefs", () => {
     expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, unified: true })).toBe(false)
     expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, motto: "Lock in." })).toBe(false)
     expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, hype: false })).toBe(false)
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, mottoOn: false })).toBe(false)
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, mottoSize: "md" })).toBe(false)
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, opener: "Hoy se vende." })).toBe(false)
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, openerOn: false })).toBe(false)
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, openerSize: "sm" })).toBe(false)
+    // The originals and an empty list are not the same ticker.
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, phrases: [] })).toBe(false)
+    expect(samePrefs(DEFAULT_PREFS, { ...DEFAULT_PREFS, phrases: ["Y2K o nada"] })).toBe(false)
+    expect(
+      samePrefs(
+        { ...DEFAULT_PREFS, phrases: ["Y2K o nada"] },
+        { ...DEFAULT_PREFS, phrases: ["Y2K o nada"] }
+      )
+    ).toBe(true)
   })
 })
 
 describe("sameLook", () => {
-  it("is what «Restablecer» puts back: not the language, the motto or larp mode", () => {
-    const mine = { ...DEFAULT_PREFS, lang: "en" as const, unified: true, motto: "Lock in.", hype: false }
+  it("is what «Restablecer» puts back: not the language, the phrases or larp mode", () => {
+    const mine = {
+      ...DEFAULT_PREFS,
+      lang: "en" as const,
+      unified: true,
+      motto: "Lock in.",
+      mottoOn: false,
+      mottoSize: "sm" as const,
+      opener: "Hoy se vende.",
+      openerSize: "xl" as const,
+      phrases: ["Y2K o nada"],
+      hype: false,
+    }
     expect(sameLook(mine, DEFAULT_PREFS)).toBe(true)
     expect(sameLook({ ...mine, palette: "cine" }, DEFAULT_PREFS)).toBe(false)
     expect(sameLook({ ...mine, font: "terminal" }, DEFAULT_PREFS)).toBe(false)
@@ -189,6 +345,41 @@ describe("what the server accepts", () => {
     expect(
       AppearanceSchema.safeParse({ palette: "roatan", font: "auto", aura: true, tabbar: true }).success
     ).toBe(true)
+    // What the second release sends: no phrases of its own, no sizes.
+    expect(
+      AppearanceSchema.safeParse({
+        palette: "cine",
+        font: "auto",
+        aura: true,
+        tabbar: true,
+        lang: "es",
+        unified: true,
+        motto: "Lock in.",
+        hype: true,
+      }).success
+    ).toBe(true)
+  })
+
+  it("takes the owner's phrases, at every size, and the way back to the originals", () => {
+    for (const size of PHRASE_SIZES) {
+      expect(
+        AppearanceSchema.safeParse({ ...DEFAULT_PREFS, mottoSize: size, openerSize: size }).success
+      ).toBe(true)
+    }
+    // The most the panel can produce: every line full, in any script.
+    const full = Array.from({ length: PHRASES_MAX }, () => "💸".repeat(PHRASE_MAX_LENGTH))
+    expect(
+      AppearanceSchema.safeParse({
+        ...DEFAULT_PREFS,
+        opener: "💸".repeat(MOTTO_MAX_LENGTH),
+        openerOn: false,
+        mottoOn: false,
+        phrases: full,
+      }).success
+    ).toBe(true)
+    expect(AppearanceSchema.safeParse({ ...DEFAULT_PREFS, phrases: [] }).success).toBe(true)
+    // Null is how "back to the originals" reaches an account that had some.
+    expect(AppearanceSchema.safeParse({ ...DEFAULT_PREFS, phrases: null }).success).toBe(true)
   })
 
   it("refuses anything that is not a look", () => {
@@ -202,6 +393,15 @@ describe("what the server accepts", () => {
     expect(bad({ ...DEFAULT_PREFS, unified: "sí" })).toBe(false)
     expect(bad({ ...DEFAULT_PREFS, motto: "x".repeat(201) })).toBe(false)
     expect(bad({ ...DEFAULT_PREFS, motto: 42 })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, opener: "x".repeat(201) })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, openerOn: "sí" })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, mottoOn: 1 })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, mottoSize: "Muy grande" })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, openerSize: 3 })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, phrases: "Locked in" })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, phrases: [42] })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, phrases: ["x".repeat(201)] })).toBe(false)
+    expect(bad({ ...DEFAULT_PREFS, phrases: Array.from({ length: 25 }, () => "x") })).toBe(false)
     // Nothing rides along into the user's metadata.
     expect(bad({ palette: "roatan", font: "auto", aura: true, tabbar: true, push_subscriptions: [] })).toBe(false)
   })

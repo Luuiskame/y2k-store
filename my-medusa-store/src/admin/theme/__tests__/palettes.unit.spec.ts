@@ -3,9 +3,11 @@ import { MEDUSA_EFFECTS } from "../medusa-tokens"
 import {
   DEFAULT_PALETTE,
   FONT_SETS,
+  LARGE_TEXT_CONTRAST,
   Mode,
   PALETTES,
   fontSetOf,
+  inkOf,
   paletteCss,
   paletteOf,
   paletteTokens,
@@ -63,6 +65,27 @@ describe("palettes", () => {
     expect(fontSetOf("no-existe").id).toBe(FONT_SETS[0].id)
   })
 
+  it("move the second accent only where it could not be read as text", () => {
+    const moved = themed.flatMap((palette) =>
+      MODES.filter((mode) => {
+        const s = swatchesOf(palette.modes![mode], mode)
+        return toHex(inkOf(s)) !== toHex(s.accent2)
+      }).map((mode) => `${palette.id}:${mode}`)
+    )
+    // A pale lilac, a coral and a gold, each on a light page. Every other
+    // palette keeps the gradient it was drawn with.
+    expect(moved).toEqual(["catedral:light", "roatan:light", "lempira:light"])
+
+    // And no further than it takes: still closer to itself than to the accent.
+    for (const id of ["catedral", "roatan", "lempira"]) {
+      const s = swatchesOf(paletteOf(id).modes!.light, "light")
+      const ink = inkOf(s)
+      const distance = (a: typeof ink, b: typeof ink) =>
+        Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b)
+      expect(distance(ink, s.accent2)).toBeLessThan(distance(ink, s.accent))
+    }
+  })
+
   it("leave Medusa untouched for the classic palette", () => {
     const classic = paletteOf("clasico")
     expect(paletteTokens(classic, "dark")).toEqual({})
@@ -92,6 +115,19 @@ describe("palettes", () => {
           expect(contrast(s.accent, s.card)).toBeGreaterThanOrEqual(4.5)
           expect(contrast(s.accent, s.canvas)).toBeGreaterThanOrEqual(4.5)
           expect(contrast(s.accent, s.raised)).toBeGreaterThanOrEqual(4.5)
+        })
+
+        it("reads: the second accent where it is text, at the end of a big figure", () => {
+          const ink = inkOf(s)
+          expect(contrast(ink, s.card)).toBeGreaterThanOrEqual(LARGE_TEXT_CONTRAST)
+          expect(contrast(ink, s.canvas)).toBeGreaterThanOrEqual(LARGE_TEXT_CONTRAST)
+          // It is the second accent itself wherever that already read.
+          const read =
+            Math.min(contrast(s.accent2, s.card), contrast(s.accent2, s.canvas)) >=
+            LARGE_TEXT_CONTRAST
+          expect(toHex(ink) === toHex(s.accent2)).toBe(read)
+          expect(paletteTokens(palette, mode)["--y2k-ink-2"]).toBe(toHex(ink))
+          expect(previewOf(palette, mode).ink2).toBe(toHex(ink))
         })
 
         it("reads: white on the accent fill, at rest and hovered", () => {

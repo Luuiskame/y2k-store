@@ -26,6 +26,12 @@ export type Appearance = {
   unified?: boolean
   motto?: string
   hype?: boolean
+  mottoOn?: boolean
+  mottoSize?: string
+  opener?: string
+  openerOn?: boolean
+  openerSize?: string
+  phrases?: string[] | null
 }
 
 export const readAppearance = async (

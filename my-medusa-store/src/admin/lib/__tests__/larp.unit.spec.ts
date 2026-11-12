@@ -81,43 +81,59 @@ describe("winterArcDay", () => {
 })
 
 describe("tickerItems", () => {
-  const mantras = ["Locked in", "En tu prime", "W in the chat", "Sin excusas", "Que suene la caja"]
+  const motto = "Todo lo bueno está al otro lado del miedo."
+  const phrases = ["Vendo ropa, no excusas", "Hecho en Tegus", "Cada pedido cuenta", "Y2K o nada"]
 
-  it("leads with the motto, then a figure and a mantra by turns", () => {
+  it("leads with the motto, then a figure and a phrase by turns", () => {
+    expect(
+      tickerItems({ motto, facts: ["Hoy: L 4,250.00", "3 pedidos · Hoy"], phrases: phrases.slice(0, 2) })
+    ).toEqual([
+      motto,
+      "Hoy: L 4,250.00",
+      "Vendo ropa, no excusas",
+      "3 pedidos · Hoy",
+      "Hecho en Tegus",
+    ])
+  })
+
+  it("runs every phrase the owner wrote, in the order they wrote them", () => {
+    const facts = ["Hoy: L 4,250.00", "3 pedidos · Hoy"]
+    const items = tickerItems({ motto, facts, phrases })
+    expect(items).toHaveLength(1 + facts.length + phrases.length)
+    expect(items.filter((item) => phrases.includes(item))).toEqual(phrases)
+    expect(items.filter((item) => facts.includes(item))).toEqual(facts)
+  })
+
+  it("spreads the shorter list through the longer one instead of bunching it", () => {
+    // Two figures among four phrases: one in each half, never side by side.
+    expect(tickerItems({ motto, facts: ["F1", "F2"], phrases: ["a", "b", "c", "d"] })).toEqual([
+      motto,
+      "a",
+      "F1",
+      "b",
+      "c",
+      "F2",
+      "d",
+    ])
+    // And the other way around: six figures, two phrases.
     const items = tickerItems({
-      motto: "Todo lo bueno está al otro lado del miedo.",
-      facts: ["Hoy: L 4,250.00", "3 pedidos · Hoy"],
-      mantras,
-      seed: "2026-11-11",
+      motto,
+      facts: ["F1", "F2", "F3", "F4", "F5", "F6"],
+      phrases: ["a", "b"],
     })
-    expect(items[0]).toBe("Todo lo bueno está al otro lado del miedo.")
-    expect(items[1]).toBe("Hoy: L 4,250.00")
-    expect(mantras).toContain(items[2])
-    expect(items[3]).toBe("3 pedidos · Hoy")
-    expect(mantras).toContain(items[4])
-    // Every figure given is on it.
-    expect(items).toEqual(expect.arrayContaining(["Hoy: L 4,250.00", "3 pedidos · Hoy"]))
-    // No mantra twice in the same lap.
-    const said = items.filter((item) => mantras.includes(item))
-    expect(new Set(said).size).toBe(said.length)
+    expect(items).toEqual([motto, "F1", "F2", "a", "F3", "F4", "F5", "b", "F6"])
   })
 
-  it("still runs with no figures yet, and starts elsewhere each day", () => {
-    const quiet = tickerItems({ motto: "Lock in.", facts: [], mantras, seed: "2026-11-11" })
-    expect(quiet[0]).toBe("Lock in.")
-    expect(quiet.length).toBeGreaterThanOrEqual(4)
-    expect(quiet.slice(1).every((item) => mantras.includes(item))).toBe(true)
-
-    const starts = new Set(
-      Array.from(
-        { length: 20 },
-        (_, day) => tickerItems({ motto: "x", facts: [], mantras, seed: `2026-11-${day + 1}` })[1]
-      )
-    )
-    expect(starts.size).toBeGreaterThan(1)
+  it("still runs with no figures yet, and with no phrases at all", () => {
+    expect(tickerItems({ motto: "Lock in.", facts: [], phrases })).toEqual(["Lock in.", ...phrases])
+    expect(tickerItems({ motto: "Lock in.", facts: ["Hoy: L 0.00"], phrases: [] })).toEqual([
+      "Lock in.",
+      "Hoy: L 0.00",
+    ])
+    expect(tickerItems({ motto: "Lock in.", facts: [], phrases: [] })).toEqual(["Lock in."])
   })
 
-  it("is only the motto when there is nothing else to say", () => {
-    expect(tickerItems({ motto: "Lock in.", facts: [], mantras: [], seed: "x" })).toEqual(["Lock in."])
+  it("leaves out anything blank", () => {
+    expect(tickerItems({ motto: "", facts: ["", "F"], phrases: ["", "a"] })).toEqual(["F", "a"])
   })
 })

@@ -44,7 +44,11 @@ export const larpEs = {
     ],
   } as Record<Mood, string[]>,
 
-  /** Short lines for the ticker, between the figures. Shown in capitals. */
+  /**
+   * Short lines for the ticker, between the figures. Shown in capitals. These
+   * are the originals: the owner replaces them with their own in Ajustes →
+   * Apariencia, and from then on theirs are the ones that run.
+   */
   mantras: [
     "Locked in",
     "Disciplina > motivación",
@@ -79,6 +83,7 @@ export const larpEs = {
 
   tickerAria: "Frases y cifras del día",
   mottoAria: "Lema",
+  openerAria: "Frase de apertura",
 
   /** Appended to a success message while larp mode is on. */
   cheers: { created: "W.", paid: "Aura +1." },
@@ -145,6 +150,7 @@ export const larpEn: Words<typeof larpEs> = {
 
   tickerAria: "Phrases and figures of the day",
   mottoAria: "Motto",
+  openerAria: "Opening phrase",
 
   cheers: { created: "W.", paid: "Aura +1." },
 }

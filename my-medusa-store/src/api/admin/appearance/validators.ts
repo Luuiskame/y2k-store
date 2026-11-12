@@ -26,6 +26,15 @@ export const AppearanceSchema = z
     /** Free text set in big type; the panel cleans what it reads back. */
     motto: z.string().max(200).optional(),
     hype: z.boolean().optional(),
+    // Added with the owner's own phrases: whether Estadísticas closes with
+    // the motto and opens with a line of its own, and how big each is set.
+    mottoOn: z.boolean().optional(),
+    mottoSize: id.optional(),
+    opener: z.string().max(200).optional(),
+    openerOn: z.boolean().optional(),
+    openerSize: id.optional(),
+    /** The owner's lines for the ticker; null means the panel's originals. */
+    phrases: z.array(z.string().max(200)).max(24).nullable().optional(),
   })
   .strict()
 

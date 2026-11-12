@@ -1,3 +1,4 @@
+import { CashSolid } from "@medusajs/icons"
 import { clx } from "@medusajs/ui"
 import type { CSSProperties } from "react"
 
@@ -7,7 +8,7 @@ const SHORTEST_LOOP_S = 24
 
 /**
  * A band of short lines that slides sideways without end, like the ticker
- * under a scoreboard.
+ * under a scoreboard, with a banknote between one line and the next.
  *
  * It is decoration and behaves like it: nothing on it can be clicked or
  * focused, assistive technology skips it (every figure on it is elsewhere on
@@ -38,6 +39,7 @@ export const Ticker = ({
       {items.map((item, index) => (
         <span key={index} className="y2k-ticker-item">
           {item}
+          <CashSolid className="y2k-ticker-sep" />
         </span>
       ))}
     </span>

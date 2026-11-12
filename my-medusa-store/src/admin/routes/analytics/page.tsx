@@ -22,7 +22,7 @@ import {
   Trend,
   WhatsappPages,
 } from "../../components/analytics/sections"
-import { Motto } from "../../components/larp/motto"
+import { BigLine } from "../../components/larp/motto"
 import { useT } from "../../i18n/use-t"
 import { PRESETS, Preset, useLive, useSales, useTraffic } from "../../lib/analytics"
 import { formatRange } from "../../lib/analytics-format"
@@ -67,7 +67,7 @@ const readPreset = (): Preset => {
 
 const AnalyticsPage = () => {
   const t = useT()
-  const { hype } = useThemePrefs()
+  const { motto, mottoOn, mottoSize, opener, openerOn, openerSize } = useThemePrefs()
   const [preset, setPreset] = useState<Preset>(readPreset)
   const [photo, setPhoto] = useState(false)
   const queryClient = useQueryClient()
@@ -106,6 +106,18 @@ const AnalyticsPage = () => {
   return (
     <div className="y2k-analytics flex flex-col gap-y-3" data-y2k-ready>
       <style>{CHART_COLORS}</style>
+
+      {openerOn && opener && (
+        // The page opens with a line of the owner's, the way it closes with
+        // their motto. Each has its own switch and size in Apariencia.
+        <section
+          className="y2k-manifesto flex flex-col items-center gap-4 px-4 pb-3 pt-5 text-center md:pb-5 md:pt-8"
+          data-opens
+          aria-label={t.larp.openerAria}
+        >
+          <BigLine text={opener} size={openerSize} className="y2k-rise" />
+        </section>
+      )}
 
       {phone ? (
         // On a phone the period is a row of pills under the title: one tap,
@@ -192,13 +204,13 @@ const AnalyticsPage = () => {
 
       <Notes storefrontUrl={live.data?.storefront_url ?? null} />
 
-      {hype && (
-        // The page signs off with the motto, as big as the screen allows.
+      {mottoOn && (
+        // The page signs off with the motto, at the size the owner chose.
         <section
           className="y2k-manifesto flex flex-col items-center gap-4 px-4 py-10 text-center md:py-14"
           aria-label={t.larp.mottoAria}
         >
-          <Motto size="xl" />
+          <BigLine text={motto} size={mottoSize} />
           <span className="txt-compact-small-plus text-ui-fg-muted uppercase tracking-[0.3em]">
             {STORE_HANDLE}
           </span>

@@ -88,10 +88,38 @@ export const appearanceEs = {
   larp: {
     title: "Lema y frases",
     description:
-      "El texto grande que te recibe y la voz del panel. Los números siempre son los de verdad.",
-    mottoLabel: "Tu lema",
-    mottoHelp: "Aparece en grande al iniciar sesión, en Estadísticas y en Modo foto.",
+      "Tus frases en Estadísticas y la voz del panel. Las palabras son tuyas; los números siempre son los de verdad.",
+
+    openerLabel: "Frase al comienzo de Estadísticas",
+    openerHelp:
+      "Lo primero que se ve al abrir Estadísticas, antes de los números. Escribí la tuya.",
+    openerPlaceholder: "Escribí tu frase",
+    openerEmpty: "Todavía no escribiste ninguna, así que no se muestra nada.",
+
+    mottoLabel: "Frase al final de Estadísticas (tu lema)",
+    mottoHelp:
+      "Tu lema cierra la página. También aparece al iniciar sesión y en Modo foto, aunque acá lo apagués.",
     mottoReset: "Volver al original",
+
+    size: "Tamaño",
+    sizes: { sm: "Chica", md: "Mediana", lg: "Grande", xl: "Enorme" },
+    hidden: "Apagada: no se muestra en Estadísticas.",
+
+    phrasesLabel: "Frases de la cinta",
+    phrasesHelp:
+      "Las que corren en la cinta de Estadísticas y de Modo foto, entre las cifras del día. Cambialas, quitá las que no te representan y agregá las tuyas. Salen en mayúsculas, en este orden.",
+    phraseAria: (position: number) => `Frase ${position}`,
+    phraseRemove: (position: number) => `Quitar la frase ${position}`,
+    phraseBlank: "Vacía: no se muestra",
+    phraseNew: "Nueva frase",
+    phraseNewPlaceholder: "Escribí una frase",
+    phraseAdd: "Agregar",
+    phrasesCount: (count: number, max: number) => `${count} de ${max}`,
+    phrasesFull: (max: number) => `Llegaste a ${max}. Quitá una para agregar otra.`,
+    phrasesNone: "Sin frases: la cinta lleva solo tu lema y las cifras del día.",
+    phrasesReset: "Volver a las originales",
+    phrasesPreview: "Así corre, con tu lema adelante",
+
     hypeLabel: "Modo larp",
     hypeHelp:
       "La cinta de frases que se mueve, la lectura del día y tu racha en Estadísticas. Apagado, el panel queda sobrio.",
@@ -186,10 +214,38 @@ export const appearanceEn: Words<typeof appearanceEs> = {
   larp: {
     title: "Motto and phrases",
     description:
-      "The big line that greets you and the voice of the panel. The numbers are always the real ones.",
-    mottoLabel: "Your motto",
-    mottoHelp: "Shown big on the sign-in screen, on Statistics and in Photo mode.",
+      "Your phrases on Statistics and the voice of the panel. The words are yours; the numbers are always the real ones.",
+
+    openerLabel: "Phrase at the top of Statistics",
+    openerHelp:
+      "The first thing you see when Statistics opens, before the numbers. Write your own.",
+    openerPlaceholder: "Write your phrase",
+    openerEmpty: "You haven't written one yet, so nothing is shown.",
+
+    mottoLabel: "Phrase at the end of Statistics (your motto)",
+    mottoHelp:
+      "Your motto closes the page. It also shows on the sign-in screen and in Photo mode, even if you turn it off here.",
     mottoReset: "Back to the original",
+
+    size: "Size",
+    sizes: { sm: "Small", md: "Medium", lg: "Large", xl: "Huge" },
+    hidden: "Off: not shown on Statistics.",
+
+    phrasesLabel: "Ticker phrases",
+    phrasesHelp:
+      "The ones that run on the ticker of Statistics and Photo mode, between the day's figures. Change them, remove the ones that don't sound like you and add your own. They show in capitals, in this order.",
+    phraseAria: (position) => `Phrase ${position}`,
+    phraseRemove: (position) => `Remove phrase ${position}`,
+    phraseBlank: "Empty: not shown",
+    phraseNew: "New phrase",
+    phraseNewPlaceholder: "Write a phrase",
+    phraseAdd: "Add",
+    phrasesCount: (count, max) => `${count} of ${max}`,
+    phrasesFull: (max) => `You've reached ${max}. Remove one to add another.`,
+    phrasesNone: "No phrases: the ticker carries only your motto and the day's figures.",
+    phrasesReset: "Back to the originals",
+    phrasesPreview: "How it runs, with your motto in front",
+
     hypeLabel: "Larp mode",
     hypeHelp:
       "The moving phrase ticker, the day's reading and your streak on Statistics. Off, the panel stays sober.",
