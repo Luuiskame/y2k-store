@@ -2,6 +2,8 @@ import { Minus, Plus, Trash } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
 import { useEffect, useState } from "react"
 
+import type { Dict } from "../../i18n/dictionary"
+import { useT } from "../../i18n/use-t"
 import { formatMoney } from "../../lib/analytics-format"
 import {
   CompactProduct,
@@ -21,15 +23,18 @@ import { useDebounced } from "../../lib/use-debounced"
 import { Thumb } from "../common/thumb"
 import { SearchField } from "../mobile/parts"
 
-const stockNote = (variant: CompactVariant): string => {
+const stockNote = (
+  variant: CompactVariant,
+  words: Dict["manualOrder"]["picker"]
+): string => {
   if (variant.price === null) {
-    return "sin precio"
+    return words.noPrice
   }
   if (variant.available === null) {
     return ""
   }
   if (variant.available <= 0) {
-    return variant.allow_backorder ? "bajo pedido" : "agotado"
+    return variant.allow_backorder ? words.backorder : words.soldOut
   }
   return String(variant.available)
 }
@@ -44,7 +49,11 @@ const ProductRow = ({
   currency: string
   lines: Line[]
   onAdd: (variant: CompactVariant) => void
-}) => (
+}) => {
+  const t = useT()
+  const words = t.manualOrder.picker
+
+  return (
   <li className="flex flex-col gap-3 px-6 py-4">
     <div className="flex items-center gap-3">
       <Thumb src={product.thumbnail} alt="" size="md" />
@@ -61,14 +70,14 @@ const ProductRow = ({
       {product.variants.map((variant) => {
         const sellable = isSellable(variant)
         const inOrder = lines.find((line) => line.variant_id === variant.id)
-        const note = stockNote(variant)
+        const note = stockNote(variant, words)
         return (
           <button
             key={variant.id}
             type="button"
             disabled={!sellable}
             onClick={() => onAdd(variant)}
-            aria-label={`Agregar ${product.title} ${variant.title}`.trim()}
+            aria-label={words.add(product.title, variant.title)}
             className={clx(
               "shadow-borders-base bg-ui-bg-field flex min-h-10 items-center gap-2 rounded-lg px-3 text-left outline-none transition-colors",
               "focus-visible:shadow-borders-interactive-with-focus",
@@ -78,7 +87,7 @@ const ProductRow = ({
               inOrder && "shadow-borders-interactive-with-active"
             )}
           >
-            <span className="txt-compact-small-plus">{variant.title || "Único"}</span>
+            <span className="txt-compact-small-plus">{variant.title || t.catalog.oneSize}</span>
             {note && (
               <span
                 className={clx(
@@ -103,7 +112,8 @@ const ProductRow = ({
       })}
     </div>
   </li>
-)
+  )
+}
 
 const LineRow = ({
   line,
@@ -114,6 +124,7 @@ const LineRow = ({
   currency: string
   onQuantity: (quantity: number) => void
 }) => {
+  const words = useT().manualOrder.picker
   const max = maxQuantity(line)
   const over = line.quantity > max
 
@@ -132,7 +143,7 @@ const LineRow = ({
           {[
             line.variant_title,
             line.price !== null ? formatMoney(line.price, currency) : null,
-            over ? `solo hay ${max}` : null,
+            over ? words.onlyThereAre(max) : null,
           ]
             .filter(Boolean)
             .join(" · ")}
@@ -142,14 +153,14 @@ const LineRow = ({
         <button
           type="button"
           onClick={() => onQuantity(line.quantity - 1)}
-          aria-label={line.quantity === 1 ? `Quitar ${line.title}` : `Uno menos de ${line.title}`}
+          aria-label={line.quantity === 1 ? words.remove(line.title) : words.oneLess(line.title)}
           className="shadow-borders-base bg-ui-bg-field hover:bg-ui-bg-field-hover text-ui-fg-subtle focus-visible:shadow-borders-interactive-with-focus flex h-9 w-9 items-center justify-center rounded-lg outline-none"
         >
           {line.quantity === 1 ? <Trash /> : <Minus />}
         </button>
         <span
           className="txt-compact-medium-plus w-7 text-center tabular-nums"
-          aria-label={`Cantidad: ${line.quantity}`}
+          aria-label={words.quantity(line.quantity)}
         >
           {line.quantity}
         </span>
@@ -157,7 +168,7 @@ const LineRow = ({
           type="button"
           onClick={() => onQuantity(line.quantity + 1)}
           disabled={line.quantity >= max}
-          aria-label={`Uno más de ${line.title}`}
+          aria-label={words.oneMore(line.title)}
           className="shadow-borders-base bg-ui-bg-field hover:bg-ui-bg-field-hover text-ui-fg-subtle disabled:text-ui-fg-disabled focus-visible:shadow-borders-interactive-with-focus flex h-9 w-9 items-center justify-center rounded-lg outline-none disabled:cursor-not-allowed"
         >
           <Plus />
@@ -184,6 +195,8 @@ export const ProductPicker = ({
   /** The catalog's currency, once known. */
   onCurrency: (currency: string) => void
 }) => {
+  const t = useT()
+  const words = t.manualOrder.picker
   const [search, setSearch] = useState("")
   const q = useDebounced(search.trim(), 300)
 
@@ -202,14 +215,14 @@ export const ProductPicker = ({
   return (
     <Container className="divide-y p-0">
       <div className="flex flex-col gap-1 px-6 py-4">
-        <Heading level="h2">Productos</Heading>
+        <Heading level="h2">{words.heading}</Heading>
         <Text size="small" leading="compact" className="text-ui-fg-subtle">
-          Tocá una talla para agregarla. El número al lado es lo que queda.
+          {words.hint}
         </Text>
       </div>
 
       {lines.length > 0 && (
-        <ul className="divide-y" aria-label="Productos del pedido">
+        <ul className="divide-y" aria-label={words.linesAria}>
           {lines.map((line) => (
             <LineRow
               key={line.variant_id}
@@ -227,32 +240,30 @@ export const ProductPicker = ({
         <SearchField
           value={search}
           onChange={setSearch}
-          placeholder="Buscar producto"
-          label="Buscar producto"
+          placeholder={t.catalog.searchProduct}
+          label={t.catalog.searchProduct}
         />
       </div>
 
       {query.isLoading ? (
         <div className="px-6 py-6">
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            Cargando productos…
+            {words.loading}
           </Text>
         </div>
       ) : query.isError && products.length === 0 ? (
         <div className="flex flex-col items-start gap-2 px-6 py-4">
           <Text size="small" leading="compact" className="text-ui-fg-error">
-            {errorMessage(query.error, "No se pudieron cargar los productos.")}
+            {errorMessage(query.error, words.loadError)}
           </Text>
           <Button size="small" variant="secondary" onClick={() => query.refetch()}>
-            Reintentar
+            {t.orders.list.retry}
           </Button>
         </div>
       ) : products.length === 0 ? (
         <div className="px-6 py-6">
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            {q
-              ? `Ningún producto publicado coincide con «${q}».`
-              : "No hay productos publicados."}
+            {q ? words.noneMatch(q) : words.none}
           </Text>
         </div>
       ) : (
@@ -276,7 +287,7 @@ export const ProductPicker = ({
                 onClick={() => query.fetchNextPage()}
                 isLoading={query.isFetchingNextPage}
               >
-                Ver más productos ({total - products.length} más)
+                {words.more(total - products.length)}
               </Button>
             </div>
           )}

@@ -3,7 +3,7 @@ import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
 import {
-  AdminAlert,
+  AlertSource,
   OrderAlertDetails,
   getVapidConfig,
   newOrderAlert,
@@ -50,16 +50,18 @@ export default async function adminPushAlertsHandler({
       return
     }
 
-    let alert: AdminAlert
+    // Each admin user reads it in the language their panel is in.
+    let alert: AlertSource
     if (isNewOrder) {
-      alert = newOrderAlert(order)
+      alert = (lang) => newOrderAlert(order, lang)
     } else {
       // Same rule as the receipt email: a canceled order has nothing left to
       // verify, so a receipt on it is a mistake or abuse.
       if (order.status === "canceled") {
         return
       }
-      alert = proofReceivedAlert(order, event.data.proof_files?.length ?? 0)
+      const files = event.data.proof_files?.length ?? 0
+      alert = (lang) => proofReceivedAlert(order, files, lang)
     }
 
     const delivery = await sendAdminAlert(container, alert)

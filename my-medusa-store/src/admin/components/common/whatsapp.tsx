@@ -1,6 +1,7 @@
 import { clx } from "@medusajs/ui"
 import type { MouseEvent, ReactNode } from "react"
 
+import { useT } from "../../i18n/use-t"
 import { toWhatsappNumber, whatsappUrl } from "../../lib/whatsapp"
 
 export const WhatsappIcon = ({ size = 18 }: { size?: number }) => (
@@ -40,6 +41,7 @@ export const WhatsappLink = ({
   children?: ReactNode
   label?: string
 }) => {
+  const t = useT()
   const number = toWhatsappNumber(phone, countryCode)
   if (!number) {
     return null
@@ -52,7 +54,7 @@ export const WhatsappLink = ({
       rel="noopener noreferrer"
       className={clx("y2k-whatsapp", className)}
       data-size={iconOnly ? "icon" : undefined}
-      aria-label={`${label} a ${number.display}`}
+      aria-label={t.orders.whatsapp.to(label, number.display)}
       title={`${label} · ${number.display}`}
       // Inside a card that is itself a link: the chat, not the order.
       onClick={(event: MouseEvent) => event.stopPropagation()}

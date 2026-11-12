@@ -1,3 +1,4 @@
+import { DEFAULT_LANG, Lang, isLang } from "../i18n/lang"
 import {
   DEFAULT_PALETTE,
   FONT_SETS,
@@ -24,6 +25,40 @@ export type ThemePrefs = {
   aura: boolean
   /** The bar at the bottom of the screen on phones and tablets. */
   tabbar: boolean
+  /** The language of our screens (and, once chosen, of Medusa's). */
+  lang: Lang
+  /**
+   * Whether a language was chosen, here or on Medusa's Profile page. From
+   * then on Medusa's own screens are kept in it too, on every device; before
+   * that they are left as they were (see i18n/dashboard.ts).
+   */
+  unified: boolean
+  /** The line set big on the sign-in screen, Estadísticas and Modo foto. */
+  motto: string
+  /** "Modo larp": the phrase ticker, the day's reading and the streak. */
+  hype: boolean
+}
+
+/** The owner's own phrase; what the panel greets with until they change it. */
+export const DEFAULT_MOTTO = "Todo lo bueno está al otro lado del miedo."
+
+/** In characters as a person counts them, not UTF-16 units. */
+export const MOTTO_MAX_LENGTH = 80
+
+/**
+ * A motto fit to be stored and set in big type: one line, no control
+ * characters, trimmed, capped. Nothing left means the default.
+ */
+export const cleanMotto = (raw: unknown): string => {
+  if (typeof raw !== "string") {
+    return DEFAULT_MOTTO
+  }
+  const line = raw
+    // Control characters and the two Unicode line breaks.
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  return Array.from(line).slice(0, MOTTO_MAX_LENGTH).join("").trim() || DEFAULT_MOTTO
 }
 
 export const DEFAULT_PREFS: ThemePrefs = {
@@ -31,6 +66,10 @@ export const DEFAULT_PREFS: ThemePrefs = {
   font: "auto",
   aura: true,
   tabbar: true,
+  lang: DEFAULT_LANG,
+  unified: false,
+  motto: DEFAULT_MOTTO,
+  hype: true,
 }
 
 export const THEME_STORAGE_KEY = "y2k-admin-theme"
@@ -40,8 +79,9 @@ export const THEME_METADATA_KEY = "y2k_theme"
 
 /**
  * Whatever was stored, as valid preferences: unknown ids (a palette removed
- * in a later version, a hand-edited value) fall back to the defaults one
- * field at a time instead of discarding the rest.
+ * in a later version, a hand-edited value) and fields that did not exist yet
+ * when it was saved fall back to the defaults one at a time, instead of
+ * discarding the rest.
  */
 export const parsePrefs = (raw: unknown): ThemePrefs => {
   let value: unknown = raw
@@ -71,6 +111,11 @@ export const parsePrefs = (raw: unknown): ThemePrefs => {
     aura: typeof stored.aura === "boolean" ? stored.aura : DEFAULT_PREFS.aura,
     tabbar:
       typeof stored.tabbar === "boolean" ? stored.tabbar : DEFAULT_PREFS.tabbar,
+    lang: isLang(stored.lang) ? stored.lang : DEFAULT_PREFS.lang,
+    unified:
+      typeof stored.unified === "boolean" ? stored.unified : DEFAULT_PREFS.unified,
+    motto: cleanMotto(stored.motto),
+    hype: typeof stored.hype === "boolean" ? stored.hype : DEFAULT_PREFS.hype,
   }
 }
 
@@ -86,11 +131,19 @@ export const hasPrefs = (raw: unknown): boolean => {
   return !!raw && typeof raw === "object" && "palette" in (raw as object)
 }
 
-export const samePrefs = (a: ThemePrefs, b: ThemePrefs): boolean =>
+/** Palette, type and the two switches: what "Restablecer" puts back. */
+export const sameLook = (a: ThemePrefs, b: ThemePrefs): boolean =>
   a.palette === b.palette &&
   a.font === b.font &&
   a.aura === b.aura &&
   a.tabbar === b.tabbar
+
+export const samePrefs = (a: ThemePrefs, b: ThemePrefs): boolean =>
+  sameLook(a, b) &&
+  a.lang === b.lang &&
+  a.unified === b.unified &&
+  a.motto === b.motto &&
+  a.hype === b.hype
 
 export type ResolvedTheme = { palette: Palette; font: FontSet }
 

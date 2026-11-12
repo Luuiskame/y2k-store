@@ -2,6 +2,7 @@ import { toast } from "@medusajs/ui"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { tr } from "../i18n/tr"
 import { sdk } from "./client"
 
 /**
@@ -111,7 +112,7 @@ const subscribedWith = (subscription: PushSubscription, publicKey: string) => {
 const registerWorker = async (): Promise<ServiceWorkerRegistration> => {
   const paths = pwaPaths()
   if (!paths) {
-    throw new Error("Falta el manifest de la app en esta página.")
+    throw new Error(tr().alerts.noManifest)
   }
   await navigator.serviceWorker.register(paths.worker, {
     scope: paths.scope,
@@ -239,7 +240,7 @@ export const useDevicePush = (status: PushStatus | undefined) => {
     const ready = registration.current
     if (!publicKey || !ready) {
       return Promise.reject(
-        new Error("Las alertas todavía no están listas en este dispositivo.")
+        new Error(tr().alerts.notReady)
       )
     }
 
@@ -268,9 +269,7 @@ export const useDevicePush = (status: PushStatus | undefined) => {
       } catch (error) {
         if (Notification.permission === "denied") {
           setState("blocked")
-          throw new Error(
-            "Las notificaciones del panel están bloqueadas en este dispositivo."
-          )
+          throw new Error(tr().alerts.blockedHere)
         }
         throw error
       }
@@ -292,22 +291,17 @@ export const useDevicePush = (status: PushStatus | undefined) => {
     onSuccess: ({ delivery, sampleError }) => {
       refresh()
       if (sampleError) {
-        toast.warning("Alertas activadas, pero la prueba no se pudo enviar.", {
-          description: errorMessage(
-            sampleError,
-            "Vuelve a intentarlo con «Enviar prueba» en Ajustes → Perfil."
-          ),
+        toast.warning(tr().alerts.onButSampleFailed, {
+          description: errorMessage(sampleError, tr().alerts.retrySample),
         })
       } else if (!delivery?.sent) {
-        toast.warning(
-          "Alertas activadas, pero la prueba no llegó a ningún dispositivo."
-        )
+        toast.warning(tr().alerts.onButSampleMissed)
       } else {
-        toast.success("Alertas activadas. Te enviamos una de prueba.")
+        toast.success(tr().alerts.onWithSample)
       }
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudieron activar las alertas."))
+      toast.error(errorMessage(error, tr().alerts.enableFailed))
     },
   })
 
@@ -337,10 +331,10 @@ export const useDevicePush = (status: PushStatus | undefined) => {
     },
     onSuccess: () => {
       refresh()
-      toast.success("Alertas desactivadas en este dispositivo.")
+      toast.success(tr().alerts.disabled)
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudieron desactivar las alertas."))
+      toast.error(errorMessage(error, tr().alerts.disableFailed))
     },
   })
 
@@ -349,17 +343,13 @@ export const useDevicePush = (status: PushStatus | undefined) => {
     onSuccess: (delivery) => {
       refresh()
       if (delivery.sent === 0) {
-        toast.error("Ningún dispositivo recibió la alerta de prueba.")
+        toast.error(tr().alerts.sampleMissed)
       } else {
-        toast.success(
-          delivery.sent === 1
-            ? "Alerta de prueba enviada."
-            : `Alerta de prueba enviada a ${delivery.sent} dispositivos.`
-        )
+        toast.success(tr().alerts.sampleSent(delivery.sent))
       }
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudo enviar la alerta de prueba."))
+      toast.error(errorMessage(error, tr().alerts.sampleFailed))
     },
   })
 
@@ -376,10 +366,10 @@ export const useDevicePush = (status: PushStatus | undefined) => {
     },
     onSuccess: () => {
       refresh()
-      toast.success("Dispositivo quitado.")
+      toast.success(tr().alerts.deviceRemoved)
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudo quitar el dispositivo."))
+      toast.error(errorMessage(error, tr().alerts.removeFailed))
     },
   })
 

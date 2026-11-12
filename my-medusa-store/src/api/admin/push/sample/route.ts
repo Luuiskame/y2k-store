@@ -27,7 +27,7 @@ export async function POST(
     return res.status(409).json({ message: NOT_CONFIGURED_MESSAGE })
   }
 
-  const delivery = await sendAdminAlert(req.scope, testAlert(), {
+  const delivery = await sendAdminAlert(req.scope, testAlert, {
     userIds: [req.auth_context.actor_id],
   })
 

@@ -3,6 +3,7 @@ import { Badge, Button, Heading, Text, clx } from "@medusajs/ui"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
+import { useT } from "../../i18n/use-t"
 import {
   CompactProduct,
   CompactVariant,
@@ -26,14 +27,16 @@ type Status = "all" | "published"
 const STATUS_KEY = "y2k-products-status"
 const STATUSES: readonly Status[] = ["all", "published"]
 
-const STATUS_LABEL: Record<string, { label: string; tone: "grey" | "orange" | "red" }> = {
-  draft: { label: "Borrador", tone: "grey" },
-  proposed: { label: "Propuesto", tone: "orange" },
-  rejected: { label: "Rechazado", tone: "red" },
+/** Products that are not on sale say why; the words are in the dictionary. */
+const STATUS_TONE: Record<string, "grey" | "orange" | "red"> = {
+  draft: "grey",
+  proposed: "orange",
+  rejected: "red",
 }
 
 /** A size and how many are left: the answer to "¿tenés en M?". */
 const SizePill = ({ variant }: { variant: CompactVariant }) => {
+  const t = useT()
   const level = stockLevel(variant.available)
   const out = level === "out"
   const low = level === "low"
@@ -51,7 +54,7 @@ const SizePill = ({ variant }: { variant: CompactVariant }) => {
           out ? "text-ui-fg-disabled line-through" : "text-ui-fg-base"
         )}
       >
-        {variant.title || "Único"}
+        {variant.title || t.catalog.oneSize}
       </span>
       {variant.available !== null && (
         <span
@@ -78,7 +81,8 @@ const ProductCard = ({
   product: CompactProduct
   currency: string
 }) => {
-  const status = STATUS_LABEL[product.status]
+  const words = useT().catalog.products
+  const tone = STATUS_TONE[product.status]
   const available = totalAvailable(product)
 
   return (
@@ -96,9 +100,9 @@ const ProductCard = ({
               <Text size="base" leading="compact" weight="plus" className="line-clamp-2">
                 {product.title}
               </Text>
-              {status && (
-                <Badge size="2xsmall" color={status.tone} className="shrink-0">
-                  {status.label}
+              {tone && (
+                <Badge size="2xsmall" color={tone} className="shrink-0">
+                  {words.status[product.status]}
                 </Badge>
               )}
             </div>
@@ -108,8 +112,8 @@ const ProductCard = ({
                 available === null
                   ? null
                   : available === 0
-                  ? "agotado"
-                  : `${available} en stock`,
+                  ? words.soldOut
+                  : words.inStock(available),
               ]
                 .filter(Boolean)
                 .join(" · ")}
@@ -137,6 +141,8 @@ const ProductCard = ({
  * Medusa's own table below it (see theme.css).
  */
 export const MobileProducts = () => {
+  const t = useT()
+  const words = t.catalog.products
   const [status, setStatus] = useState<Status>(() =>
     readStored(STATUS_KEY, STATUSES, "all")
   )
@@ -157,11 +163,11 @@ export const MobileProducts = () => {
   return (
     <div className="y2k-m-takeover flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3 px-1 pt-1">
-        <Heading>Productos</Heading>
+        <Heading>{words.title}</Heading>
         <Button variant="secondary" asChild>
           <Link to="create">
             <Plus />
-            Crear
+            {words.create}
           </Link>
         </Button>
       </div>
@@ -169,16 +175,16 @@ export const MobileProducts = () => {
       <SearchField
         value={search}
         onChange={setSearch}
-        placeholder="Buscar producto"
-        label="Buscar productos"
+        placeholder={t.catalog.searchProduct}
+        label={words.searchLabel}
       />
 
-      <div className="y2k-chips" role="group" aria-label="Filtrar productos">
+      <div className="y2k-chips" role="group" aria-label={words.filterAria}>
         <Chip on={status === "all"} onClick={() => choose("all")}>
-          Todos
+          {t.orders.list.all}
         </Chip>
         <Chip on={status === "published"} onClick={() => choose("published")}>
-          A la venta
+          {words.forSale}
         </Chip>
       </div>
 
@@ -190,16 +196,16 @@ export const MobileProducts = () => {
         </div>
       ) : query.isError && products.length === 0 ? (
         <ErrorState
-          message={errorMessage(query.error, "No se pudieron cargar los productos.")}
+          message={errorMessage(query.error, words.loadError)}
           onRetry={() => query.refetch()}
         />
       ) : products.length === 0 ? (
         q ? (
-          <EmptyState title="Sin resultados">Nada coincide con «{q}».</EmptyState>
-        ) : (
-          <EmptyState title="Todavía no hay productos">
-            Creá el primero con el botón de arriba.
+          <EmptyState title={t.orders.list.noResults}>
+            {t.orders.list.nothingMatches(q)}
           </EmptyState>
+        ) : (
+          <EmptyState title={words.emptyTitle}>{words.emptyDetail}</EmptyState>
         )
       ) : (
         <>
@@ -211,7 +217,7 @@ export const MobileProducts = () => {
           <ListFooter
             shown={products.length}
             total={total}
-            noun={["producto", "productos"]}
+            noun={words.noun}
             hasMore={!!query.hasNextPage}
             loading={query.isFetchingNextPage}
             onMore={() => query.fetchNextPage()}

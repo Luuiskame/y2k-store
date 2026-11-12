@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 
 import { MobileOrders } from "../components/mobile/orders-list"
 import { SalesAlertsBanner } from "../components/push/sales-alerts"
+import { useT } from "../i18n/use-t"
 import { useAccountTheme } from "../lib/theme-sync"
 import { useIsPhone } from "../lib/use-media"
 import "../theme/boot"
@@ -19,6 +20,7 @@ import "../theme/boot"
  *   over WhatsApp and never pass through the storefront's checkout.
  */
 const OrdersTopWidget = () => {
+  const t = useT()
   const phone = useIsPhone()
   // The app opens here: where a new phone picks up the account's look.
   useAccountTheme()
@@ -32,16 +34,16 @@ const OrdersTopWidget = () => {
         <Container className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex flex-col gap-1">
             <Text size="small" leading="compact" weight="plus">
-              ¿Venta por WhatsApp o contra entrega?
+              {t.orders.top.question}
             </Text>
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
-              Registrá el pedido desde aquí, sin comprarlo vos en la tienda.
+              {t.orders.top.hint}
             </Text>
           </div>
           <Button size="small" className="shrink-0" asChild>
             <Link to="/nuevo-pedido">
               <Plus />
-              Nuevo pedido
+              {t.orders.newOrder}
             </Link>
           </Button>
         </Container>

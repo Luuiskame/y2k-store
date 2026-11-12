@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
+import { useT } from "../../i18n/use-t"
 import { sdk } from "../../lib/client"
 import {
   COMPACT_PRODUCTS_KEY,
@@ -53,6 +54,8 @@ const VariantRow = ({
   onStocked: (value: number) => void
   disabled: boolean
 }) => {
+  const t = useT()
+  const words = t.catalog.inventory
   const stock = variant.stock
   const reserved = stock?.reserved ?? 0
   const available =
@@ -61,7 +64,7 @@ const VariantRow = ({
   const out = level === "out"
   const low = level === "low"
   const changed = !!stock && stocked !== null && stocked !== stock.stocked
-  const name = variant.title || "Único"
+  const name = variant.title || t.catalog.oneSize
 
   return (
     <li className="flex items-center justify-between gap-3 py-2.5">
@@ -77,10 +80,10 @@ const VariantRow = ({
           )}
         >
           {available === null
-            ? "Sin control de stock"
+            ? words.untracked
             : [
-                out ? "Agotado" : `${available} ${available === 1 ? "disponible" : "disponibles"}`,
-                reserved > 0 ? `${reserved} en pedidos` : null,
+                out ? words.out : words.available(available),
+                reserved > 0 ? words.inOrders(reserved) : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
@@ -93,7 +96,7 @@ const VariantRow = ({
             type="button"
             onClick={() => onStocked(Math.max(0, stocked - 1))}
             disabled={disabled || stocked <= 0}
-            aria-label={`Una unidad menos de ${name}`}
+            aria-label={words.oneLess(name)}
             className="shadow-borders-base bg-ui-bg-field hover:bg-ui-bg-field-hover text-ui-fg-subtle disabled:text-ui-fg-disabled focus-visible:shadow-borders-interactive-with-focus flex h-10 w-10 items-center justify-center rounded-lg outline-none"
           >
             <Minus />
@@ -112,7 +115,7 @@ const VariantRow = ({
               )
             }}
             onFocus={(event) => event.target.select()}
-            aria-label={`Unidades en bodega de ${name}`}
+            aria-label={words.inWarehouse(name)}
             className={clx(
               "bg-ui-bg-field shadow-borders-base focus-visible:shadow-borders-interactive-with-active h-10 w-16 rounded-lg text-center tabular-nums outline-none",
               "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
@@ -123,7 +126,7 @@ const VariantRow = ({
             type="button"
             onClick={() => onStocked(Math.min(MAX_STOCK, stocked + 1))}
             disabled={disabled}
-            aria-label={`Una unidad más de ${name}`}
+            aria-label={words.oneMore(name)}
             className="shadow-borders-base bg-ui-bg-field hover:bg-ui-bg-field-hover text-ui-fg-subtle disabled:text-ui-fg-disabled focus-visible:shadow-borders-interactive-with-focus flex h-10 w-10 items-center justify-center rounded-lg outline-none"
           >
             <Plus />
@@ -132,7 +135,7 @@ const VariantRow = ({
       ) : (
         variant.available !== null && (
           <Text size="xsmall" leading="compact" className="text-ui-fg-muted shrink-0">
-            Varias bodegas
+            {words.severalWarehouses}
           </Text>
         )
       )}
@@ -148,6 +151,7 @@ const ProductStock = ({
   view: View
 }) => {
   const queryClient = useQueryClient()
+  const words = useT().catalog.inventory
 
   // Units in the warehouse per variant, as the owner is editing them.
   const [edits, setEdits] = useState<Record<string, number>>({})
@@ -190,10 +194,10 @@ const ProductStock = ({
       }
     },
     onSuccess: () => {
-      toast.success(`Stock de ${product.title} guardado.`)
+      toast.success(words.saved(product.title))
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudo guardar el stock."))
+      toast.error(errorMessage(error, words.saveFailed))
     },
     onSettled: () => {
       // Whatever got saved is real: reload ours and Medusa's own lists.
@@ -242,7 +246,7 @@ const ProductStock = ({
             onClick={() => setEdits({})}
             disabled={save.isPending}
           >
-            Deshacer
+            {words.undo}
           </Button>
           <Button
             size="small"
@@ -250,7 +254,7 @@ const ProductStock = ({
             isLoading={save.isPending}
             disabled={save.isPending}
           >
-            Guardar {changes.length === 1 ? "cambio" : `${changes.length} cambios`}
+            {words.save(changes.length)}
           </Button>
         </div>
       )}
@@ -270,6 +274,8 @@ const ProductStock = ({
  * hides Medusa's own table below it (see theme.css).
  */
 export const MobileInventory = () => {
+  const t = useT()
+  const words = t.catalog.inventory
   const [view, setView] = useState<View>(() => readStored(VIEW_KEY, VIEWS, "all"))
   const [search, setSearch] = useState("")
   const q = useDebounced(search.trim(), 350)
@@ -297,25 +303,25 @@ export const MobileInventory = () => {
   return (
     <div className="y2k-m-takeover flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3 px-1 pt-1">
-        <Heading>Inventario</Heading>
+        <Heading>{words.title}</Heading>
       </div>
 
       <SearchField
         value={search}
         onChange={setSearch}
-        placeholder="Buscar producto"
-        label="Buscar en el inventario"
+        placeholder={t.catalog.searchProduct}
+        label={words.searchLabel}
       />
 
-      <div className="y2k-chips" role="group" aria-label="Filtrar inventario">
+      <div className="y2k-chips" role="group" aria-label={words.filterAria}>
         <Chip on={view === "all"} onClick={() => choose("all")}>
-          Todo
+          {words.all}
         </Chip>
         <Chip on={view === "low"} onClick={() => choose("low")} count={count("low")}>
-          Por acabarse
+          {words.low}
         </Chip>
         <Chip on={view === "out"} onClick={() => choose("out")} count={count("out")}>
-          Agotado
+          {words.out}
         </Chip>
       </div>
 
@@ -327,28 +333,30 @@ export const MobileInventory = () => {
         </div>
       ) : query.isError && products.length === 0 ? (
         <ErrorState
-          message={errorMessage(query.error, "No se pudo cargar el inventario.")}
+          message={errorMessage(query.error, words.loadError)}
           onRetry={() => query.refetch()}
         />
       ) : visible.length === 0 ? (
         <EmptyState
           title={
             q
-              ? "Sin resultados"
+              ? t.orders.list.noResults
               : view === "low"
-              ? "Nada por acabarse"
+              ? words.emptyLow
               : view === "out"
-              ? "Nada agotado"
-              : "Todavía no hay productos"
+              ? words.emptyOut
+              : words.emptyAll
           }
         >
           {q
-            ? `Nada coincide con «${q}».`
+            ? t.orders.list.nothingMatches(q)
             : view === "all"
             ? undefined
             : query.hasNextPage
-            ? "Entre los productos cargados. Tocá «Cargar más» para revisar el resto."
-            : `Ninguna talla tiene ${view === "low" ? `${LOW_STOCK} o menos` : "cero"} unidades.`}
+            ? words.amongLoaded
+            : view === "low"
+            ? words.noneAtOrUnder(LOW_STOCK)
+            : words.noneAtZero}
         </EmptyState>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -362,7 +370,7 @@ export const MobileInventory = () => {
         <ListFooter
           shown={products.length}
           total={total}
-          noun={["producto revisado", "productos revisados"]}
+          noun={words.noun}
           hasMore={!!query.hasNextPage}
           loading={query.isFetchingNextPage}
           onMore={() => query.fetchNextPage()}

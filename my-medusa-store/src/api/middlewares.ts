@@ -9,6 +9,8 @@ import {
 } from "@medusajs/framework/http"
 import multer from "multer"
 
+import { adminLangOf, englishBody } from "../lib/admin-lang"
+
 import { AnalyticsRangeSchema } from "./admin/analytics/validators"
 import { AppearanceSchema } from "./admin/appearance/validators"
 import {
@@ -285,6 +287,27 @@ const uploadProofFiles = (
 }
 
 /**
+ * The admin panel can be read in English, and what a route answers when
+ * something goes wrong is shown there as is. Those messages are written in
+ * Spanish where they are raised; for a panel that says it is in English
+ * (`lib/admin-lang.ts`), the answer's `message` is reworded on its way out.
+ * It wraps `res.json`, which is also what Medusa's error handler ends in, so
+ * thrown errors and plain `res.status(…).json(…)` are covered alike. A
+ * request without the header is not touched.
+ */
+const adminLanguage = (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  if (adminLangOf(req.headers) === "en") {
+    const json = res.json.bind(res)
+    res.json = ((body?: unknown) => json(englishBody(body))) as typeof res.json
+  }
+  next()
+}
+
+/**
  * Order in this array is NOT the registration order — Medusa runs it through
  * `RoutesSorter`, which buckets by matcher shape and registers in the order
  * `global > wildcard > regex > static > params`. An entry with no `method` is
@@ -305,6 +328,7 @@ export default defineMiddlewares({
       matcher: "/admin/*",
       middlewares: [
         fallbackRateLimit("/admin", "admin:ip:", ADMIN_LIMIT) as any,
+        adminLanguage as any,
       ],
     },
     {

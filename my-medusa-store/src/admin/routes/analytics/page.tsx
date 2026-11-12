@@ -22,9 +22,12 @@ import {
   Trend,
   WhatsappPages,
 } from "../../components/analytics/sections"
+import { Motto } from "../../components/larp/motto"
+import { useT } from "../../i18n/use-t"
 import { PRESETS, Preset, useLive, useSales, useTraffic } from "../../lib/analytics"
 import { formatRange } from "../../lib/analytics-format"
-import { useAccountTheme } from "../../lib/theme-sync"
+import { STORE_HANDLE } from "../../lib/orders-format"
+import { useAccountTheme, useThemePrefs } from "../../lib/theme-sync"
 import { useIsPhone } from "../../lib/use-media"
 
 /** The chosen period is remembered per browser; losing it costs nothing. */
@@ -63,6 +66,8 @@ const readPreset = (): Preset => {
 }
 
 const AnalyticsPage = () => {
+  const t = useT()
+  const { hype } = useThemePrefs()
   const [preset, setPreset] = useState<Preset>(readPreset)
   const [photo, setPhoto] = useState(false)
   const queryClient = useQueryClient()
@@ -82,15 +87,15 @@ const AnalyticsPage = () => {
     }
   }, [preset])
 
-  const option = PRESETS.find((p) => p.value === preset) ?? PRESETS[0]
+  const words = t.analytics.presets[preset]
   const range = sales.data?.range ?? traffic.data?.range
   const refreshing = sales.isFetching || traffic.isFetching
 
   const refresh = (
-    <Tooltip content="Actualizar ahora">
+    <Tooltip content={t.analytics.refresh}>
       <IconButton
         size="small"
-        aria-label="Actualizar ahora"
+        aria-label={t.analytics.refresh}
         onClick={() => queryClient.invalidateQueries({ queryKey: ["y2k-analytics"] })}
       >
         <ArrowPath className={refreshing ? "animate-spin" : undefined} />
@@ -108,15 +113,15 @@ const AnalyticsPage = () => {
         <div className="flex flex-col gap-3 px-1 pt-1">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <Heading>Estadísticas</Heading>
+              <Heading>{t.analytics.title}</Heading>
               <Text size="xsmall" leading="compact" className="text-ui-fg-subtle truncate">
-                {range ? formatRange(range.from, range.to) : "Ventas y visitas"} · hora
-                de Honduras
+                {range ? formatRange(range.from, range.to) : t.analytics.subtitleShort} ·{" "}
+                {t.analytics.storeTime}
               </Text>
             </div>
             {refresh}
           </div>
-          <div className="y2k-chips" role="group" aria-label="Período">
+          <div className="y2k-chips" role="group" aria-label={t.analytics.period}>
             {PRESETS.map((p) => (
               <button
                 key={p.value}
@@ -125,7 +130,7 @@ const AnalyticsPage = () => {
                 aria-pressed={p.value === preset}
                 onClick={() => setPreset(p.value)}
               >
-                {p.label}
+                {t.analytics.presets[p.value].label}
               </button>
             ))}
           </div>
@@ -133,10 +138,10 @@ const AnalyticsPage = () => {
       ) : (
         <Container className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
           <div className="flex flex-col gap-y-1">
-            <Heading>Estadísticas</Heading>
+            <Heading>{t.analytics.title}</Heading>
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
-              {range ? formatRange(range.from, range.to) : "Ventas y visitas de la tienda"}{" "}
-              · hora de Honduras
+              {range ? formatRange(range.from, range.to) : t.analytics.subtitleLong} ·{" "}
+              {t.analytics.storeTime}
             </Text>
           </div>
           <div className="flex items-center gap-x-2">
@@ -145,13 +150,13 @@ const AnalyticsPage = () => {
               value={preset}
               onValueChange={(value) => setPreset(value as Preset)}
             >
-              <Select.Trigger className="w-[190px]" aria-label="Período">
+              <Select.Trigger className="w-[190px]" aria-label={t.analytics.period}>
                 <Select.Value />
               </Select.Trigger>
               <Select.Content>
                 {PRESETS.map((p) => (
                   <Select.Item key={p.value} value={p.value}>
-                    {p.label}
+                    {t.analytics.presets[p.value].label}
                   </Select.Item>
                 ))}
               </Select.Content>
@@ -161,15 +166,9 @@ const AnalyticsPage = () => {
         </Container>
       )}
 
-      <SalesHero
-        sales={sales}
-        live={live}
-        periodLabel={option.label}
-        comparison={option.comparison}
-        onPhoto={() => setPhoto(true)}
-      />
+      <SalesHero sales={sales} live={live} preset={preset} onPhoto={() => setPhoto(true)} />
       <PendingWork sales={sales} />
-      <Summary sales={sales} traffic={traffic} comparison={option.comparison} />
+      <Summary sales={sales} traffic={traffic} comparison={words.ref} />
       <Trend sales={sales} traffic={traffic} />
       <LivePanel />
 
@@ -193,6 +192,19 @@ const AnalyticsPage = () => {
 
       <Notes storefrontUrl={live.data?.storefront_url ?? null} />
 
+      {hype && (
+        // The page signs off with the motto, as big as the screen allows.
+        <section
+          className="y2k-manifesto flex flex-col items-center gap-4 px-4 py-10 text-center md:py-14"
+          aria-label={t.larp.mottoAria}
+        >
+          <Motto size="xl" />
+          <span className="txt-compact-small-plus text-ui-fg-muted uppercase tracking-[0.3em]">
+            {STORE_HANDLE}
+          </span>
+        </section>
+      )}
+
       {photo && (
         <PhotoMode
           sales={sales.data}
@@ -208,7 +220,9 @@ const AnalyticsPage = () => {
 }
 
 export const config = defineRouteConfig({
-  label: "Estadísticas",
+  // A key, not the words: Medusa looks it up in our menu labels (i18n/menu.ts).
+  label: "menu.analytics",
+  translationNs: "y2k",
   icon: ChartBar,
 })
 

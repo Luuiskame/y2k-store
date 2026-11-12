@@ -12,6 +12,7 @@ import {
 } from "@medusajs/ui"
 import { ReactNode, useState } from "react"
 
+import { useT } from "../../i18n/use-t"
 import { formatMoney } from "../../lib/analytics-format"
 import { errorMessage } from "../../lib/compact"
 import {
@@ -77,6 +78,7 @@ export const ReviewModal = ({
   onCartChange: (cart: WorkingCart) => void
   onPlaced: (order: PlacedOrder) => void
 }) => {
+  const words = useT().manualOrder.reviewModal
   const [method, setMethod] = useState<PaymentMethod>("contra_entrega")
   const [surcharge, setSurcharge] = useState(true)
   const [note, setNote] = useState("")
@@ -104,7 +106,7 @@ export const ReviewModal = ({
       {
         onSuccess: onCartChange,
         onError: (error) =>
-          toast.error(errorMessage(error, "No se pudo cambiar el envío.")),
+          toast.error(errorMessage(error, words.shippingFailed)),
       }
     )
   }
@@ -120,7 +122,7 @@ export const ReviewModal = ({
       {
         onSuccess: onPlaced,
         onError: (error) =>
-          toast.error(errorMessage(error, "No se pudo crear el pedido.")),
+          toast.error(errorMessage(error, words.createFailed)),
       }
     )
   }
@@ -137,16 +139,16 @@ export const ReviewModal = ({
       <FocusModal.Content>
         <FocusModal.Header>
           <FocusModal.Title asChild>
-            <Heading level="h2">Revisar pedido</Heading>
+            <Heading level="h2">{words.title}</Heading>
           </FocusModal.Title>
         </FocusModal.Header>
 
         <FocusModal.Body className="flex flex-col overflow-y-auto">
           <FocusModal.Description className="sr-only">
-            Totales del pedido, envío y forma de pago antes de crearlo.
+            {words.description}
           </FocusModal.Description>
           <div className="mx-auto flex w-full max-w-[640px] flex-col gap-y-8 px-5 py-6">
-            <Block title="Productos">
+            <Block title={words.products}>
               <ul className="flex flex-col gap-3">
                 {cart.items.map((item) => (
                   <li key={item.id} className="flex items-center gap-3">
@@ -169,7 +171,7 @@ export const ReviewModal = ({
               </ul>
             </Block>
 
-            <Block title="Entrega">
+            <Block title={words.delivery}>
               <div className="flex flex-col gap-0.5">
                 <Text size="small" leading="compact" weight="plus">
                   {address?.full_name}
@@ -184,17 +186,17 @@ export const ReviewModal = ({
                 </Text>
                 {(address?.address_2 || address?.company) && (
                   <Text size="small" leading="compact" className="text-ui-fg-subtle">
-                    Ref: {[address?.address_2, address?.company].filter(Boolean).join(" / ")}
+                    {words.reference}{" "}
+                    {[address?.address_2, address?.company].filter(Boolean).join(" / ")}
                   </Text>
                 )}
               </div>
             </Block>
 
-            <Block title="Envío">
+            <Block title={words.shipping}>
               {cart.shipping_options.length === 0 ? (
                 <Text size="small" leading="compact" className="text-ui-fg-error">
-                  No hay métodos de envío para esta dirección. Revisá las
-                  opciones de envío de la tienda en Ajustes → Ubicaciones.
+                  {words.noShipping}
                 </Text>
               ) : (
                 <RadioGroup
@@ -202,52 +204,52 @@ export const ReviewModal = ({
                   onValueChange={onShipping}
                   disabled={busy}
                   className={clx("flex flex-col gap-2", shipping.isPending && "opacity-60")}
-                  aria-label="Método de envío"
+                  aria-label={words.shippingAria}
                 >
                   {cart.shipping_options.map((option) => (
                     <RadioGroup.ChoiceBox
                       key={option.id}
                       value={option.id}
                       label={option.name}
-                      description={option.amount > 0 ? money(option.amount) : "Gratis"}
+                      description={option.amount > 0 ? money(option.amount) : words.free}
                     />
                   ))}
                 </RadioGroup>
               )}
               {!cart.shipping_method && cart.shipping_options.length > 0 && (
                 <Text size="small" leading="compact" className="text-ui-tag-orange-text">
-                  Elegí cómo se envía para ver el total.
+                  {words.chooseShipping}
                 </Text>
               )}
             </Block>
 
-            <Block title="Pago">
+            <Block title={words.payment}>
               <RadioGroup
                 value={method}
                 onValueChange={(value) => setMethod(value as PaymentMethod)}
                 disabled={busy}
                 className="flex flex-col gap-2"
-                aria-label="Forma de pago"
+                aria-label={words.paymentAria}
               >
                 <RadioGroup.ChoiceBox
                   value="contra_entrega"
-                  label="Contra entrega"
-                  description="Paga en efectivo al recibir. Queda por cobrar hasta que lo marqués."
+                  label={words.cashOnDelivery}
+                  description={words.cashOnDeliveryHint}
                 />
                 <RadioGroup.ChoiceBox
                   value="transferencia_bac"
-                  label="Transferencia BAC"
-                  description="Queda esperando el pago; lo confirmás en el pedido cuando llegue."
+                  label={words.transfer}
+                  description={words.transferHint}
                 />
               </RadioGroup>
               {isCod && (
                 <div className="flex items-start justify-between gap-4 pt-1">
                   <div className="flex flex-col gap-0.5">
                     <Label htmlFor="mo-surcharge" size="small" weight="plus">
-                      Sumar el 5% de la empresa de envíos
+                      {words.surcharge}
                     </Label>
                     <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-                      Lo cobra quien entrega; no cuenta como venta de la tienda.
+                      {words.surchargeHint}
                     </Text>
                   </div>
                   <Switch
@@ -260,43 +262,47 @@ export const ReviewModal = ({
               )}
             </Block>
 
-            <Block title="Nota">
+            <Block title={words.note}>
               <Textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 maxLength={500}
                 rows={2}
-                placeholder="Solo para vos: horario de entrega, color, lo que haga falta."
-                aria-label="Nota del pedido"
+                placeholder={words.notePlaceholder}
+                aria-label={words.noteAria}
                 disabled={busy}
               />
             </Block>
 
             <div className="bg-ui-bg-subtle shadow-borders-base flex flex-col gap-2 rounded-xl p-4">
-              <Row label="Productos" value={money(cart.item_total)} />
+              <Row label={words.products} value={money(cart.item_total)} />
               <Row
-                label={cart.shipping_method ? `Envío · ${cart.shipping_method.name}` : "Envío"}
+                label={
+                  cart.shipping_method
+                    ? words.shippingWith(cart.shipping_method.name)
+                    : words.shipping
+                }
                 value={cart.shipping_method ? money(cart.shipping_total) : "—"}
               />
               {cart.discount_total > 0 && (
                 <Row
-                  label={`Descuento${cart.promo_codes.length ? ` (${cart.promo_codes.join(", ")})` : ""}`}
+                  label={words.discount(cart.promo_codes.join(", "))}
                   value={`− ${money(cart.discount_total)}`}
                 />
               )}
-              {cart.tax_total > 0 && <Row label="Impuestos" value={money(cart.tax_total)} />}
+              {cart.tax_total > 0 && <Row label={words.taxes} value={money(cart.tax_total)} />}
               <div className="border-ui-border-base my-1 border-t" />
-              <Row label="Total del pedido" value={money(cart.total)} strong />
+              <Row label={words.orderTotal} value={money(cart.total)} strong />
               {isCod && surcharge && (
                 <Row
-                  label="Recargo contra entrega (5%)"
+                  label={words.surchargeLine}
                   value={`+ ${money(cart.contra_entrega.surcharge)}`}
                 />
               )}
               {isCod && (
                 <div className="flex items-baseline justify-between gap-4 pt-1">
                   <Text size="base" leading="compact" weight="plus">
-                    A cobrar al entregar
+                    {words.collectOnDelivery}
                   </Text>
                   <span className="y2k-num text-ui-fg-base text-[22px] font-medium leading-7">
                     {money(collect)}
@@ -310,14 +316,14 @@ export const ReviewModal = ({
         <FocusModal.Footer>
           <div className="flex w-full items-center justify-end gap-2">
             <Button variant="secondary" onClick={onClose} disabled={complete.isPending}>
-              Volver
+              {words.back}
             </Button>
             <Button
               onClick={onCreate}
               isLoading={complete.isPending}
               disabled={busy || !cart.shipping_method}
             >
-              Crear pedido
+              {words.create}
             </Button>
           </div>
         </FocusModal.Footer>

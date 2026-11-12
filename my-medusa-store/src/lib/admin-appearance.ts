@@ -5,9 +5,9 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { userMetadataLock } from "./admin-push"
 
 /**
- * The look an admin user chose in "Ajustes → Apariencia" (palette, type set
- * and two switches), kept in the user's metadata next to their push devices:
- * no table, no migration, and it goes when the user does.
+ * What an admin user chose in "Ajustes → Apariencia" (palette, type set,
+ * language, motto and a few switches), kept in the user's metadata next to
+ * their push devices: no table, no migration, and it goes when the user does.
  *
  * Each browser keeps its own copy in localStorage and applies it before the
  * first paint; this copy is what a new phone or computer starts from. What
@@ -21,6 +21,11 @@ export type Appearance = {
   font: string
   aura: boolean
   tabbar: boolean
+  /** Also read by the server: the language of that user's push alerts. */
+  lang?: "es" | "en"
+  unified?: boolean
+  motto?: string
+  hype?: boolean
 }
 
 export const readAppearance = async (
@@ -42,6 +47,11 @@ export const readAppearance = async (
 /**
  * Writes only its own key; Medusa merges the rest of the metadata back. Under
  * the same lock as the push devices, so neither write can drop the other.
+ *
+ * What is saved is laid over what was stored, not put in its place: a device
+ * still running an earlier version of the panel does not know the newer
+ * fields, and its save must not erase them (the language would silently go
+ * back to Spanish on every other device).
  */
 export const saveAppearance = async (
   container: MedusaContainer,
@@ -49,20 +59,20 @@ export const saveAppearance = async (
   appearance: Appearance
 ): Promise<Appearance> => {
   const locking = container.resolve(Modules.LOCKING)
+  let saved = appearance
 
   await locking.execute(
     userMetadataLock(userId),
     async () => {
+      saved = { ...(await readAppearance(container, userId)), ...appearance }
       await updateUsersWorkflow(container).run({
         input: {
-          updates: [
-            { id: userId, metadata: { [APPEARANCE_METADATA_KEY]: appearance } },
-          ],
+          updates: [{ id: userId, metadata: { [APPEARANCE_METADATA_KEY]: saved } }],
         },
       })
     },
     { timeout: 5 }
   )
 
-  return appearance
+  return saved
 }

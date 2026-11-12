@@ -5,6 +5,8 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { updateUsersWorkflow } from "@medusajs/medusa/core-flows"
 import { sendNotification } from "web-push"
 
+import { AdminLang, adminLangOfMetadata } from "./admin-lang"
+
 /**
  * Push alerts for the people who run the store: a new order, a BAC transfer
  * receipt. They reach every device where someone tapped "Activar alertas" in
@@ -76,6 +78,13 @@ export type PushDevice = {
   /** False once the server's key changed: the device has to subscribe again. */
   current_key: boolean
 }
+
+/**
+ * An alert as one user reads it. Either the same for everyone, or written
+ * per language: each admin user gets theirs in the language saved with
+ * their look (`adminLangOfMetadata`).
+ */
+export type AlertSource = AdminAlert | ((lang: AdminLang) => AdminAlert)
 
 export type AdminAlert = {
   title: string
@@ -293,19 +302,27 @@ const formatAmount = (
 const orderNumber = (order: OrderAlertDetails): string =>
   order.display_id ? `#${order.display_id}` : ""
 
-export const newOrderAlert = (order: OrderAlertDetails): AdminAlert => {
+export const newOrderAlert = (
+  order: OrderAlertDetails,
+  lang: AdminLang = "es"
+): AdminAlert => {
+  const english = lang === "en"
   const amount = formatAmount(order.total, order.currency_code)
-  const items = order.item_count
-    ? `${order.item_count} ${order.item_count === 1 ? "artículo" : "artículos"}`
-    : ""
+  const one = order.item_count === 1
+  const items = !order.item_count
+    ? ""
+    : english
+    ? `${order.item_count} ${one ? "item" : "items"}`
+    : `${order.item_count} ${one ? "artículo" : "artículos"}`
 
   return {
     title:
-      ["Nuevo pedido", orderNumber(order)].filter(Boolean).join(" ") +
-      (amount ? ` · ${amount}` : ""),
+      [english ? "New order" : "Nuevo pedido", orderNumber(order)]
+        .filter(Boolean)
+        .join(" ") + (amount ? ` · ${amount}` : ""),
     body:
       [order.customer_name, order.city, items].filter(Boolean).join(" · ") ||
-      "Ábrelo para ver el detalle.",
+      (english ? "Open it to see the details." : "Ábrelo para ver el detalle."),
     url: `orders/${order.id}`,
     tag: `order-${order.id}`,
   }
@@ -313,10 +330,24 @@ export const newOrderAlert = (order: OrderAlertDetails): AdminAlert => {
 
 export const proofReceivedAlert = (
   order: OrderAlertDetails,
-  fileCount: number
+  fileCount: number,
+  lang: AdminLang = "es"
 ): AdminAlert => {
   const amount = formatAmount(order.total, order.currency_code)
   const number = orderNumber(order)
+
+  if (lang === "en") {
+    const files = fileCount > 1 ? ` (${fileCount} files)` : ""
+    return {
+      title: number ? `Receipt received · order ${number}` : "Receipt received",
+      body: `${order.customer_name || "The customer"} uploaded the receipt${files}${
+        amount ? ` for ${amount}` : ""
+      }. Review it and confirm the payment.`,
+      url: `orders/${order.id}`,
+      tag: `proof-${order.id}`,
+    }
+  }
+
   const files = fileCount > 1 ? ` (${fileCount} archivos)` : ""
 
   return {
@@ -331,9 +362,12 @@ export const proofReceivedAlert = (
   }
 }
 
-export const testAlert = (): AdminAlert => ({
-  title: "Alertas de ventas activas",
-  body: "Así te vamos a avisar de cada pedido nuevo y de cada comprobante de transferencia.",
+export const testAlert = (lang: AdminLang = "es"): AdminAlert => ({
+  title: lang === "en" ? "Sales alerts are on" : "Alertas de ventas activas",
+  body:
+    lang === "en"
+      ? "This is how we will let you know about every new order and every transfer receipt."
+      : "Así te vamos a avisar de cada pedido nuevo y de cada comprobante de transferencia.",
   url: "orders",
   tag: "test",
 })
@@ -429,7 +463,7 @@ const describeError = (err: unknown): string => {
  */
 export const sendAdminAlert = async (
   container: MedusaContainer,
-  alert: AdminAlert,
+  alert: AlertSource,
   { userIds }: { userIds?: string[] } = {}
 ): Promise<AlertDelivery> => {
   const delivery: AlertDelivery = { sent: 0, removed: 0, failed: 0, skipped: 0 }
@@ -441,12 +475,25 @@ export const sendAdminAlert = async (
 
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const users = await loadUsers(container, userIds)
-  const payload = JSON.stringify({ ...alert, timestamp: Date.now() })
+  const timestamp = Date.now()
+  // One payload per language in use, written the first time it is needed.
+  const payloads = new Map<AdminLang, string>()
+  const payloadIn = (lang: AdminLang): string => {
+    let payload = payloads.get(lang)
+    if (!payload) {
+      const content = typeof alert === "function" ? alert(lang) : alert
+      payload = JSON.stringify({ ...content, timestamp })
+      payloads.set(lang, payload)
+    }
+    return payload
+  }
   const gone = new Map<string, Set<string>>()
 
   await Promise.all(
-    users.flatMap((user) =>
-      readStoredSubscriptions(user.metadata).map(async (subscription) => {
+    users.flatMap((user) => {
+      const payload = payloadIn(adminLangOfMetadata(user.metadata))
+
+      return readStoredSubscriptions(user.metadata).map(async (subscription) => {
         if (subscription.vapid_key !== vapid.publicKey) {
           delivery.skipped++
           return
@@ -482,7 +529,7 @@ export const sendAdminAlert = async (
           )
         }
       })
-    )
+    })
   )
 
   for (const [userId, ids] of gone) {

@@ -3,6 +3,7 @@ import { Button, Container, Tabs, Text } from "@medusajs/ui"
 import { ReactNode, useState } from "react"
 import { Link } from "react-router-dom"
 
+import { useT } from "../../i18n/use-t"
 import type { SalesResponse, TrafficResponse } from "../../lib/analytics"
 import {
   changeOf,
@@ -75,6 +76,7 @@ const TaskLink = ({
 
 /** What is waiting on the owner, whatever range is selected. */
 export const PendingWork = ({ sales }: { sales: Query<SalesResponse> }) => {
+  const t = useT()
   const pending = sales.data?.pending
   if (!pending) {
     return null
@@ -84,22 +86,20 @@ export const PendingWork = ({ sales }: { sales: Query<SalesResponse> }) => {
     pending.proofs_to_review > 0 && (
       <TaskLink key="proofs" to="/orders" icon={<ExclamationCircle />}>
         <strong>{formatNumber(pending.proofs_to_review)}</strong>{" "}
-        {pending.proofs_to_review === 1
-          ? "comprobante de transferencia por revisar"
-          : "comprobantes de transferencia por revisar"}
+        {t.analytics.pending.proofs(pending.proofs_to_review)}
       </TaskLink>
     ),
     pending.awaiting_payment > 0 && (
       <TaskLink key="payment" to="/orders" icon={<Receipt />}>
         <strong>{formatNumber(pending.awaiting_payment)}</strong>{" "}
-        {pending.awaiting_payment === 1 ? "pedido sin cobrar" : "pedidos sin cobrar"} (
+        {t.analytics.pending.unpaid(pending.awaiting_payment)} (
         {formatMoney(pending.awaiting_amount, sales.data!.currency)})
       </TaskLink>
     ),
     pending.to_fulfill > 0 && (
       <TaskLink key="fulfill" to="/orders" icon={<TruckFast />}>
         <strong>{formatNumber(pending.to_fulfill)}</strong>{" "}
-        {pending.to_fulfill === 1 ? "pedido sin despachar" : "pedidos sin despachar"}
+        {t.analytics.pending.toShip(pending.to_fulfill)}
       </TaskLink>
     ),
   ].filter(Boolean)
@@ -109,7 +109,7 @@ export const PendingWork = ({ sales }: { sales: Query<SalesResponse> }) => {
   }
 
   return (
-    <Section title="Por atender" description="Pedidos abiertos, sin importar las fechas elegidas">
+    <Section title={t.analytics.pending.title} description={t.analytics.pending.description}>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{tasks}</div>
     </Section>
   )
@@ -128,14 +128,22 @@ export const Summary = ({
 }: {
   sales: Query<SalesResponse>
   traffic: Query<TrafficResponse>
+  /** What the period is compared with: "ayer a esta hora". */
   comparison: string
 }) => {
+  const t = useT()
+  const words = t.analytics.summary
   const s = sales.data
-  const t = traffic.data
+  const v = traffic.data
 
-  const conversion = s && t ? ratioOf(s.totals.orders, t.totals.sessions) : null
+  const whatsappShare = (part: number, whole: number) => {
+    const share = shareOf(part, whole)
+    return share === undefined ? undefined : words.ofVisits(share)
+  }
+
+  const conversion = s && v ? ratioOf(s.totals.orders, v.totals.sessions) : null
   const previousConversion =
-    s && t ? ratioOf(s.previous.orders, t.previous.sessions) : null
+    s && v ? ratioOf(s.previous.orders, v.previous.sessions) : null
 
   return (
     <div
@@ -147,52 +155,53 @@ export const Summary = ({
     >
       <div className="flex flex-col gap-y-2">
         <Text size="small" leading="compact" className="text-ui-fg-subtle px-1">
-          Los cambios se comparan {comparison.replace(/^vs\. /, "con ")}.
+          {t.analytics.comparedWith(comparison)}
         </Text>
         <StatGrid>
           <StatTile
-            label="Visitas"
-            value={t ? formatNumber(t.totals.sessions) : null}
-            change={t ? changeOf(t.totals.sessions, t.previous.sessions) : null}
-            hint={t && `${formatNumber(t.totals.visitors)} personas distintas`}
-            help="Sesiones en la tienda. Una sesión termina tras 30 minutos sin actividad. Tus propias visitas cuentan salvo que las excluyas (ver al final)."
+            label={words.visits}
+            value={v ? formatNumber(v.totals.sessions) : null}
+            change={v ? changeOf(v.totals.sessions, v.previous.sessions) : null}
+            hint={v && words.visitsHint(v.totals.visitors, formatNumber(v.totals.visitors))}
+            help={words.visitsHelp}
           />
           <StatTile
-            label="Abrieron WhatsApp"
-            value={t ? formatNumber(t.totals.contacted_whatsapp) : null}
+            label={words.openedWhatsapp}
+            value={v ? formatNumber(v.totals.contacted_whatsapp) : null}
             change={
-              t ? changeOf(t.totals.contacted_whatsapp, t.previous.contacted_whatsapp) : null
+              v ? changeOf(v.totals.contacted_whatsapp, v.previous.contacted_whatsapp) : null
             }
-            hint={t && shareOf(t.totals.contacted_whatsapp, t.totals.sessions)?.concat(" de las visitas")}
-            help="Visitas que tocaron un botón o enlace de WhatsApp en la tienda."
+            hint={v && whatsappShare(v.totals.contacted_whatsapp, v.totals.sessions)}
+            help={words.whatsappHelp}
           />
           <StatTile
-            label="Conversión"
-            value={conversion === null ? (s && t ? "—" : null) : formatPercent(conversion)}
+            label={words.conversion}
+            value={conversion === null ? (s && v ? "—" : null) : formatPercent(conversion)}
             change={
               conversion !== null && previousConversion !== null
                 ? changeOf(conversion, previousConversion)
                 : null
             }
-            hint="pedidos por visita"
-            help="Pedidos ÷ visitas. Como muchos pedidos los hacés vos por WhatsApp, leelo como cuántos pedidos salen por cada visita a la tienda."
+            hint={words.conversionHint}
+            help={words.conversionHelp}
           />
           <StatTile
-            label="Clientes"
+            label={words.customers}
             value={s ? formatNumber(s.customers.identified) : null}
             hint={
               s &&
-              `${formatNumber(s.customers.new)} nuevos · ${formatNumber(
-                s.customers.returning
-              )} recurrentes`
+              words.customersHint(
+                formatNumber(s.customers.new),
+                formatNumber(s.customers.returning)
+              )
             }
-            help="Clientes distintos del período según el teléfono de envío, no la cuenta: así cuentan bien los pedidos que hacés vos. Recurrente: ya había comprado antes."
+            help={words.customersHelp}
           />
         </StatGrid>
-        {(!s && sales.error) || (!t && traffic.error) ? (
+        {(!s && sales.error) || (!v && traffic.error) ? (
           <div className="px-1">
             {!s && sales.error ? <ErrorNote error={sales.error} /> : null}
-            {!t && traffic.error ? <ErrorNote error={traffic.error} /> : null}
+            {!v && traffic.error ? <ErrorNote error={traffic.error} /> : null}
           </div>
         ) : null}
       </div>
@@ -204,11 +213,7 @@ export const Summary = ({
 
 type Metric = "sales" | "orders" | "sessions"
 
-const METRIC_TITLES: Record<Metric, string> = {
-  sales: "Ventas",
-  orders: "Pedidos",
-  sessions: "Visitas",
-}
+const METRICS: Metric[] = ["sales", "orders", "sessions"]
 
 export const Trend = ({
   sales,
@@ -217,6 +222,8 @@ export const Trend = ({
   sales: Query<SalesResponse>
   traffic: Query<TrafficResponse>
 }) => {
+  const t = useT()
+  const words = t.analytics.trend
   const [metric, setMetric] = useState<Metric>("sales")
   const [asTable, setAsTable] = useState(false)
 
@@ -226,23 +233,23 @@ export const Trend = ({
     <div className="flex items-center gap-x-2">
       <Tabs value={metric} onValueChange={(value) => setMetric(value as Metric)}>
         <Tabs.List>
-          {(Object.keys(METRIC_TITLES) as Metric[]).map((key) => (
+          {METRICS.map((key) => (
             <Tabs.Trigger key={key} value={key}>
-              {METRIC_TITLES[key]}
+              {words.metrics[key]}
             </Tabs.Trigger>
           ))}
         </Tabs.List>
       </Tabs>
       <Button size="small" variant="secondary" onClick={() => setAsTable((v) => !v)}>
-        {asTable ? "Ver gráfico" : "Ver tabla"}
+        {asTable ? words.showChart : words.showTable}
       </Button>
     </div>
   )
 
   return (
     <Section
-      title="En el tiempo"
-      description="Este período contra el anterior"
+      title={words.title}
+      description={words.description}
       actions={tabs}
       dimmed={query.isPlaceholderData}
     >
@@ -287,13 +294,7 @@ export const Trend = ({
               {...props}
               formatTick={formatTick}
               integer={!isMoney}
-              label={`${METRIC_TITLES[metric]} por ${
-                range.granularity === "hour"
-                  ? "hora"
-                  : range.granularity === "day"
-                  ? "día"
-                  : "mes"
-              }`}
+              label={words.per(words.metrics[metric], range.granularity)}
             />
           )
         }}
@@ -304,26 +305,30 @@ export const Trend = ({
 
 /* ------------------------------------------------------------------------ */
 
-export const Behavior = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
+export const Behavior = ({ traffic }: { traffic: Query<TrafficResponse> }) => {
+  const t = useT()
+  const words = t.analytics.behavior
+
+  return (
   <Section
-    title="Qué hacen las visitas"
-    description="Parte de las visitas que llegó a cada paso"
+    title={words.title}
+    description={words.description}
     dimmed={traffic.isPlaceholderData}
   >
     <Body query={traffic}>
       {({ totals }) => {
         const steps: [string, number][] = [
-          ["Vieron un producto", totals.viewed_product],
-          ["Agregaron al carrito", totals.added_to_cart],
-          ["Llegaron al checkout", totals.reached_checkout],
-          ["Abrieron WhatsApp", totals.contacted_whatsapp],
-          ["Compraron en la web", totals.purchased],
+          [words.viewedProduct, totals.viewed_product],
+          [words.addedToCart, totals.added_to_cart],
+          [words.reachedCheckout, totals.reached_checkout],
+          [words.openedWhatsapp, totals.contacted_whatsapp],
+          [words.purchased, totals.purchased],
         ]
         return (
           <div className="flex flex-col gap-y-4">
             <BarList
               max={totals.sessions}
-              empty="Todavía no hay visitas en este período."
+              empty={t.analytics.noVisits}
               items={
                 totals.sessions === 0
                   ? []
@@ -337,29 +342,38 @@ export const Behavior = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
               }
             />
             <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-              {formatNumber(totals.sessions)} visitas ·{" "}
-              {formatNumber(totals.pageviews)} páginas vistas ·{" "}
-              {formatNumber(totals.whatsapp_clicks)} toques a WhatsApp ·{" "}
-              {formatNumber(totals.new_visitors)} visitantes nuevos,{" "}
-              {formatNumber(totals.returning_visitors)} que ya habían venido
+              {words.footer(
+                {
+                  sessions: totals.sessions,
+                  pageviews: totals.pageviews,
+                  whatsappClicks: totals.whatsapp_clicks,
+                  fresh: totals.new_visitors,
+                  returning: totals.returning_visitors,
+                },
+                formatNumber
+              )}
             </Text>
           </div>
         )
       }}
     </Body>
   </Section>
-)
+  )
+}
 
-export const Sources = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
+export const Sources = ({ traffic }: { traffic: Query<TrafficResponse> }) => {
+  const t = useT()
+
+  return (
   <Section
-    title="De dónde llegan"
-    description="Por sesión. Instagram y Facebook se reconocen aunque no manden referencia."
+    title={t.analytics.sources.title}
+    description={t.analytics.sources.description}
     dimmed={traffic.isPlaceholderData}
   >
     <Body query={traffic}>
       {({ sources, totals }) => (
         <BarList
-          empty="Todavía no hay visitas en este período."
+          empty={t.analytics.noVisits}
           items={sources.map((source) => ({
             key: source.key,
             label: sourceLabel(source.key),
@@ -371,7 +385,8 @@ export const Sources = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
       )}
     </Body>
   </Section>
-)
+  )
+}
 
 /* ------------------------------------------------------------------------ */
 
@@ -384,36 +399,43 @@ const productLink = (id: string | null | undefined, label: ReactNode) =>
     label
   )
 
-export const BestSellers = ({ sales }: { sales: Query<SalesResponse> }) => (
-  <Section title="Más vendidos" description="Unidades en pedidos no cancelados" dimmed={sales.isPlaceholderData}>
+export const BestSellers = ({ sales }: { sales: Query<SalesResponse> }) => {
+  const t = useT()
+
+  return (
+  <Section title={t.analytics.bestSellers.title} description={t.analytics.bestSellers.description} dimmed={sales.isPlaceholderData}>
     <Body query={sales}>
       {({ products, currency }) => (
         <BarList
-          empty="Sin ventas en este período."
+          empty={t.analytics.noSales}
           items={products.map((product) => ({
             key: product.product_id ?? product.title,
             leading: <ProductThumb src={product.thumbnail} alt={product.title} />,
             label: productLink(product.product_id, product.title),
             value: product.units,
-            display: `${formatNumber(product.units)} u.`,
+            display: t.analytics.hero.units(product.units, formatNumber(product.units)),
             detail: formatMoney(product.sales, currency),
           }))}
         />
       )}
     </Body>
   </Section>
-)
+  )
+}
 
-export const MostViewed = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
+export const MostViewed = ({ traffic }: { traffic: Query<TrafficResponse> }) => {
+  const t = useT()
+
+  return (
   <Section
-    title="Más vistos"
-    description="Visitas a la página del producto y toques a WhatsApp desde ella"
+    title={t.analytics.mostViewed.title}
+    description={t.analytics.mostViewed.description}
     dimmed={traffic.isPlaceholderData}
   >
     <Body query={traffic}>
       {({ products }) => (
         <BarList
-          empty="Nadie vio productos en este período."
+          empty={t.analytics.mostViewed.empty}
           items={products.map((item) => ({
             key: item.handle,
             leading: (
@@ -427,7 +449,7 @@ export const MostViewed = ({ traffic }: { traffic: Query<TrafficResponse> }) => 
               pageLabel(`/products/${item.handle}`, item.product)
             ),
             value: item.views,
-            display: `${formatNumber(item.views)} vistas`,
+            display: t.analytics.mostViewed.views(item.views, formatNumber(item.views)),
             detail: item.whatsapp_clicks
               ? `${formatNumber(item.whatsapp_clicks)} WhatsApp`
               : undefined,
@@ -436,55 +458,67 @@ export const MostViewed = ({ traffic }: { traffic: Query<TrafficResponse> }) => 
       )}
     </Body>
   </Section>
-)
+  )
+}
 
 /* ------------------------------------------------------------------------ */
 
-export const Provinces = ({ sales }: { sales: Query<SalesResponse> }) => (
-  <Section title="Ventas por departamento" description="Según la dirección de envío" dimmed={sales.isPlaceholderData}>
+export const Provinces = ({ sales }: { sales: Query<SalesResponse> }) => {
+  const t = useT()
+
+  return (
+  <Section title={t.analytics.provinces.title} description={t.analytics.provinces.description} dimmed={sales.isPlaceholderData}>
     <Body query={sales}>
       {({ provinces, currency }) => (
         <BarList
-          empty="Sin ventas en este período."
+          empty={t.analytics.noSales}
           items={provinces.map((province) => ({
             key: province.province,
             label: province.province,
             value: province.sales,
             display: formatMoney(province.sales, currency),
-            detail: `${formatNumber(province.orders)} ped.`,
+            detail: t.analytics.provinces.orders(formatNumber(province.orders)),
           }))}
         />
       )}
     </Body>
   </Section>
-)
+  )
+}
 
-export const PaymentMethods = ({ sales }: { sales: Query<SalesResponse> }) => (
-  <Section title="Métodos de pago" description="Vendido y, al lado, lo ya cobrado" dimmed={sales.isPlaceholderData}>
+export const PaymentMethods = ({ sales }: { sales: Query<SalesResponse> }) => {
+  const t = useT()
+
+  return (
+  <Section title={t.analytics.methods.title} description={t.analytics.methods.description} dimmed={sales.isPlaceholderData}>
     <Body query={sales}>
       {({ methods, currency }) => (
         <BarList
-          empty="Sin ventas en este período."
+          empty={t.analytics.noSales}
           items={methods.map((method) => ({
             key: method.provider_id ?? "none",
             label: paymentMethodLabel(method.provider_id),
             value: method.sales,
             display: formatMoney(method.sales, currency),
-            detail: `${formatMoney(method.collected, currency)} cobrado`,
+            detail: t.analytics.methods.collected(formatMoney(method.collected, currency)),
           }))}
         />
       )}
     </Body>
   </Section>
-)
+  )
+}
 
-export const Audience = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
-  <Section title="Dispositivos y ciudades" description="Por sesión" dimmed={traffic.isPlaceholderData}>
+export const Audience = ({ traffic }: { traffic: Query<TrafficResponse> }) => {
+  const t = useT()
+
+  return (
+  <Section title={t.analytics.audience.title} description={t.analytics.audience.description} dimmed={traffic.isPlaceholderData}>
     <Body query={traffic}>
       {({ devices, cities, totals }) => (
         <div className="flex flex-col gap-y-5">
           <BarList
-            empty="Todavía no hay visitas en este período."
+            empty={t.analytics.noVisits}
             items={devices.map((device) => ({
               key: device.key,
               label: deviceLabel(device.key),
@@ -500,7 +534,7 @@ export const Audience = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
                 const [country, name] = city.key.split("|")
                 return {
                   key: city.key,
-                  label: name ? `${flagOf(country)} ${name}`.trim() : "Otras ciudades",
+                  label: name ? `${flagOf(country)} ${name}`.trim() : t.analytics.audience.otherCities,
                   value: city.count,
                   display: formatNumber(city.count),
                   detail:
@@ -515,7 +549,8 @@ export const Audience = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
       )}
     </Body>
   </Section>
-)
+  )
+}
 
 const pageItems = (pages: TrafficResponse["landing_pages"]): BarItem[] =>
   pages.map((page) => ({
@@ -525,43 +560,52 @@ const pageItems = (pages: TrafficResponse["landing_pages"]): BarItem[] =>
     display: formatNumber(page.count),
   }))
 
-export const LandingPages = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
-  <Section title="Páginas de entrada" description="Dónde empieza cada visita" dimmed={traffic.isPlaceholderData}>
+export const LandingPages = ({ traffic }: { traffic: Query<TrafficResponse> }) => {
+  const t = useT()
+
+  return (
+  <Section title={t.analytics.landing.title} description={t.analytics.landing.description} dimmed={traffic.isPlaceholderData}>
     <Body query={traffic}>
       {({ landing_pages }) => (
-        <BarList empty="Todavía no hay visitas en este período." items={pageItems(landing_pages)} />
+        <BarList empty={t.analytics.noVisits} items={pageItems(landing_pages)} />
       )}
     </Body>
   </Section>
-)
+  )
+}
 
-export const WhatsappPages = ({ traffic }: { traffic: Query<TrafficResponse> }) => (
+export const WhatsappPages = ({ traffic }: { traffic: Query<TrafficResponse> }) => {
+  const t = useT()
+
+  return (
   <Section
-    title="Desde dónde abren WhatsApp"
-    description="Toques a WhatsApp por página"
+    title={t.analytics.whatsappPages.title}
+    description={t.analytics.whatsappPages.description}
     dimmed={traffic.isPlaceholderData}
   >
     <Body query={traffic}>
       {({ whatsapp_pages }) => (
-        <BarList empty="Nadie abrió WhatsApp en este período." items={pageItems(whatsapp_pages)} />
+        <BarList empty={t.analytics.whatsappPages.empty} items={pageItems(whatsapp_pages)} />
       )}
     </Body>
   </Section>
-)
+  )
+}
 
 /* ------------------------------------------------------------------------ */
 
 export const Notes = ({ storefrontUrl }: { storefrontUrl: string | null }) => {
+  const t = useT()
+  const words = t.analytics.notes
   const optOut = storefrontUrl ? `${storefrontUrl.replace(/\/$/, "")}/?notrack=1` : null
 
   return (
     <Container className="flex flex-col gap-y-2 px-6 py-4">
       <Text size="small" leading="compact" weight="plus">
-        Para que tus visitas no cuenten
+        {words.title}
       </Text>
       <Text size="small" leading="compact" className="text-ui-fg-subtle">
-        Como hacés pedidos desde la tienda, tus propias visitas inflarían las
-        estadísticas. Abrí{" "}
+        {words.before}{" "}
         {optOut ? (
           <a
             href={optOut}
@@ -574,13 +618,10 @@ export const Notes = ({ storefrontUrl }: { storefrontUrl: string | null }) => {
         ) : (
           <code>/?notrack=1</code>
         )}{" "}
-        una vez en cada celular y computadora que usás. Con{" "}
-        <code>?notrack=0</code> se vuelve a contar. Los pedidos que hacés
-        siempre cuentan como ventas.
+        {words.middle} <code>?notrack=0</code> {words.after}
       </Text>
       <Text size="small" leading="compact" className="text-ui-fg-subtle">
-        Todas las fechas y horas son de Honduras. No se guardan direcciones IP
-        ni datos personales de las visitas.
+        {words.privacy}
       </Text>
     </Container>
   )

@@ -8,7 +8,10 @@ import { CustomerFormSection } from "../../components/manual-order/customer-form
 import { ProductPicker } from "../../components/manual-order/product-picker"
 import { ReviewModal } from "../../components/manual-order/review"
 import { StoreCartsSection } from "../../components/manual-order/store-carts"
+import { tr } from "../../i18n/tr"
+import { useT } from "../../i18n/use-t"
 import { formatMoney } from "../../lib/analytics-format"
+import { cheer } from "../../lib/cheer"
 import { errorMessage } from "../../lib/compact"
 import {
   CustomerForm,
@@ -66,6 +69,7 @@ const writeDraft = (draft: Draft | null) => {
  * what the "+" in the bottom bar opens.
  */
 const NuevoPedidoPage = () => {
+  const words = useT().manualOrder
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -107,11 +111,13 @@ const NuevoPedidoPage = () => {
       setSource(cart)
       setCurrency(cart.currency_code)
       setAttempted(false)
-      toast.success("Carrito cargado", {
-        description: "Revisá los datos y tocá «Revisar pedido».",
+      // Read when it happens, not when this callback was made: the words
+      // are the ones of the language in use at that moment.
+      toast.success(tr().manualOrder.cartLoaded, {
+        description: tr().manualOrder.cartLoadedHint,
       })
     } catch (error) {
-      toast.error(errorMessage(error, "No se encontró ese carrito de la tienda."))
+      toast.error(errorMessage(error, tr().manualOrder.cartNotFound))
     } finally {
       setLoadingCart(null)
     }
@@ -142,7 +148,7 @@ const NuevoPedidoPage = () => {
           setReview(cart)
         },
         onError: (error) =>
-          toast.error(errorMessage(error, "No se pudo preparar el pedido.")),
+          toast.error(errorMessage(error, words.prepareFailed)),
       }
     )
   }
@@ -158,7 +164,9 @@ const NuevoPedidoPage = () => {
   }
 
   const onPlaced = (order: PlacedOrder) => {
-    toast.success(`Pedido${order.display_id ? ` #${order.display_id}` : ""} creado`)
+    toast.success(
+      cheer(words.created(order.display_id ? ` #${order.display_id}` : ""), "created")
+    )
     startOver()
     navigate(`/orders/${order.id}`)
   }
@@ -172,15 +180,14 @@ const NuevoPedidoPage = () => {
     <div className="flex flex-col gap-y-3" data-y2k-ready>
       <Container className="flex items-start justify-between gap-4 px-6 py-4">
         <div className="flex flex-col gap-1">
-          <Heading>Nuevo pedido</Heading>
+          <Heading>{words.title}</Heading>
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            Para ventas por WhatsApp, Instagram o contra entrega: queda como
-            cualquier pedido de la tienda, sin que lo comprés vos.
+            {words.intro}
           </Text>
         </div>
         {!blank && (
           <Button size="small" variant="secondary" className="shrink-0" onClick={startOver}>
-            Vaciar
+            {words.clear}
           </Button>
         )}
       </Container>
@@ -226,14 +233,11 @@ const NuevoPedidoPage = () => {
         <div className="flex min-w-0 flex-col">
           <Text size="small" leading="compact" weight="plus">
             {units === 0
-              ? "Sin productos"
-              : `${units} ${units === 1 ? "artículo" : "artículos"} · ${formatMoney(
-                  estimateSubtotal(lines),
-                  currency
-                )}`}
+              ? words.noProducts
+              : words.unitsAndTotal(units, formatMoney(estimateSubtotal(lines), currency))}
           </Text>
           <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-            {units === 0 ? "Agregá lo que va en el pedido" : "Más el envío, en el siguiente paso"}
+            {units === 0 ? words.addWhatGoes : words.plusShipping}
           </Text>
         </div>
         <Button
@@ -243,7 +247,7 @@ const NuevoPedidoPage = () => {
           isLoading={createCart.isPending}
           disabled={createCart.isPending}
         >
-          Revisar pedido
+          {words.review}
         </Button>
       </div>
 
@@ -259,13 +263,15 @@ const NuevoPedidoPage = () => {
 }
 
 export const config = defineRouteConfig({
-  label: "Nuevo pedido",
+  // A key, not the words: Medusa looks it up in our menu labels (i18n/menu.ts).
+  label: "menu.newOrder",
+  translationNs: "y2k",
   icon: Plus,
   nested: "/orders",
 })
 
 export const handle = {
-  breadcrumb: () => "Nuevo pedido",
+  breadcrumb: () => tr().manualOrder.title,
 }
 
 export default NuevoPedidoPage

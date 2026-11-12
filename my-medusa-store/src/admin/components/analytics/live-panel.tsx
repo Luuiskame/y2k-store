@@ -1,6 +1,8 @@
 import { Badge, Button, Container, Heading, Text } from "@medusajs/ui"
 import { useState } from "react"
 
+import type { Dict } from "../../i18n/dictionary"
+import { useT } from "../../i18n/use-t"
 import { LiveVisitor, useLive } from "../../lib/analytics"
 import {
   activityLabel,
@@ -41,15 +43,19 @@ const MiniStat = ({ label, value }: { label: string; value: number }) => (
   </div>
 )
 
-const placeOf = (visitor: LiveVisitor) => {
+const placeOf = (visitor: LiveVisitor, t: Dict) => {
   if (!visitor.country) {
-    return "Ubicación desconocida"
+    return t.analytics.live.unknownPlace
   }
   const flag = flagOf(visitor.country)
   return `${flag} ${visitor.city ?? countryName(visitor.country)}`.trim()
 }
 
-const VisitorRow = ({ visitor, now }: { visitor: LiveVisitor; now: number }) => (
+const VisitorRow = ({ visitor, now }: { visitor: LiveVisitor; now: number }) => {
+  const t = useT()
+  const words = t.analytics.live
+
+  return (
   <li className="flex items-center gap-x-3 px-6 py-3">
     <ProductThumb
       src={visitor.product?.thumbnail ?? null}
@@ -62,9 +68,9 @@ const VisitorRow = ({ visitor, now }: { visitor: LiveVisitor; now: number }) => 
       <Text size="xsmall" leading="compact" className="text-ui-fg-subtle truncate">
         {[
           activityLabel(visitor.page_type),
-          placeOf(visitor),
+          placeOf(visitor, t),
           deviceLabel(visitor.device),
-          `llegó por ${sourceLabel(visitor.source)}`,
+          words.cameFrom(sourceLabel(visitor.source)),
         ].join(" · ")}
       </Text>
     </div>
@@ -76,22 +82,22 @@ const VisitorRow = ({ visitor, now }: { visitor: LiveVisitor; now: number }) => 
       )}
       {(visitor.added_to_cart || visitor.has_cart) && (
         <Badge size="2xsmall" color="blue">
-          Carrito
+          {words.badgeCart}
         </Badge>
       )}
       {visitor.reached_checkout && (
         <Badge size="2xsmall" color="orange">
-          Checkout
+          {words.badgeCheckout}
         </Badge>
       )}
       {visitor.purchased && (
         <Badge size="2xsmall" color="purple">
-          Compró
+          {words.badgeBought}
         </Badge>
       )}
       {visitor.logged_in && (
         <Badge size="2xsmall" color="grey">
-          Con cuenta
+          {words.badgeAccount}
         </Badge>
       )}
     </div>
@@ -100,17 +106,20 @@ const VisitorRow = ({ visitor, now }: { visitor: LiveVisitor; now: number }) => 
         {formatDuration(now - visitor.started_at)}
       </Text>
       <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
-        {visitor.pages} {visitor.pages === 1 ? "página" : "páginas"}
+        {words.pages(visitor.pages)}
       </Text>
     </div>
   </li>
-)
+  )
+}
 
 /**
  * Who is on the storefront right now, polled every 5 s. The big number is
  * the one this dashboard leads with; everything else is context for it.
  */
 export const LivePanel = () => {
+  const t = useT()
+  const words = t.analytics.live
   const { data, error, isLoading } = useLive()
   const [expanded, setExpanded] = useState(false)
 
@@ -123,16 +132,16 @@ export const LivePanel = () => {
     <Container className="divide-y p-0">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-4">
         <div className="flex items-center gap-x-3">
-          <Heading level="h2">En vivo</Heading>
+          <Heading level="h2">{words.title}</Heading>
           <LiveDot />
           {data?.backend === "memory" && (
             <Badge size="2xsmall" color="orange">
-              Sin Redis: solo este proceso
+              {words.noRedis}
             </Badge>
           )}
         </div>
         <Text size="small" leading="compact" className="text-ui-fg-subtle">
-          Se actualiza cada 5 segundos
+          {words.refreshes}
         </Text>
       </div>
 
@@ -150,30 +159,27 @@ export const LivePanel = () => {
                 {formatNumber(data.active)}
               </span>
               <Text size="small" leading="compact" weight="plus">
-                {data.active === 1
-                  ? "persona en la tienda ahora"
-                  : "personas en la tienda ahora"}
+                {words.inStoreNow(data.active)}
               </Text>
               <Text size="small" leading="compact" className="text-ui-fg-subtle">
-                {formatNumber(data.recent)} en los últimos{" "}
-                {data.recent_window_minutes} minutos
+                {words.recent(formatNumber(data.recent), data.recent_window_minutes)}
               </Text>
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <MiniStat
-                label="Viendo productos"
+                label={words.viewingProducts}
                 value={count((v) => v.page_type === "product")}
               />
               <MiniStat
-                label="Con carrito"
+                label={words.withCart}
                 value={count((v) => v.has_cart || v.added_to_cart)}
               />
               <MiniStat
-                label="En el checkout"
+                label={words.inCheckout}
                 value={count((v) => v.page_type === "checkout")}
               />
               <MiniStat
-                label="Abrieron WhatsApp"
+                label={words.openedWhatsapp}
                 value={count((v) => v.contacted_whatsapp)}
               />
             </div>
@@ -182,12 +188,10 @@ export const LivePanel = () => {
           <div className="bg-ui-bg-subtle px-6 py-3">
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
               {[
-                "Hoy",
-                `${formatNumber(data.today.sessions)} ${
-                  data.today.sessions === 1 ? "visita" : "visitas"
-                }`,
-                `${formatNumber(data.today.pageviews)} páginas vistas`,
-                `${formatNumber(data.today.contacted_whatsapp)} abrieron WhatsApp`,
+                words.today,
+                words.visits(data.today.sessions, formatNumber(data.today.sessions)),
+                words.pageviews(data.today.pageviews, formatNumber(data.today.pageviews)),
+                words.openedWhatsappCount(formatNumber(data.today.contacted_whatsapp)),
               ].join(" · ")}
             </Text>
           </div>
@@ -201,7 +205,7 @@ export const LivePanel = () => {
           {visitors.length === 0 ? (
             <div className="px-6 py-4">
               <Text size="small" leading="compact" className="text-ui-fg-subtle">
-                Nadie en la tienda en este momento.
+                {words.nobody}
               </Text>
             </div>
           ) : (
@@ -222,9 +226,7 @@ export const LivePanel = () => {
                     variant="transparent"
                     onClick={() => setExpanded((e) => !e)}
                   >
-                    {expanded
-                      ? "Ver menos"
-                      : `Ver los ${visitors.length} visitantes`}
+                    {expanded ? words.showLess : words.showAll(visitors.length)}
                   </Button>
                 </div>
               )}

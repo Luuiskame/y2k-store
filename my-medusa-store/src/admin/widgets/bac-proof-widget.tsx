@@ -3,6 +3,10 @@ import type { DetailWidgetProps, AdminOrder } from "@medusajs/framework/types"
 import { Container, Heading, Button, Badge, Text, toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
 
+import { LANG_HEADER, dateLocale, getLang } from "../i18n/lang"
+import { tr } from "../i18n/tr"
+import { useLang, useT } from "../i18n/use-t"
+
 /** What `GET /admin/orders/:id/bac-proofs` returns per file. */
 type SignedProof = { url: string | null; uploaded_at: string; is_pdf: boolean }
 
@@ -12,6 +16,8 @@ type SignedProof = { url: string | null; uploaded_at: string; is_pdf: boolean }
 const PREVIEW_PAGE_SIZE = 12
 
 const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
+  const words = useT().alerts.bac
+  const locale = dateLocale(useLang())
   const stored = order.metadata?.bac_transfer_proof
   const proofCount = Array.isArray(stored) ? stored.length : 0
   const status =
@@ -38,11 +44,14 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
     }
 
     let cancelled = false
-    fetch(`/admin/orders/${order.id}/bac-proofs`, { credentials: "include" })
+    fetch(`/admin/orders/${order.id}/bac-proofs`, {
+      credentials: "include",
+      headers: { [LANG_HEADER]: getLang() },
+    })
       .then(async (res) => {
         const json = await res.json().catch(() => ({}))
         if (!res.ok) {
-          throw new Error(json.message ?? "No se pudieron cargar los comprobantes.")
+          throw new Error(json.message ?? tr().alerts.bac.proofsFailed)
         }
         if (!cancelled) {
           setProof(json.proofs ?? [])
@@ -50,7 +59,7 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       })
       .catch((e: any) => {
         if (!cancelled) {
-          setProofError(e.message ?? "No se pudieron cargar los comprobantes.")
+          setProofError(e.message ?? tr().alerts.bac.proofsFailed)
         }
       })
 
@@ -69,16 +78,16 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       const res = await fetch(`/admin/orders/${order.id}/bac-confirm`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", [LANG_HEADER]: getLang() },
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        throw new Error(json.message ?? "No se pudo confirmar el pago.")
+        throw new Error(json.message ?? words.confirmFailed)
       }
       setConfirmed(true)
-      toast.success("Pago confirmado. Notificando al cliente.")
+      toast.success(words.confirmed)
     } catch (e: any) {
-      toast.error(e.message ?? "Error al confirmar el pago.")
+      toast.error(e.message ?? words.confirmError)
     } finally {
       setConfirming(false)
     }
@@ -88,13 +97,13 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-x-3">
-          <Heading level="h2">Transferencia BAC</Heading>
+          <Heading level="h2">{words.title}</Heading>
           {confirmed ? (
-            <Badge color="green">Pago verificado</Badge>
+            <Badge color="green">{words.verified}</Badge>
           ) : status === "proof_uploaded" ? (
-            <Badge color="orange">Comprobante pendiente</Badge>
+            <Badge color="orange">{words.proofPending}</Badge>
           ) : (
-            <Badge color="grey">Sin comprobante</Badge>
+            <Badge color="grey">{words.noProof}</Badge>
           )}
         </div>
       </div>
@@ -102,13 +111,12 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       <div className="px-6 py-4 flex flex-col gap-y-4">
         {proofCount === 0 ? (
           <Text size="small" className="text-ui-fg-subtle">
-            Aún no se ha subido comprobante de transferencia.
+            {words.nothingUploaded}
           </Text>
         ) : (
           <div className="flex flex-col gap-y-3">
             <Text size="small" className="text-ui-fg-subtle">
-              {proofCount} archivo{proofCount === 1 ? "" : "s"} recibido
-              {proofCount === 1 ? "" : "s"}
+              {words.filesReceived(proofCount)}
             </Text>
             {proofError ? (
               <Text size="small" className="text-ui-fg-error">
@@ -116,7 +124,7 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
               </Text>
             ) : !proof ? (
               <Text size="small" className="text-ui-fg-subtle">
-                Cargando comprobantes…
+                {words.loadingProofs}
               </Text>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -136,13 +144,13 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
                       ) : (
                         <img
                           src={p.url}
-                          alt={`Comprobante ${i + 1}`}
+                          alt={words.proofAlt(i + 1)}
                           className="w-full h-32 object-cover"
                         />
                       )}
                       <div className="px-2 py-1.5">
                         <Text size="xsmall" className="text-ui-fg-subtle">
-                          {new Date(p.uploaded_at).toLocaleString("es-HN")}
+                          {new Date(p.uploaded_at).toLocaleString(locale)}
                         </Text>
                       </div>
                     </a>
@@ -152,7 +160,7 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
                       className="flex items-center justify-center h-32 border rounded-md bg-ui-bg-subtle px-2 text-center"
                     >
                       <Text size="xsmall" className="text-ui-fg-subtle">
-                        Comprobante {i + 1}: no se encontró el archivo
+                        {words.fileMissing(i + 1)}
                       </Text>
                     </div>
                   )
@@ -166,8 +174,10 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
                 className="self-start"
                 onClick={() => setVisibleCount((c) => c + PREVIEW_PAGE_SIZE)}
               >
-                Ver {Math.min(PREVIEW_PAGE_SIZE, proof.length - visibleCount)}{" "}
-                más ({proof.length - visibleCount} restantes)
+                {words.showMore(
+                  Math.min(PREVIEW_PAGE_SIZE, proof.length - visibleCount),
+                  proof.length - visibleCount
+                )}
               </Button>
             )}
           </div>
@@ -180,13 +190,13 @@ const BacProofWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
             isLoading={confirming}
             disabled={confirming}
           >
-            Confirmar pago
+            {words.confirm}
           </Button>
         )}
 
         {confirmed && (
           <Text size="small" className="text-ui-fg-subtle">
-            El cliente ya fue notificado por correo.
+            {words.customerNotified}
           </Text>
         )}
       </div>

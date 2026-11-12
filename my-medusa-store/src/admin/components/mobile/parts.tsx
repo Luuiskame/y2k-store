@@ -2,6 +2,8 @@ import { MagnifyingGlass, XMarkMini } from "@medusajs/icons"
 import { Button, Text, clx } from "@medusajs/ui"
 import type { ReactNode } from "react"
 
+import { useT } from "../../i18n/use-t"
+
 /**
  * Pieces shared by the phone lists (Pedidos, Productos, Inventario): the
  * search field, the filter pills, the placeholder cards and the footer.
@@ -17,7 +19,10 @@ export const SearchField = ({
   onChange: (value: string) => void
   placeholder: string
   label: string
-}) => (
+}) => {
+  const words = useT().orders.list
+
+  return (
   <div className="relative">
     <MagnifyingGlass className="text-ui-fg-muted pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
     <input
@@ -35,14 +40,15 @@ export const SearchField = ({
       <button
         type="button"
         onClick={() => onChange("")}
-        aria-label="Borrar búsqueda"
+        aria-label={words.clearSearch}
         className="text-ui-fg-muted hover:text-ui-fg-base absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg"
       >
         <XMarkMini />
       </button>
     )}
   </div>
-)
+  )
+}
 
 export const Chip = ({
   on,
@@ -107,16 +113,20 @@ export const ErrorState = ({
 }: {
   message: string
   onRetry: () => void
-}) => (
-  <div className="bg-ui-bg-base shadow-elevation-card-rest flex flex-col items-center gap-3 rounded-xl px-6 py-8 text-center">
-    <Text size="small" leading="compact" className="text-ui-fg-error">
-      {message}
-    </Text>
-    <Button size="small" variant="secondary" onClick={onRetry}>
-      Reintentar
-    </Button>
-  </div>
-)
+}) => {
+  const words = useT().orders.list
+
+  return (
+    <div className="bg-ui-bg-base shadow-elevation-card-rest flex flex-col items-center gap-3 rounded-xl px-6 py-8 text-center">
+      <Text size="small" leading="compact" className="text-ui-fg-error">
+        {message}
+      </Text>
+      <Button size="small" variant="secondary" onClick={onRetry}>
+        {words.retry}
+      </Button>
+    </div>
+  )
+}
 
 /** "Cargar más" and how far the list has got. */
 export const ListFooter = ({
@@ -129,12 +139,15 @@ export const ListFooter = ({
 }: {
   shown: number
   total: number
-  /** [singular, plural] */
-  noun: [string, string]
+  /** What is being counted, for that many: "pedido" or "pedidos". */
+  noun: (count: number) => string
   hasMore: boolean
   loading: boolean
   onMore: () => void
-}) => (
+}) => {
+  const words = useT().orders.list
+
+  return (
   <div className="flex flex-col items-center gap-2 py-1">
     {hasMore && (
       <Button
@@ -144,11 +157,12 @@ export const ListFooter = ({
         isLoading={loading}
         disabled={loading}
       >
-        Cargar más
+        {words.loadMore}
       </Button>
     )}
     <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
-      {shown} de {total} {total === 1 ? noun[0] : noun[1]}
+      {words.shownOf(shown, total, noun(total))}
     </Text>
   </div>
-)
+  )
+}

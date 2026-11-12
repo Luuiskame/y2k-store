@@ -1,0 +1,105 @@
+import type { Words } from "./words"
+
+/** Products and inventory, as the phone shows them. */
+
+export const catalogEs = {
+  searchProduct: "Buscar producto",
+  oneSize: "Único",
+  noPrice: "Sin precio",
+
+  products: {
+    title: "Productos",
+    create: "Crear",
+    searchLabel: "Buscar productos",
+    filterAria: "Filtrar productos",
+    forSale: "A la venta",
+    status: { draft: "Borrador", proposed: "Propuesto", rejected: "Rechazado" } as Record<
+      string,
+      string
+    >,
+    soldOut: "agotado",
+    inStock: (count: number) => `${count} en stock`,
+    loadError: "No se pudieron cargar los productos.",
+    emptyTitle: "Todavía no hay productos",
+    emptyDetail: "Creá el primero con el botón de arriba.",
+    noun: (count: number) => (count === 1 ? "producto" : "productos"),
+  },
+
+  inventory: {
+    title: "Inventario",
+    searchLabel: "Buscar en el inventario",
+    filterAria: "Filtrar inventario",
+    all: "Todo",
+    low: "Por acabarse",
+    out: "Agotado",
+    untracked: "Sin control de stock",
+    available: (count: number) => `${count} ${count === 1 ? "disponible" : "disponibles"}`,
+    inOrders: (count: number) => `${count} en pedidos`,
+    oneLess: (name: string) => `Una unidad menos de ${name}`,
+    oneMore: (name: string) => `Una unidad más de ${name}`,
+    inWarehouse: (name: string) => `Unidades en bodega de ${name}`,
+    severalWarehouses: "Varias bodegas",
+    saved: (product: string) => `Stock de ${product} guardado.`,
+    saveFailed: "No se pudo guardar el stock.",
+    undo: "Deshacer",
+    save: (changes: number) =>
+      `Guardar ${changes === 1 ? "cambio" : `${changes} cambios`}`,
+    loadError: "No se pudo cargar el inventario.",
+    emptyLow: "Nada por acabarse",
+    emptyOut: "Nada agotado",
+    emptyAll: "Todavía no hay productos",
+    amongLoaded: "Entre los productos cargados. Tocá «Cargar más» para revisar el resto.",
+    noneAtOrUnder: (units: number) => `Ninguna talla tiene ${units} o menos unidades.`,
+    noneAtZero: "Ninguna talla tiene cero unidades.",
+    noun: (count: number) => (count === 1 ? "producto revisado" : "productos revisados"),
+  },
+}
+
+export const catalogEn: Words<typeof catalogEs> = {
+  searchProduct: "Search product",
+  oneSize: "One size",
+  noPrice: "No price",
+
+  products: {
+    title: "Products",
+    create: "Create",
+    searchLabel: "Search products",
+    filterAria: "Filter products",
+    forSale: "On sale",
+    status: { draft: "Draft", proposed: "Proposed", rejected: "Rejected" },
+    soldOut: "sold out",
+    inStock: (count) => `${count} in stock`,
+    loadError: "Could not load the products.",
+    emptyTitle: "No products yet",
+    emptyDetail: "Create the first one with the button above.",
+    noun: (count) => (count === 1 ? "product" : "products"),
+  },
+
+  inventory: {
+    title: "Inventory",
+    searchLabel: "Search the inventory",
+    filterAria: "Filter inventory",
+    all: "All",
+    low: "Running low",
+    out: "Sold out",
+    untracked: "Stock not tracked",
+    available: (count) => `${count} available`,
+    inOrders: (count) => `${count} in orders`,
+    oneLess: (name) => `One unit less of ${name}`,
+    oneMore: (name) => `One unit more of ${name}`,
+    inWarehouse: (name) => `Units in the warehouse of ${name}`,
+    severalWarehouses: "Several warehouses",
+    saved: (product) => `Stock of ${product} saved.`,
+    saveFailed: "Could not save the stock.",
+    undo: "Undo",
+    save: (changes) => `Save ${changes === 1 ? "change" : `${changes} changes`}`,
+    loadError: "Could not load the inventory.",
+    emptyLow: "Nothing running low",
+    emptyOut: "Nothing sold out",
+    emptyAll: "No products yet",
+    amongLoaded: "Among the products loaded. Tap “Load more” to check the rest.",
+    noneAtOrUnder: (units) => `No size has ${units} units or fewer.`,
+    noneAtZero: "No size has zero units.",
+    noun: (count) => (count === 1 ? "product checked" : "products checked"),
+  },
+}

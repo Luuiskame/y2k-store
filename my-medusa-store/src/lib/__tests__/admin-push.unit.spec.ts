@@ -15,6 +15,7 @@ import {
   readStoredSubscriptions,
   sendAdminAlert,
   subscriptionId,
+  testAlert,
   upsertSubscription,
 } from "../admin-push"
 
@@ -223,6 +224,29 @@ describe("alert copy", () => {
       "El cliente subió el comprobante (2 archivos). Revísalo y confirma el pago."
     )
   })
+
+  it("says the same in English, with the amount still in lempiras", () => {
+    const placed = newOrderAlert(order, "en")
+    expect(placed.title).toMatch(/^New order #1043 · L\s?1,250\.00$/)
+    expect(placed.body).toBe("María López · San Pedro Sula · 3 items")
+    expect(newOrderAlert({ id: "order_02", item_count: 1 }, "en").body).toBe("1 item")
+    expect(newOrderAlert({ id: "order_03" }, "en").body).toBe("Open it to see the details.")
+
+    const receipt = proofReceivedAlert(order, 1, "en")
+    expect(receipt.title).toBe("Receipt received · order #1043")
+    expect(receipt.body).toMatch(
+      /^María López uploaded the receipt for L\s?1,250\.00\. Review it and confirm the payment\.$/
+    )
+    expect(proofReceivedAlert({ id: "order_04" }, 2, "en").body).toBe(
+      "The customer uploaded the receipt (2 files). Review it and confirm the payment."
+    )
+    // Where it opens and what it replaces do not depend on the language.
+    expect(receipt.url).toBe(proofReceivedAlert(order, 1).url)
+    expect(receipt.tag).toBe(proofReceivedAlert(order, 1).tag)
+
+    expect(testAlert("en").title).toBe("Sales alerts are on")
+    expect(testAlert().title).toBe("Alertas de ventas activas")
+  })
 })
 
 describe("sendAdminAlert", () => {
@@ -262,6 +286,32 @@ describe("sendAdminAlert", () => {
 
   afterAll(() => {
     process.env = savedEnv
+  })
+
+  it("writes the alert for each user in the language their panel is in", async () => {
+    const hers = device("https://web.push.apple.com/owner")
+    const his = device("https://web.push.apple.com/staff")
+    const theirs = device("https://fcm.googleapis.com/fcm/send/never-chose")
+    sendMock.mockResolvedValue({ statusCode: 201, body: "", headers: {} })
+
+    const { container } = buildContainer([
+      { id: "user_owner", metadata: { y2k_theme: { lang: "en" }, [PUSH_METADATA_KEY]: [hers] } },
+      { id: "user_staff", metadata: { y2k_theme: { lang: "es" }, [PUSH_METADATA_KEY]: [his] } },
+      { id: "user_new", metadata: { [PUSH_METADATA_KEY]: [theirs] } },
+    ])
+    const order = { id: "order_9", display_id: 9, item_count: 2 }
+
+    const delivery = await sendAdminAlert(container, (lang) => newOrderAlert(order, lang))
+
+    expect(delivery.sent).toBe(3)
+    const titleFor = (endpoint: string) =>
+      JSON.parse(
+        sendMock.mock.calls.find(([subscription]) => subscription.endpoint === endpoint)![1] as string
+      ).title
+    expect(titleFor(hers.endpoint)).toBe("New order #9")
+    expect(titleFor(his.endpoint)).toBe("Nuevo pedido #9")
+    // Nobody who never chose a language is moved to English.
+    expect(titleFor(theirs.endpoint)).toBe("Nuevo pedido #9")
   })
 
   it("delivers to every device, drops the gone ones and keeps the rest", async () => {

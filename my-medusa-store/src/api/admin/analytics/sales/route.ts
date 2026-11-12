@@ -4,6 +4,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import {
   pendingWork,
   reportingCurrency,
+  salesMomentum,
   salesReport,
 } from "../../../../lib/analytics/sales"
 import {
@@ -18,7 +19,8 @@ import { AnalyticsRangeQuery } from "../validators"
 /**
  * Sales for the dashboard: totals against the comparison period, the series
  * for the chart, top products, payment methods, departments and customers,
- * plus what is waiting on the owner right now.
+ * plus what is waiting on the owner right now and the store's streak of days
+ * with sales. The last two do not depend on the range asked for.
  */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   let range: ReturnType<typeof resolveRange>
@@ -34,7 +36,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const pg = req.scope.resolve(ContainerRegistrationKeys.PG_CONNECTION)
   const currency = await reportingCurrency(pg)
 
-  const [report, pending] = await Promise.all([
+  const [report, pending, momentum] = await Promise.all([
     salesReport(pg, {
       current: range.current,
       previous: range.previous,
@@ -45,7 +47,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       currency,
     }),
     pendingWork(pg, currency),
+    salesMomentum(pg, currency),
   ])
 
-  return res.json({ range: describeRange(range), ...report, pending })
+  return res.json({ range: describeRange(range), ...report, pending, momentum })
 }

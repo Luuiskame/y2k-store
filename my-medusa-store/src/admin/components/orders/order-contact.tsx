@@ -14,7 +14,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
+import { useT } from "../../i18n/use-t"
 import { formatMoney } from "../../lib/analytics-format"
+import { cheer } from "../../lib/cheer"
 import { sdk } from "../../lib/client"
 import { COMPACT_ORDERS_KEY, errorMessage } from "../../lib/compact"
 import { STORE_NAME } from "../../lib/orders-format"
@@ -62,6 +64,8 @@ const TO_SHIP = ["not_fulfilled", "partially_fulfilled"]
  *   its receipt arrives over WhatsApp, so the receipt card never offers to.
  */
 export const OrderContact = ({ order }: { order: AdminOrder }) => {
+  const t = useT()
+  const words = t.orders.contact
   const queryClient = useQueryClient()
   const prompt = usePrompt()
 
@@ -117,14 +121,14 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
   const capture = useMutation({
     mutationFn: () => sdk.admin.payment.capture(payment!.id, {}),
     onSuccess: () => {
-      toast.success("Pedido marcado como cobrado.")
+      toast.success(cheer(words.collectedToast, "paid"))
       // Medusa's order pages, our phone list and Estadísticas all show it.
       for (const queryKey of [["orders"], COMPACT_ORDERS_KEY, ["y2k-analytics"]]) {
         queryClient.invalidateQueries({ queryKey })
       }
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudo marcar como cobrado."))
+      toast.error(errorMessage(error, words.collectFailed))
     },
   })
 
@@ -134,26 +138,25 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
     mutationFn: () =>
       sdk.client.fetch(`/admin/orders/${order.id}/bac-confirm`, { method: "POST" }),
     onSuccess: () => {
-      toast.success("Transferencia confirmada.")
+      toast.success(cheer(words.transferToast, "paid"))
       for (const queryKey of [["orders"], COMPACT_ORDERS_KEY, ["y2k-analytics"]]) {
         queryClient.invalidateQueries({ queryKey })
       }
     },
     onError: (error) => {
-      toast.error(errorMessage(error, "No se pudo confirmar la transferencia."))
+      toast.error(errorMessage(error, words.transferFailed))
     },
   })
 
   const onConfirmTransfer = async () => {
     const confirmed = await prompt({
-      title: "¿Ya llegó la transferencia?",
-      description: `Se va a registrar que recibiste ${money(
-        payment?.amount ?? order.total
-      )} por transferencia${
-        order.email ? " y se le avisa al cliente por correo" : ""
-      }. No se puede deshacer desde aquí.`,
-      confirmText: "Sí, llegó",
-      cancelText: "Todavía no",
+      title: words.transferPrompt.title,
+      description: words.transferPrompt.description(
+        money(payment?.amount ?? order.total),
+        !!order.email
+      ),
+      confirmText: words.transferPrompt.confirm,
+      cancelText: words.transferPrompt.cancel,
       variant: "confirmation",
     })
     if (confirmed) {
@@ -164,10 +167,10 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
   const onCollect = async () => {
     const amount = money(collectTotal ?? payment?.amount ?? order.total)
     const confirmed = await prompt({
-      title: "¿Ya recibiste el pago?",
-      description: `Se va a registrar que cobraste ${amount} de este pedido. No se puede deshacer desde aquí.`,
-      confirmText: "Sí, cobrado",
-      cancelText: "Todavía no",
+      title: words.collectPrompt.title,
+      description: words.collectPrompt.description(amount),
+      confirmText: words.collectPrompt.confirm,
+      cancelText: words.collectPrompt.cancel,
       variant: "confirmation",
     })
     if (confirmed) {
@@ -184,28 +187,27 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
       <div className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <Text size="base" leading="compact" weight="plus" className="truncate">
-            {fullName || order.email || "Cliente sin nombre"}
+            {fullName || order.email || words.noName}
           </Text>
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
             {[number?.display ?? typedPhone, place].filter(Boolean).join(" · ") ||
-              "Sin teléfono ni dirección"}
+              words.nothingToReach}
           </Text>
           {address?.address_1 && (
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
               {address.address_1}
-              {references ? ` · Ref: ${references}` : ""}
+              {references ? words.reference(references) : ""}
             </Text>
           )}
           {number && !number.certain && !editing && (
             <Text size="xsmall" leading="compact" className="text-ui-tag-orange-text">
-              El número no dice de qué país es; lo completamos como{" "}
-              {number.display}.{" "}
+              {t.orders.whatsapp.guessed(number.display)}{" "}
               <button
                 type="button"
                 className="underline"
                 onClick={() => setCorrection(typedPhone)}
               >
-                Corregir
+                {t.orders.whatsapp.fix}
               </button>
             </Text>
           )}
@@ -222,7 +224,7 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="y2k-whatsapp rounded-r-none"
-                aria-label={`WhatsApp a ${number.display}`}
+                aria-label={t.orders.whatsapp.to("WhatsApp", number.display)}
               >
                 <WhatsappIcon />
                 WhatsApp
@@ -232,13 +234,13 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
                   <button
                     type="button"
                     className="y2k-whatsapp rounded-l-none border-l border-white/25 px-2"
-                    aria-label="Otros mensajes de WhatsApp"
+                    aria-label={t.orders.whatsapp.others}
                   >
                     <ChevronDownMini />
                   </button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end" className="w-[280px]">
-                  <DropdownMenu.Label>Mensajes listos</DropdownMenu.Label>
+                  <DropdownMenu.Label>{t.orders.whatsapp.ready}</DropdownMenu.Label>
                   {MESSAGE_TEMPLATES.map((template) => (
                     <DropdownMenu.Item key={template.id} asChild>
                       <a
@@ -250,9 +252,9 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
                         rel="noopener noreferrer"
                         className="flex flex-col items-start gap-0.5"
                       >
-                        <span>{template.label}</span>
+                        <span>{t.orders.whatsapp.templates[template.id].label}</span>
                         <span className="text-ui-fg-subtle txt-compact-xsmall">
-                          {template.hint}
+                          {t.orders.whatsapp.templates[template.id].hint}
                         </span>
                       </a>
                     </DropdownMenu.Item>
@@ -268,7 +270,7 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
                 onClick={() => setCorrection(typedPhone)}
               >
                 <WhatsappIcon size={16} />
-                Escribir el número
+                {t.orders.whatsapp.typeNumber}
               </Button>
             )
           )}
@@ -276,10 +278,10 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
             <Button size="small" variant="secondary" asChild>
               <a
                 href={`tel:${number ? `+${number.digits}` : typedPhone}`}
-                aria-label="Llamar"
+                aria-label={words.call}
               >
                 <Phone />
-                Llamar
+                {words.call}
               </a>
             </Button>
           )}
@@ -287,7 +289,7 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
             <Button size="small" variant="secondary" asChild>
               <Link to="fulfillment">
                 <TruckFast />
-                Despachar
+                {words.ship}
               </Link>
             </Button>
           )}
@@ -298,11 +300,10 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
         <div className="flex flex-col gap-2 px-6 py-4 md:flex-row md:items-center">
           <div className="flex flex-1 flex-col gap-1">
             <Text size="small" leading="compact" weight="plus">
-              Número de WhatsApp
+              {t.orders.whatsapp.numberLabel}
             </Text>
             <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-              Con el código del país si no es de Honduras: +1 305 555 1234. Solo
-              se usa para abrir el chat; el pedido no cambia.
+              {t.orders.whatsapp.numberHelp}
             </Text>
           </div>
           <div className="flex items-center gap-2">
@@ -313,11 +314,11 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
               autoFocus
               value={correction ?? ""}
               onChange={(event) => setCorrection(event.target.value)}
-              aria-label="Número de WhatsApp"
+              aria-label={t.orders.whatsapp.numberLabel}
               className="w-[200px]"
             />
             <Button size="small" variant="transparent" onClick={() => setCorrection(null)}>
-              Cancelar
+              {words.cancel}
             </Button>
           </div>
         </div>
@@ -328,35 +329,37 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <Text size="small" leading="compact" weight="plus">
-                Pago contra entrega
+                {words.cashOnDelivery}
               </Text>
               {collected ? (
                 <Badge size="2xsmall" color="green">
-                  Cobrado
+                  {words.collected}
                 </Badge>
               ) : canceled ? (
                 <Badge size="2xsmall" color="grey">
-                  Pedido cancelado
+                  {words.orderCanceled}
                 </Badge>
               ) : (
                 <Badge size="2xsmall" color="orange">
-                  Por cobrar
+                  {words.toCollect}
                 </Badge>
               )}
             </div>
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
               {collectTotal !== null ? (
                 <>
-                  Cobrar al entregar:{" "}
+                  {words.collectOnDelivery}{" "}
                   <span className="text-ui-fg-base font-medium">
                     {money(collectTotal)}
                   </span>
                   {cod?.surcharge
-                    ? ` (pedido ${money(order.total)} + ${money(cod.surcharge)} de recargo de la empresa de envíos)`
-                    : " (sin recargo)"}
+                    ? words.withSurcharge(money(order.total), money(cod.surcharge))
+                    : words.noSurcharge}
                 </>
               ) : (
-                <>Cobrar al entregar: {money(order.total)}</>
+                <>
+                  {words.collectOnDelivery} {money(order.total)}
+                </>
               )}
             </Text>
           </div>
@@ -368,7 +371,7 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
               isLoading={capture.isPending}
               disabled={capture.isPending}
             >
-              Marcar cobrado
+              {words.markCollected}
             </Button>
           )}
         </div>
@@ -379,28 +382,26 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <Text size="small" leading="compact" weight="plus">
-                Transferencia BAC
+                {words.transfer}
               </Text>
               {collected ? (
                 <Badge size="2xsmall" color="green">
-                  Pagado
+                  {words.paid}
                 </Badge>
               ) : canceled ? (
                 <Badge size="2xsmall" color="grey">
-                  Pedido cancelado
+                  {words.orderCanceled}
                 </Badge>
               ) : (
                 <Badge size="2xsmall" color="orange">
-                  Esperando el pago
+                  {words.awaitingPayment}
                 </Badge>
               )}
             </div>
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
               {collected
-                ? `Recibiste ${money(payment?.amount ?? order.total)}.`
-                : `Cuando veás los ${money(
-                    payment?.amount ?? order.total
-                  )} en la cuenta, confirmalo aquí.`}
+                ? words.received(money(payment?.amount ?? order.total))
+                : words.whenItArrives(money(payment?.amount ?? order.total))}
             </Text>
           </div>
           {!collected && !canceled && (
@@ -411,7 +412,7 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
               isLoading={confirmTransfer.isPending}
               disabled={confirmTransfer.isPending}
             >
-              Confirmar pago
+              {words.confirmPayment}
             </Button>
           )}
         </div>
@@ -420,7 +421,7 @@ export const OrderContact = ({ order }: { order: AdminOrder }) => {
       {note && (
         <div className="px-6 py-3">
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            <span className="text-ui-fg-base font-medium">Nota:</span> {note}
+            <span className="text-ui-fg-base font-medium">{words.note}</span> {note}
           </Text>
         </div>
       )}

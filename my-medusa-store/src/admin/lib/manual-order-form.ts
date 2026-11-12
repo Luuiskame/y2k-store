@@ -1,3 +1,4 @@
+import { tr } from "../i18n/tr"
 import type { CompactProduct, CompactVariant } from "./compact"
 import type {
   CreateWorkingCartInput,
@@ -178,9 +179,10 @@ export const validateOrderForm = (
   customer: CustomerForm
 ): FormError[] => {
   const errors: FormError[] = []
+  const words = tr().manualOrder.errors
 
   if (lines.length === 0) {
-    errors.push({ field: "items", message: "Agregá al menos un producto." })
+    errors.push({ field: "items", message: words.noItems })
   }
   for (const line of lines) {
     if (line.quantity > maxQuantity(line)) {
@@ -189,34 +191,32 @@ export const validateOrderForm = (
         field: "items",
         message:
           line.available === 0
-            ? `${name} está agotado.`
-            : `Solo ${line.available === 1 ? "queda 1" : `quedan ${line.available}`} de ${name}.`,
+            ? words.soldOut(name)
+            : words.onlyLeft(line.available ?? 0, name),
       })
     }
   }
 
   if (!customer.full_name.trim()) {
-    errors.push({ field: "full_name", message: "Falta el nombre del cliente." })
+    errors.push({ field: "full_name", message: words.noName })
   }
   if (!toWhatsappNumber(customer.phone, customer.country_code)) {
     errors.push({
       field: "phone",
-      message: customer.phone.trim()
-        ? "Revisá el teléfono: no parece un número completo."
-        : "Falta el teléfono del cliente.",
+      message: customer.phone.trim() ? words.badPhone : words.noPhone,
     })
   }
   if (!customer.city.trim()) {
-    errors.push({ field: "city", message: "Falta la ciudad o el poblado." })
+    errors.push({ field: "city", message: words.noCity })
   }
   if (!customer.province.trim()) {
-    errors.push({ field: "province", message: "Elegí el departamento." })
+    errors.push({ field: "province", message: words.noProvince })
   }
   if (!customer.address_1.trim()) {
-    errors.push({ field: "address_1", message: "Falta la dirección de entrega." })
+    errors.push({ field: "address_1", message: words.noAddress })
   }
   if (customer.email.trim() && !EMAIL.test(customer.email.trim())) {
-    errors.push({ field: "email", message: "El correo no parece válido." })
+    errors.push({ field: "email", message: words.badEmail })
   }
 
   return errors
