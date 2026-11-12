@@ -1,6 +1,7 @@
 import { Container, Heading, Input, Label, Select, Text, clx } from "@medusajs/ui"
 import type { ReactNode } from "react"
 
+import { useT } from "../../i18n/use-t"
 import {
   CustomerForm,
   FormError,
@@ -25,7 +26,10 @@ const Field = ({
   hint?: ReactNode
   className?: string
   children: ReactNode
-}) => (
+}) => {
+  const words = useT().manualOrder.customer
+
+  return (
   <div className={clx("flex flex-col gap-1.5", className)}>
     <div className="flex items-baseline gap-1.5">
       <Label htmlFor={id} size="small" weight="plus">
@@ -33,7 +37,7 @@ const Field = ({
       </Label>
       {optional && (
         <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
-          opcional
+          {words.optional}
         </Text>
       )}
     </div>
@@ -50,7 +54,8 @@ const Field = ({
       )
     )}
   </div>
-)
+  )
+}
 
 /**
  * Who the order is for and where it goes. The same fields the storefront's
@@ -70,6 +75,7 @@ export const CustomerFormSection = ({
   showErrors: boolean
   onChange: (patch: Partial<CustomerForm>) => void
 }) => {
+  const words = useT().manualOrder.customer
   const errorOf = (field: keyof CustomerForm) =>
     showErrors ? errors.find((error) => error.field === field)?.message : undefined
 
@@ -88,14 +94,14 @@ export const CustomerFormSection = ({
   return (
     <Container className="divide-y p-0">
       <div className="flex flex-col gap-1 px-6 py-4">
-        <Heading level="h2">Cliente y entrega</Heading>
+        <Heading level="h2">{words.heading}</Heading>
         <Text size="small" leading="compact" className="text-ui-fg-subtle">
-          Lo que necesita quien entrega para encontrarlo y cobrarle.
+          {words.hint}
         </Text>
       </div>
 
       <div className="grid grid-cols-1 gap-4 px-6 py-4 md:grid-cols-2">
-        <Field id="mo-name" label="Nombre completo" error={errorOf("full_name")}>
+        <Field id="mo-name" label={words.fullName} error={errorOf("full_name")}>
           <Input
             id="mo-name"
             autoComplete="off"
@@ -108,9 +114,9 @@ export const CustomerFormSection = ({
 
         <Field
           id="mo-phone"
-          label="Teléfono (WhatsApp)"
+          label={words.phone}
           error={errorOf("phone")}
-          hint={number ? `Se escribe a ${number.display}` : "8 dígitos; con +código si es de otro país"}
+          hint={number ? words.writesTo(number.display) : words.phoneHint}
         >
           <Input
             id="mo-phone"
@@ -126,9 +132,9 @@ export const CustomerFormSection = ({
 
         <div className="flex flex-col gap-2 md:col-span-2">
           <Text size="small" leading="compact" weight="plus">
-            ¿A dónde va?
+            {words.whereTo}
           </Text>
-          <div className="y2k-chips" role="group" aria-label="Ciudades frecuentes">
+          <div className="y2k-chips" role="group" aria-label={words.quickPlaces}>
             {QUICK_PLACES.map((place) => (
               <button
                 key={place.label}
@@ -147,7 +153,7 @@ export const CustomerFormSection = ({
           </div>
         </div>
 
-        <Field id="mo-city" label="Ciudad o poblado" error={errorOf("city")}>
+        <Field id="mo-city" label={words.city} error={errorOf("city")}>
           <Input
             id="mo-city"
             autoComplete="off"
@@ -158,13 +164,13 @@ export const CustomerFormSection = ({
           />
         </Field>
 
-        <Field id="mo-province" label="Departamento" error={errorOf("province")}>
+        <Field id="mo-province" label={words.province} error={errorOf("province")}>
           <Select
             value={customer.province || undefined}
             onValueChange={(province) => onChange({ province })}
           >
             <Select.Trigger id="mo-province" aria-invalid={!!errorOf("province")}>
-              <Select.Value placeholder="Elegir departamento" />
+              <Select.Value placeholder={words.chooseProvince} />
             </Select.Trigger>
             <Select.Content>
               {departments.map((department) => (
@@ -178,31 +184,31 @@ export const CustomerFormSection = ({
 
         <Field
           id="mo-address"
-          label="Dirección exacta"
+          label={words.address}
           error={errorOf("address_1")}
           className="md:col-span-2"
         >
           <Input
             id="mo-address"
             autoComplete="off"
-            placeholder="Colonia, calle, número de casa"
+            placeholder={words.addressPlaceholder}
             value={customer.address_1}
             onChange={text("address_1")}
             aria-invalid={!!errorOf("address_1")}
           />
         </Field>
 
-        <Field id="mo-ref1" label="Referencia" optional>
+        <Field id="mo-ref1" label={words.reference} optional>
           <Input
             id="mo-ref1"
             autoComplete="off"
-            placeholder="Cómo llegar"
+            placeholder={words.referencePlaceholder}
             value={customer.address_2}
             onChange={text("address_2")}
           />
         </Field>
 
-        <Field id="mo-ref2" label="Otra referencia" optional>
+        <Field id="mo-ref2" label={words.otherReference} optional>
           <Input
             id="mo-ref2"
             autoComplete="off"
@@ -213,10 +219,10 @@ export const CustomerFormSection = ({
 
         <Field
           id="mo-email"
-          label="Correo"
+          label={words.email}
           optional
           error={errorOf("email")}
-          hint="Con correo, el cliente recibe los avisos de envío y entrega."
+          hint={words.emailHint}
           className="md:col-span-2"
         >
           <Input

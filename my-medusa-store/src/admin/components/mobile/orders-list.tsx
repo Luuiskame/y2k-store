@@ -3,6 +3,7 @@ import { Badge, Button, Heading, IconButton, Text, clx } from "@medusajs/ui"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
+import { useT } from "../../i18n/use-t"
 import { formatMoney } from "../../lib/analytics-format"
 import {
   CompactOrder,
@@ -33,28 +34,14 @@ import {
 const VIEW_KEY = "y2k-orders-view"
 const VIEWS: readonly OrderView[] = ["all", "unpaid", "unfulfilled"]
 
-const EMPTY: Record<OrderView, { title: string; detail: string }> = {
-  all: {
-    title: "Todavía no hay pedidos",
-    detail: "Cuando entre el primero, o lo registrés con «Nuevo pedido», aparece aquí.",
-  },
-  unpaid: {
-    title: "Nada por cobrar",
-    detail: "Todos los pedidos abiertos están pagados.",
-  },
-  unfulfilled: {
-    title: "Nada por despachar",
-    detail: "Todos los pedidos abiertos ya salieron.",
-  },
-}
-
 const OrderCard = ({ order }: { order: CompactOrder }) => {
+  const words = useT().orders.card
   const canceled = order.status === "canceled"
   const payment = paymentLabel(order.payment_status)
   const fulfillment = fulfillmentLabel(order.fulfillment_status)
-  const name = order.customer_name || order.email || "Cliente sin nombre"
+  const name = order.customer_name || order.email || words.noName
   const method = paymentMethodName(order.payment_provider)
-  const number = order.display_id ? `#${order.display_id}` : "Pedido"
+  const number = order.display_id ? `#${order.display_id}` : words.order
   const firstName = order.customer_name.split(" ")[0] ?? ""
 
   return (
@@ -67,7 +54,7 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
       {/* The whole card opens the order; WhatsApp sits above this link. */}
       <Link
         to={`/orders/${order.id}`}
-        aria-label={`${number} de ${name}`}
+        aria-label={words.aria(number, name)}
         className="focus-visible:shadow-borders-interactive-with-focus absolute inset-0 rounded-xl outline-none"
       />
       <div className="pointer-events-none relative flex flex-col gap-3 p-4">
@@ -85,7 +72,7 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
               {name}
             </Text>
             <Text size="small" leading="compact" className="text-ui-fg-subtle truncate">
-              {[order.city, method].filter(Boolean).join(" · ") || "Sin dirección"}
+              {[order.city, method].filter(Boolean).join(" · ") || words.noAddress}
             </Text>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-0.5">
@@ -94,7 +81,7 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
             </span>
             {order.collect_total !== null && order.collect_total !== order.total && (
               <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
-                cobrar {formatMoney(order.collect_total, order.currency_code)}
+                {words.collect(formatMoney(order.collect_total, order.currency_code))}
               </Text>
             )}
           </div>
@@ -117,7 +104,7 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
           <div className="flex flex-wrap items-center gap-1.5">
             {canceled ? (
               <Badge size="2xsmall" color="red">
-                Cancelado
+                {words.canceled}
               </Badge>
             ) : (
               <>
@@ -129,7 +116,7 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
                 </Badge>
                 {order.bac_status === "proof_uploaded" && (
                   <Badge size="2xsmall" color="purple">
-                    Comprobante por revisar
+                    {words.proofToReview}
                   </Badge>
                 )}
               </>
@@ -138,6 +125,8 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
           <WhatsappLink
             phone={order.phone}
             countryCode={order.country_code}
+            // Written to the customer: Spanish, whatever the panel is in
+            // (the same greeting as the first template of lib/whatsapp.ts).
             message={`Hola${firstName ? ` ${firstName}` : ""}, te escribimos de ${STORE_NAME} por tu pedido${
               order.display_id ? ` #${order.display_id}` : ""
             }.`}
@@ -159,6 +148,8 @@ const OrderCard = ({ order }: { order: CompactOrder }) => {
  * hides Medusa's own table below it (see theme.css).
  */
 export const MobileOrders = () => {
+  const t = useT()
+  const words = t.orders
   const [view, setView] = useState<OrderView>(() => readStored(VIEW_KEY, VIEWS, "all"))
   const [search, setSearch] = useState("")
   const q = useDebounced(search.trim(), 350)
@@ -177,11 +168,11 @@ export const MobileOrders = () => {
   return (
     <div className="y2k-m-takeover flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3 px-1 pt-1">
-        <Heading>Pedidos</Heading>
+        <Heading>{words.title}</Heading>
         <div className="flex items-center gap-2">
           <IconButton
             variant="transparent"
-            aria-label="Actualizar"
+            aria-label={words.list.refresh}
             onClick={() => query.refetch()}
           >
             <ArrowPath className={query.isFetching ? "animate-spin" : undefined} />
@@ -189,7 +180,7 @@ export const MobileOrders = () => {
           <Button asChild>
             <Link to="/nuevo-pedido">
               <Plus />
-              Nuevo pedido
+              {words.newOrder}
             </Link>
           </Button>
         </div>
@@ -198,35 +189,36 @@ export const MobileOrders = () => {
       <SearchField
         value={search}
         onChange={setSearch}
-        placeholder="Número, nombre o correo"
-        label="Buscar pedidos"
+        placeholder={words.searchPlaceholder}
+        label={words.searchLabel}
       />
 
-      <div className="y2k-chips" role="group" aria-label="Filtrar pedidos">
+      <div className="y2k-chips" role="group" aria-label={words.filterAria}>
         <Chip on={view === "all"} onClick={() => choose("all")}>
-          Todos
+          {words.list.all}
         </Chip>
         <Chip
           on={view === "unpaid"}
           onClick={() => choose("unpaid")}
           count={pending?.awaiting_payment}
         >
-          Por cobrar
+          {words.unpaid}
         </Chip>
         <Chip
           on={view === "unfulfilled"}
           onClick={() => choose("unfulfilled")}
           count={pending?.to_fulfill}
         >
-          Por despachar
+          {words.unfulfilled}
         </Chip>
       </div>
 
       {view === "unpaid" && pending && pending.awaiting_payment > 0 && !q && (
         <Text size="small" leading="compact" className="text-ui-fg-subtle px-1">
-          {formatMoney(pending.awaiting_amount, orders[0]?.currency_code ?? "hnl")} por
-          cobrar en {pending.awaiting_payment}{" "}
-          {pending.awaiting_payment === 1 ? "pedido" : "pedidos"}.
+          {words.toCollectIn(
+            formatMoney(pending.awaiting_amount, orders[0]?.currency_code ?? "hnl"),
+            pending.awaiting_payment
+          )}
         </Text>
       )}
 
@@ -238,14 +230,14 @@ export const MobileOrders = () => {
         </div>
       ) : query.isError && orders.length === 0 ? (
         <ErrorState
-          message={errorMessage(query.error, "No se pudieron cargar los pedidos.")}
+          message={errorMessage(query.error, words.loadError)}
           onRetry={() => query.refetch()}
         />
       ) : orders.length === 0 ? (
         q ? (
-          <EmptyState title="Sin resultados">Nada coincide con «{q}».</EmptyState>
+          <EmptyState title={words.list.noResults}>{words.list.nothingMatches(q)}</EmptyState>
         ) : (
-          <EmptyState title={EMPTY[view].title}>{EMPTY[view].detail}</EmptyState>
+          <EmptyState title={words.empty[view].title}>{words.empty[view].detail}</EmptyState>
         )
       ) : (
         <>
@@ -257,7 +249,7 @@ export const MobileOrders = () => {
           <ListFooter
             shown={orders.length}
             total={total}
-            noun={["pedido", "pedidos"]}
+            noun={words.noun}
             hasMore={!!query.hasNextPage}
             loading={query.isFetchingNextPage}
             onMore={() => query.fetchNextPage()}

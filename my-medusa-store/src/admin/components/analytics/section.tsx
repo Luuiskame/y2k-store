@@ -2,6 +2,8 @@ import { Spinner } from "@medusajs/icons"
 import { Container, Heading, Text, clx } from "@medusajs/ui"
 import type { ReactNode } from "react"
 
+import { useT } from "../../i18n/use-t"
+
 /** A dashboard card: heading row, then content. */
 export const Section = ({
   title,
@@ -41,13 +43,15 @@ export const Loading = () => (
   </div>
 )
 
-export const ErrorNote = ({ error }: { error: unknown }) => (
-  <Text size="small" leading="compact" className="text-ui-fg-error">
-    {error instanceof Error && error.message
-      ? error.message
-      : "No se pudieron cargar estos datos."}
-  </Text>
-)
+export const ErrorNote = ({ error }: { error: unknown }) => {
+  const t = useT()
+
+  return (
+    <Text size="small" leading="compact" className="text-ui-fg-error">
+      {error instanceof Error && error.message ? error.message : t.analytics.loadError}
+    </Text>
+  )
+}
 
 export const Empty = ({ children }: { children: ReactNode }) => (
   <Text size="small" leading="compact" className="text-ui-fg-subtle">

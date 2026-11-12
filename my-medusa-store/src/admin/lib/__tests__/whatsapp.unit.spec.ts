@@ -1,3 +1,5 @@
+import { DICTS } from "../../i18n/dictionary"
+import { LANGS, setLang } from "../../i18n/lang"
 import {
   MESSAGE_TEMPLATES,
   MessageOrder,
@@ -187,11 +189,26 @@ describe("message templates", () => {
     expect(build("confirmar", bare)).not.toMatch(/\n{3,}/)
   })
 
-  it("all produce text and have distinct ids and labels", () => {
+  it("all produce text, and each has its own name in both languages", () => {
     expect(new Set(MESSAGE_TEMPLATES.map((t) => t.id)).size).toBe(MESSAGE_TEMPLATES.length)
-    expect(new Set(MESSAGE_TEMPLATES.map((t) => t.label)).size).toBe(MESSAGE_TEMPLATES.length)
+    for (const lang of LANGS) {
+      const names = DICTS[lang].orders.whatsapp.templates
+      expect(Object.keys(names).sort()).toEqual(MESSAGE_TEMPLATES.map((t) => t.id).sort())
+      expect(new Set(Object.values(names).map((name) => name.label)).size).toBe(
+        MESSAGE_TEMPLATES.length
+      )
+    }
     for (const template of MESSAGE_TEMPLATES) {
       expect(template.build(order, "Y2K Fit").length).toBeGreaterThan(20)
+    }
+  })
+
+  it("are written to the customer in Spanish whatever the panel's language", () => {
+    setLang("en")
+    try {
+      expect(build("saludo")).toBe("Hola María, te escribimos de Y2K Fit por tu pedido #128.")
+    } finally {
+      setLang("es")
     }
   })
 })

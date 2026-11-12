@@ -2,6 +2,7 @@ import { ArrowDownMini, ArrowUpMini, InformationCircleSolid } from "@medusajs/ic
 import { Badge, Text, Tooltip } from "@medusajs/ui"
 import type { ReactNode } from "react"
 
+import { useT } from "../../i18n/use-t"
 import { formatPercent } from "../../lib/analytics-format"
 
 /** Under half a percent either way reads as "no change". */
@@ -12,6 +13,7 @@ const FLAT = 0.005
  * the direction never rests on color alone.
  */
 export const Change = ({ value }: { value: number }) => {
+  const { change } = useT().analytics
   const flat = Math.abs(value) < FLAT
   const up = value > 0
 
@@ -22,7 +24,7 @@ export const Change = ({ value }: { value: number }) => {
       className="gap-x-0.5"
     >
       {!flat && (up ? <ArrowUpMini /> : <ArrowDownMini />)}
-      <span className="sr-only">{flat ? "Sin cambio" : up ? "Subió" : "Bajó"}</span>
+      <span className="sr-only">{flat ? change.flat : up ? change.up : change.down}</span>
       {formatPercent(Math.abs(value))}
     </Badge>
   )

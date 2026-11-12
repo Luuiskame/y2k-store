@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from "react"
 import {
   getThemePrefs,
   hasLocalTheme,
+  isThemeUnsaved,
+  markThemeUnsaved,
   setThemePrefs,
   subscribeTheme,
 } from "../theme/boot"
@@ -24,28 +26,7 @@ import { sdk } from "./client"
  */
 
 const APPEARANCE_KEY = ["y2k-appearance"]
-const UNSAVED_KEY = "y2k-admin-theme-unsaved"
 const SAVE_DELAY_MS = 600
-
-const readUnsaved = (): boolean => {
-  try {
-    return localStorage.getItem(UNSAVED_KEY) === "1"
-  } catch {
-    return false
-  }
-}
-
-const markUnsaved = (unsaved: boolean) => {
-  try {
-    if (unsaved) {
-      localStorage.setItem(UNSAVED_KEY, "1")
-    } else {
-      localStorage.removeItem(UNSAVED_KEY)
-    }
-  } catch {
-    // Storage blocked: nothing to remember it in.
-  }
-}
 
 const save = (prefs: ThemePrefs) =>
   sdk.client.fetch<{ appearance: unknown }>("/admin/appearance", {
@@ -79,10 +60,10 @@ export const useAccountTheme = () => {
     const local = getThemePrefs()
 
     // A change made here that never reached the account: send it now.
-    if (readUnsaved()) {
+    if (isThemeUnsaved()) {
       save(local)
         .then(() => {
-          markUnsaved(false)
+          markThemeUnsaved(false)
           queryClient.setQueryData(APPEARANCE_KEY, { appearance: local })
         })
         .catch(() => undefined)
@@ -92,7 +73,10 @@ export const useAccountTheme = () => {
     if (!hasPrefs(data.appearance)) {
       return
     }
-    const account = parsePrefs(data.appearance)
+    // A copy saved by an earlier version of the panel lacks the newer
+    // fields (language, motto): those keep what this browser has instead of
+    // falling back to the defaults.
+    const account = parsePrefs({ ...local, ...(data.appearance as object) })
     if (!hasLocalTheme() || !samePrefs(account, local)) {
       setThemePrefs(account)
     }
@@ -113,7 +97,7 @@ export const useChangeTheme = () => {
       // Only the latest change clears the flag; an older answer arriving
       // late must not hide that a newer one is still on its way.
       if (samePrefs(prefs, getThemePrefs())) {
-        markUnsaved(false)
+        markThemeUnsaved(false)
       }
       queryClient.setQueryData(APPEARANCE_KEY, { appearance: prefs })
     },
@@ -134,7 +118,7 @@ export const useChangeTheme = () => {
   const change = useCallback(
     (patch: Partial<ThemePrefs>) => {
       setThemePrefs(patch)
-      markUnsaved(true)
+      markThemeUnsaved(true)
       if (timer.current) {
         clearTimeout(timer.current)
       }

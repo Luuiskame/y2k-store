@@ -2,6 +2,9 @@ import { BellAlert, Spinner } from "@medusajs/icons"
 import { Badge, Button, Container, Heading, Text, toast } from "@medusajs/ui"
 import { ReactNode, useState } from "react"
 
+import type { Dict } from "../../i18n/dictionary"
+import { dateLocale } from "../../i18n/lang"
+import { useLang, useT } from "../../i18n/use-t"
 import {
   DeviceState,
   PushDevice,
@@ -32,15 +35,13 @@ const rememberDismissed = () => {
 const appleDevice = (): string =>
   /iPhone|iPod/.test(navigator.userAgent) ? "iPhone" : "iPad"
 
-const INSTALL_STEPS =
-  "En Safari toca Compartir y elige «Agregar a pantalla de inicio». Luego abre el panel desde el ícono Y2K Admin y activa las alertas ahí."
-
 /**
  * Top of the orders list: offers alerts on this device, and only while there
  * is something to do about them. Once they are on, or after "Ahora no", it
  * stays out of the way; Ajustes → Perfil has the full controls.
  */
 export const SalesAlertsBanner = () => {
+  const words = useT().alerts
   const [dismissed, setDismissed] = useState(readDismissed)
 
   if (dismissed) {
@@ -52,13 +53,14 @@ export const SalesAlertsBanner = () => {
       onDismiss={() => {
         rememberDismissed()
         setDismissed(true)
-        toast.info("Puedes activarlas cuando quieras en Ajustes → Perfil.")
+        toast.info(words.dismissedHint)
       }}
     />
   )
 }
 
 const BannerContent = ({ onDismiss }: { onDismiss: () => void }) => {
+  const words = useT().alerts
   const { data: status } = usePushStatus()
   const push = useDevicePush(status)
 
@@ -69,11 +71,11 @@ const BannerContent = ({ onDismiss }: { onDismiss: () => void }) => {
   if (push.state === "needs-install") {
     return (
       <BannerFrame
-        title={`Recibe las alertas de ventas en este ${appleDevice()}`}
-        description={`El ${appleDevice()} solo avisa desde la app de inicio. ${INSTALL_STEPS}`}
+        title={words.installTitle(appleDevice())}
+        description={words.installDescription(appleDevice(), words.installSteps)}
       >
         <Button size="small" variant="secondary" onClick={onDismiss}>
-          Entendido
+          {words.understood}
         </Button>
       </BannerFrame>
     )
@@ -85,14 +87,14 @@ const BannerContent = ({ onDismiss }: { onDismiss: () => void }) => {
 
   return (
     <BannerFrame
-      title="Alertas de ventas en este dispositivo"
-      description="Te avisamos al momento cada vez que entra un pedido o un cliente sube el comprobante de su transferencia."
+      title={words.bannerTitle}
+      description={words.bannerDescription}
     >
       <Button size="small" variant="secondary" onClick={onDismiss}>
-        Ahora no
+        {words.notNow}
       </Button>
       <Button size="small" onClick={push.enable} isLoading={push.enabling}>
-        Activar alertas
+        {words.enable}
       </Button>
     </BannerFrame>
   )
@@ -123,38 +125,37 @@ const BannerFrame = ({
   </Container>
 )
 
-const STATE_BADGE: Partial<
-  Record<DeviceState, { label: string; color: "green" | "grey" | "red" | "orange" }>
-> = {
-  on: { label: "Activas", color: "green" },
-  off: { label: "Desactivadas", color: "grey" },
-  blocked: { label: "Bloqueadas", color: "red" },
-  "needs-install": { label: "Falta instalar", color: "orange" },
-  unsupported: { label: "No disponibles", color: "grey" },
+/** The color of each state's badge; its word is in the dictionary. */
+const STATE_COLOR: Partial<Record<DeviceState, "green" | "grey" | "red" | "orange">> = {
+  on: "green",
+  off: "grey",
+  blocked: "red",
+  "needs-install": "orange",
+  unsupported: "grey",
 }
 
-const stateDescription = (state: DeviceState): string => {
+const stateDescription = (state: DeviceState, words: Dict["alerts"]): string => {
   switch (state) {
     case "checking":
-      return "Revisando este dispositivo…"
+      return words.describe.checking
     case "on":
-      return "Este dispositivo recibe un aviso por cada pedido nuevo y cada comprobante."
+      return words.describe.on
     case "off":
-      return "Este dispositivo no recibe avisos."
+      return words.describe.off
     case "blocked":
-      return "Las notificaciones del panel están bloqueadas. Actívalas en los ajustes del dispositivo (en iPhone: Ajustes → Notificaciones → Y2K Admin) y vuelve a esta página."
+      return words.describe.blocked
     case "needs-install":
-      return `En ${appleDevice()} los avisos solo llegan a la app de inicio. ${INSTALL_STEPS}`
+      return words.describe.needsInstall(appleDevice(), words.installSteps)
     case "unsupported":
-      return "Este navegador no puede recibir notificaciones del panel."
+      return words.describe.unsupported
   }
 }
 
-const formatDate = (iso: string): string => {
+const formatDate = (iso: string, locale: string): string => {
   const date = new Date(iso)
   return Number.isNaN(date.getTime())
     ? ""
-    : date.toLocaleDateString("es-HN", {
+    : date.toLocaleDateString(locale, {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -163,20 +164,19 @@ const formatDate = (iso: string): string => {
 
 /** Ajustes → Perfil: alerts on this device, the user's other devices, a test. */
 export const SalesAlertsCard = () => {
+  const words = useT().alerts
   const { data: status, isLoading, isError } = usePushStatus()
   const push = useDevicePush(status)
   const devices = status?.devices ?? []
-  const badge = STATE_BADGE[push.state]
+  const badgeColor = STATE_COLOR[push.state]
 
   return (
     <Container className="divide-y p-0">
       <div className="flex items-start justify-between gap-4 px-6 py-4">
         <div className="flex flex-col gap-1">
-          <Heading level="h2">Alertas de ventas</Heading>
+          <Heading level="h2">{words.title}</Heading>
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            Un aviso en tus dispositivos por cada pedido nuevo y cada
-            comprobante de transferencia. Los comprobantes también llegan por
-            correo.
+            {words.description}
           </Text>
         </div>
         {status?.configured && devices.length > 0 && (
@@ -187,7 +187,7 @@ export const SalesAlertsCard = () => {
             onClick={() => push.test.mutate()}
             isLoading={push.test.isPending}
           >
-            Enviar prueba
+            {words.sendTest}
           </Button>
         )}
       </div>
@@ -196,20 +196,19 @@ export const SalesAlertsCard = () => {
         <div className="flex items-center gap-2 px-6 py-4">
           <Spinner className="text-ui-fg-subtle animate-spin" />
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            Cargando…
+            {words.loading}
           </Text>
         </div>
       ) : isError || !status ? (
         <div className="px-6 py-4">
           <Text size="small" leading="compact" className="text-ui-fg-error">
-            No se pudo cargar el estado de las alertas.
+            {words.loadError}
           </Text>
         </div>
       ) : !status.configured ? (
         <div className="px-6 py-4">
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            El servidor todavía no puede enviar alertas: faltan las variables
-            WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY y WEB_PUSH_SUBJECT.
+            {words.notConfigured}
           </Text>
         </div>
       ) : (
@@ -218,16 +217,16 @@ export const SalesAlertsCard = () => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <Text size="small" leading="compact" weight="plus">
-                  Este dispositivo
+                  {words.thisDevice}
                 </Text>
-                {badge && (
-                  <Badge size="2xsmall" color={badge.color}>
-                    {badge.label}
+                {badgeColor && (
+                  <Badge size="2xsmall" color={badgeColor}>
+                    {words.states[push.state]}
                   </Badge>
                 )}
               </div>
               <Text size="small" leading="compact" className="text-ui-fg-subtle">
-                {stateDescription(push.state)}
+                {stateDescription(push.state, words)}
               </Text>
             </div>
             <div className="flex shrink-0 justify-end">
@@ -237,7 +236,7 @@ export const SalesAlertsCard = () => {
                   onClick={push.enable}
                   isLoading={push.enabling}
                 >
-                  Activar alertas
+                  {words.enable}
                 </Button>
               )}
               {push.state === "on" && (
@@ -247,7 +246,7 @@ export const SalesAlertsCard = () => {
                   onClick={() => push.disable.mutate()}
                   isLoading={push.disable.isPending}
                 >
-                  Desactivar
+                  {words.disable}
                 </Button>
               )}
             </div>
@@ -256,7 +255,7 @@ export const SalesAlertsCard = () => {
           {devices.length > 0 && (
             <div className="flex flex-col gap-3 px-6 py-4">
               <Text size="small" leading="compact" weight="plus">
-                Dispositivos con alertas
+                {words.devices}
               </Text>
               <ul className="flex flex-col gap-2">
                 {devices.map((device) => (
@@ -291,7 +290,8 @@ const DeviceRow = ({
   removing: boolean
   onRemove: () => void
 }) => {
-  const since = formatDate(device.created_at)
+  const words = useT().alerts
+  const since = formatDate(device.created_at, dateLocale(useLang()))
 
   return (
     <li className="flex items-center justify-between gap-3">
@@ -302,18 +302,18 @@ const DeviceRow = ({
           </Text>
           {isThisDevice && (
             <Badge size="2xsmall" color="blue">
-              Este dispositivo
+              {words.thisDevice}
             </Badge>
           )}
           {!device.current_key && (
             <Badge size="2xsmall" color="orange">
-              Hay que volver a activarlas
+              {words.reactivate}
             </Badge>
           )}
         </div>
         {since && (
           <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-            Desde el {since}
+            {words.since(since)}
           </Text>
         )}
       </div>
@@ -324,7 +324,7 @@ const DeviceRow = ({
         onClick={onRemove}
         isLoading={removing}
       >
-        Quitar
+        {words.remove}
       </Button>
     </li>
   )

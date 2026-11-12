@@ -208,11 +208,13 @@ export type MessageOrder = {
   address: string
 }
 
+/**
+ * What each one is called and what it is for is the owner's reading, and is
+ * translated: `t.orders.whatsapp.templates[id]`. The message itself is the
+ * customer's, and is always in Spanish.
+ */
 export type MessageTemplate = {
   id: "saludo" | "confirmar" | "en-camino" | "coordinar" | "comprobante"
-  label: string
-  /** What it is for, under the label. */
-  hint: string
   build: (order: MessageOrder, storeName: string) => string
 }
 
@@ -239,15 +241,11 @@ const itemLines = (order: MessageOrder) =>
 export const MESSAGE_TEMPLATES: MessageTemplate[] = [
   {
     id: "saludo",
-    label: "Saludo",
-    hint: "Abre el chat con una línea",
     build: (order, store) =>
       `${greeting(order)}, te escribimos de ${store} por ${orderRef(order)}.`,
   },
   {
     id: "confirmar",
-    label: "Confirmar pedido",
-    hint: "Productos, total y dirección para que diga que sí",
     build: (order, store) =>
       [
         `${greeting(order)}, te escribimos de ${store} para confirmar ${orderRef(order)}:`,
@@ -263,8 +261,6 @@ export const MESSAGE_TEMPLATES: MessageTemplate[] = [
   },
   {
     id: "en-camino",
-    label: "Va en camino",
-    hint: "Avisa que ya salió",
     build: (order, store) =>
       `${greeting(order)}, ${orderRef(order)} de ${store} ya va en camino.${
         order.collect_total
@@ -274,15 +270,11 @@ export const MESSAGE_TEMPLATES: MessageTemplate[] = [
   },
   {
     id: "coordinar",
-    label: "Coordinar entrega",
-    hint: "Pregunta a qué hora puede recibir",
     build: (order, store) =>
       `${greeting(order)}, te escribimos de ${store}. ¿A qué hora te queda bien recibir ${orderRef(order)}?`,
   },
   {
     id: "comprobante",
-    label: "Pedir comprobante",
-    hint: "Para transferencias que no han mandado el recibo",
     build: (order, store) =>
       `${greeting(order)}, te escribimos de ${store}. Para preparar ${orderRef(order)} nos falta el comprobante de la transferencia por ${order.total}. ¿Nos lo mandás por aquí?`,
   },

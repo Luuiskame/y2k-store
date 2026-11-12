@@ -8,6 +8,7 @@ import {
   useState,
 } from "react"
 
+import { useT } from "../../i18n/use-t"
 import type { Granularity } from "../../lib/analytics"
 import { formatBucket } from "../../lib/analytics-format"
 
@@ -123,22 +124,26 @@ const LineKey = ({ color }: { color: string }) => (
   />
 )
 
-export const TrendLegend = () => (
-  <div className="flex items-center gap-x-4">
-    <div className="flex items-center gap-x-1.5">
-      <LineKey color="var(--an-series)" />
-      <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-        Este período
-      </Text>
+export const TrendLegend = () => {
+  const words = useT().analytics.trend
+
+  return (
+    <div className="flex items-center gap-x-4">
+      <div className="flex items-center gap-x-1.5">
+        <LineKey color="var(--an-series)" />
+        <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+          {words.thisPeriod}
+        </Text>
+      </div>
+      <div className="flex items-center gap-x-1.5">
+        <LineKey color="var(--an-context)" />
+        <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+          {words.previousPeriod}
+        </Text>
+      </div>
     </div>
-    <div className="flex items-center gap-x-1.5">
-      <LineKey color="var(--an-context)" />
-      <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-        Período anterior
-      </Text>
-    </div>
-  </div>
-)
+  )
+}
 
 /**
  * Current period against the previous one on a single axis: the current line
@@ -157,6 +162,7 @@ export const TrendChart = ({
   integer = false,
   label,
 }: TrendProps) => {
+  const words = useT().analytics.trend
   const wrapper = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [active, setActive] = useState<number | null>(null)
@@ -258,7 +264,7 @@ export const TrendChart = ({
         style={{ height: PLOT_HEIGHT + PAD.top + AXIS_BAND }}
         tabIndex={0}
         role="group"
-        aria-label={`${label}. Usá las flechas para recorrer los valores.`}
+        aria-label={words.arrowsHint(label)}
         onKeyDown={onKeyDown}
         onFocus={() => setActive((a) => a ?? Math.max(0, lastCurrent))}
         onBlur={() => setActive(null)}
@@ -394,7 +400,7 @@ export const TrendChart = ({
                 {valueAt(current, active)}
               </Text>
               <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
-                este período
+                {words.thisPeriodInline}
               </Text>
             </div>
             <div className="flex items-center gap-x-2">
@@ -426,6 +432,7 @@ export const TrendTable = ({
   previousDay,
   format,
 }: Omit<TrendProps, "formatTick" | "integer" | "label">) => {
+  const words = useT().analytics.trend
   const rows = Math.max(current.buckets.length, previous.buckets.length)
 
   return (
@@ -433,10 +440,10 @@ export const TrendTable = ({
       <Table>
         <Table.Header>
           <Table.Row>
-            <Table.HeaderCell>{granularity === "hour" ? "Hora" : "Fecha"}</Table.HeaderCell>
-            <Table.HeaderCell className="text-right">Este período</Table.HeaderCell>
-            <Table.HeaderCell>Período anterior</Table.HeaderCell>
-            <Table.HeaderCell className="text-right">Valor anterior</Table.HeaderCell>
+            <Table.HeaderCell>{granularity === "hour" ? words.hour : words.date}</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">{words.thisPeriod}</Table.HeaderCell>
+            <Table.HeaderCell>{words.previousPeriod}</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">{words.previousValue}</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
         <Table.Body>

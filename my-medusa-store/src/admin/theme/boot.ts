@@ -1,5 +1,7 @@
 import "./theme.css"
 
+import { keepDashboardInStep, startDashboardLanguage } from "../i18n/dashboard"
+import { setLang } from "../i18n/lang"
 import { paletteCss } from "./palettes"
 import {
   DEFAULT_PREFS,
@@ -28,7 +30,9 @@ import { mountTabBar } from "./tabbar"
  * - the type set as CSS variables;
  * - the browser's `theme-color`, so the iPhone status bar and the Android
  *   title bar match the page;
- * - the bottom bar for phones.
+ * - the bottom bar for phones;
+ * - the language of our screens (i18n/lang.ts), and Medusa's own screens
+ *   kept in step with it (i18n/dashboard.ts).
  *
  * Nothing here may throw: a look that fails to load must leave a working
  * admin behind.
@@ -38,6 +42,7 @@ type Listener = () => void
 
 const MEDUSA_THEME_KEY = "medusa_admin_theme"
 const STYLE_ID = "y2k-palette"
+const UNSAVED_KEY = "y2k-admin-theme-unsaved"
 
 const readStored = (): string | null => {
   try {
@@ -61,6 +66,31 @@ export const subscribeTheme = (listener: Listener): (() => void) => {
 
 /** Whether this browser has a look of its own saved. */
 export const hasLocalTheme = (): boolean => hasPrefs(readStored())
+
+/**
+ * Whether a change made here has not reached the account yet. While it is
+ * set, lib/theme-sync.ts sends this browser's copy on the next visit instead
+ * of letting the account's older one overwrite it.
+ */
+export const isThemeUnsaved = (): boolean => {
+  try {
+    return localStorage.getItem(UNSAVED_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+export const markThemeUnsaved = (unsaved: boolean) => {
+  try {
+    if (unsaved) {
+      localStorage.setItem(UNSAVED_KEY, "1")
+    } else {
+      localStorage.removeItem(UNSAVED_KEY)
+    }
+  } catch {
+    // Storage blocked: nothing to remember it in.
+  }
+}
 
 /** Medusa adds `dark` to <html> itself; this reads which side is showing. */
 export const currentMode = (): "dark" | "light" =>
@@ -96,6 +126,8 @@ const apply = (next: ThemePrefs) => {
   html.dataset.y2kPalette = palette.id
   html.classList.toggle("y2k-aura", next.aura && !!palette.modes)
   html.classList.toggle("y2k-tabbar-on", next.tabbar)
+  setLang(next.lang)
+  keepDashboardInStep(next.unified)
 
   if (font.id === "clasica") {
     delete html.dataset.y2kFont
@@ -178,6 +210,14 @@ const boot = () => {
 
   applyModeEarly()
   apply(prefs)
+
+  // Medusa's Profile page can change the language too: ours follows (that
+  // is a choice of language like the one in Apariencia), and the account
+  // hears about it on the next visit.
+  startDashboardLanguage((lang) => {
+    setThemePrefs({ lang, unified: true })
+    markThemeUnsaved(true)
+  })
 
   // The status bar follows Medusa's own light/dark switch.
   new MutationObserver(syncThemeColor).observe(document.documentElement, {

@@ -18,6 +18,14 @@ export const AppearanceSchema = z
     font: id,
     aura: z.boolean(),
     tabbar: z.boolean(),
+    // Added after the first release. Optional, because a phone that still
+    // runs the earlier panel saves without them (what was stored is kept:
+    // see `saveAppearance`).
+    lang: z.enum(["es", "en"]).optional(),
+    unified: z.boolean().optional(),
+    /** Free text set in big type; the panel cleans what it reads back. */
+    motto: z.string().max(200).optional(),
+    hype: z.boolean().optional(),
   })
   .strict()
 

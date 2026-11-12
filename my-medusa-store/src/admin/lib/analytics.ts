@@ -7,15 +7,19 @@ import { sdk } from "./client"
  * `src/api/admin/analytics/*` return.
  */
 
+/**
+ * The periods on offer. What each is called and what it is compared with
+ * are words: `t.analytics.presets[value]` (i18n/dict/analytics.ts).
+ */
 export const PRESETS = [
-  { value: "today", label: "Hoy", comparison: "vs. ayer a esta hora" },
-  { value: "yesterday", label: "Ayer", comparison: "vs. el día anterior" },
-  { value: "last_7_days", label: "Últimos 7 días", comparison: "vs. los 7 días anteriores" },
-  { value: "last_30_days", label: "Últimos 30 días", comparison: "vs. los 30 días anteriores" },
-  { value: "last_90_days", label: "Últimos 90 días", comparison: "vs. los 90 días anteriores" },
-  { value: "this_month", label: "Este mes", comparison: "vs. los mismos días del mes pasado" },
-  { value: "last_month", label: "Mes pasado", comparison: "vs. el mes anterior" },
-  { value: "this_year", label: "Este año", comparison: "vs. los mismos días del año pasado" },
+  { value: "today" },
+  { value: "yesterday" },
+  { value: "last_7_days" },
+  { value: "last_30_days" },
+  { value: "last_90_days" },
+  { value: "this_month" },
+  { value: "last_month" },
+  { value: "this_year" },
 ] as const
 
 export type Preset = (typeof PRESETS)[number]["value"]
@@ -34,6 +38,17 @@ export type RangeInfo = {
 type SeriesOf<K extends string> = { buckets: string[] } & Record<K, (number | null)[]>
 
 export type ProductCard = { id: string; title: string; thumbnail: string | null }
+
+/** The store's run of days with sales (src/lib/analytics/momentum.ts). */
+export type Momentum = {
+  /** Days in a row with a sale, ending today or, with none yet today, yesterday. */
+  streak: number
+  includes_today: boolean
+  best: number
+  active_days_30: number
+  /** Today counted from the first sale ever; null before it. */
+  day_number: number | null
+}
 
 export type SalesResponse = {
   range: RangeInfo
@@ -72,6 +87,8 @@ export type SalesResponse = {
     awaiting_amount: number
     to_fulfill: number
   }
+  /** Missing only while an older server is still answering. */
+  momentum?: Momentum
 }
 
 export type TrafficTotals = {

@@ -1,3 +1,4 @@
+import { tr } from "../i18n/tr"
 import { formatMoney } from "./analytics-format"
 import type { CompactProduct } from "./compact"
 
@@ -15,7 +16,7 @@ export const priceRange = (
     .map((variant) => variant.price)
     .filter((price): price is number => price !== null)
   if (prices.length === 0) {
-    return "Sin precio"
+    return tr().catalog.noPrice
   }
   const low = Math.min(...prices)
   const high = Math.max(...prices)

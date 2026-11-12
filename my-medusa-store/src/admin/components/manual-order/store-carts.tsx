@@ -3,6 +3,7 @@ import { Badge, Button, Container, Heading, Text, toast } from "@medusajs/ui"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
+import { useT } from "../../i18n/use-t"
 import { formatMoney } from "../../lib/analytics-format"
 import { errorMessage } from "../../lib/compact"
 import { extractCartId } from "../../lib/manual-order-form"
@@ -27,6 +28,7 @@ const CartRow = ({
   loading: boolean
   onPick: () => void
 }) => {
+  const words = useT().manualOrder.carts
   const number = toWhatsappNumber(cart.phone, "hn")
 
   return (
@@ -39,7 +41,7 @@ const CartRow = ({
       >
         <div className="flex items-baseline justify-between gap-3">
           <Text size="small" leading="compact" weight="plus" className="truncate">
-            {cart.customer_name || "Sin nombre"}
+            {cart.customer_name || words.noName}
           </Text>
           <Text size="small" leading="compact" weight="plus" className="shrink-0 tabular-nums">
             {formatMoney(cart.total, cart.currency_code)}
@@ -56,7 +58,7 @@ const CartRow = ({
         {cart.placed && (
           <div>
             <Badge size="2xsmall" color="orange">
-              Ya es el pedido{cart.placed.display_id ? ` #${cart.placed.display_id}` : ""}
+              {words.alreadyOrder(cart.placed.display_id ? ` #${cart.placed.display_id}` : "")}
             </Badge>
           </div>
         )}
@@ -85,6 +87,7 @@ export const StoreCartsSection = ({
   onPick: (cartId: string) => void
   onClear: () => void
 }) => {
+  const words = useT().manualOrder.carts
   const [search, setSearch] = useState("")
   const [expanded, setExpanded] = useState(false)
   const q = useDebounced(search.trim(), 350)
@@ -108,19 +111,14 @@ export const StoreCartsSection = ({
     try {
       text = await navigator.clipboard.readText()
     } catch {
-      toast.info("Pegá el mensaje en el buscador de abajo.", {
-        description: "Este navegador no deja leer el portapapeles con un botón.",
-      })
+      toast.info(words.pasteBelow, { description: words.pasteBlocked })
       return
     }
     const id = extractCartId(text)
     if (id) {
       onPick(id)
     } else {
-      toast.warning("Ese texto no trae un carrito de la tienda.", {
-        description:
-          "Copiá el mensaje completo del cliente: termina con «Pedido #: cart_…».",
-      })
+      toast.warning(words.noCartInText, { description: words.copyWholeMessage })
     }
   }
 
@@ -131,31 +129,31 @@ export const StoreCartsSection = ({
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <Text size="small" leading="compact" weight="plus">
-              Desde el carrito de {address?.full_name || "un cliente"}
+              {words.fromCartOf(address?.full_name || words.aCustomer)}
             </Text>
             <Text size="small" leading="compact" className="text-ui-fg-subtle">
-              Productos, dirección y envío vienen de lo que el cliente armó en la
-              tienda ({formatMoney(loaded.total, loaded.currency_code)}). Podés
-              cambiar lo que haga falta.
+              {words.fromCartHint(formatMoney(loaded.total, loaded.currency_code))}
             </Text>
           </div>
           <Button size="small" variant="secondary" className="shrink-0" onClick={onClear}>
             <XMarkMini />
-            Quitar
+            {words.remove}
           </Button>
         </div>
         {(loaded.placed || loaded.completed) && (
           <Text size="small" leading="compact" className="text-ui-tag-orange-text">
             {loaded.placed ? (
               <>
-                De este carrito ya salió{" "}
+                {words.placedBefore}{" "}
                 <Link to={`/orders/${loaded.placed.order_id}`} className="underline">
-                  el pedido{loaded.placed.display_id ? ` #${loaded.placed.display_id}` : ""}
+                  {words.theOrder(
+                    loaded.placed.display_id ? ` #${loaded.placed.display_id}` : ""
+                  )}
                 </Link>
-                . Seguí solo si es un pedido distinto.
+                {words.placedAfter}
               </>
             ) : (
-              "El cliente ya completó este carrito en la tienda. Seguí solo si es un pedido distinto."
+              words.completedInStore
             )}
           </Text>
         )}
@@ -167,15 +165,14 @@ export const StoreCartsSection = ({
     <Container className="divide-y p-0">
       <div className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-1">
-          <Heading level="h2">¿Te escribió desde la tienda?</Heading>
+          <Heading level="h2">{words.heading}</Heading>
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            Si llegó hasta el pago, su carrito ya trae productos, dirección y
-            envío. Elegilo aquí o pegá su mensaje de WhatsApp.
+            {words.headingHint}
           </Text>
         </div>
         <Button variant="secondary" className="shrink-0" onClick={onPaste}>
           <DocumentText />
-          Pegar mensaje
+          {words.paste}
         </Button>
       </div>
 
@@ -183,34 +180,32 @@ export const StoreCartsSection = ({
         <SearchField
           value={search}
           onChange={onSearch}
-          placeholder="Nombre, teléfono o el mensaje pegado"
-          label="Buscar carrito de la tienda"
+          placeholder={words.searchPlaceholder}
+          label={words.searchLabel}
         />
       </div>
 
       {query.isLoading ? (
         <div className="px-6 py-4">
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            Buscando carritos…
+            {words.searching}
           </Text>
         </div>
       ) : query.isError ? (
         <div className="px-6 py-4">
           <Text size="small" leading="compact" className="text-ui-fg-error">
-            {errorMessage(query.error, "No se pudieron cargar los carritos.")}
+            {errorMessage(query.error, words.loadError)}
           </Text>
         </div>
       ) : carts.length === 0 ? (
         <div className="px-6 py-4">
           <Text size="small" leading="compact" className="text-ui-fg-subtle">
-            {q
-              ? `Ningún carrito reciente coincide con «${q}».`
-              : "No hay carritos recientes con datos de entrega. Armá el pedido abajo."}
+            {q ? words.noneMatch(q) : words.none}
           </Text>
         </div>
       ) : (
         <>
-          <ul className="divide-y" aria-label="Carritos de la tienda">
+          <ul className="divide-y" aria-label={words.listAria}>
             {shown.map((cart) => (
               <CartRow
                 key={cart.id}
@@ -227,7 +222,7 @@ export const StoreCartsSection = ({
                 variant="transparent"
                 onClick={() => setExpanded((value) => !value)}
               >
-                {expanded ? "Ver menos" : `Ver los ${carts.length} carritos`}
+                {expanded ? words.showLess : words.showAll(carts.length)}
               </Button>
             </div>
           )}

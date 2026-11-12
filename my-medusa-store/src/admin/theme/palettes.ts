@@ -36,11 +36,9 @@ export type FontSetId =
   | "terminal"
   | "clasica"
 
+/** Its name and one line of character are words: i18n/dict/appearance.ts. */
 export type FontSet = {
   id: FontSetId
-  name: string
-  /** One line of character, shown under the name. */
-  tagline: string
   /** Headings and big numbers. */
   display: string
   body: string
@@ -61,8 +59,6 @@ const MONO_FALLBACK = `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`
 export const FONT_SETS: FontSet[] = [
   {
     id: "gotica",
-    name: "Gótica",
-    tagline: "Cinzel en los títulos, como la tienda",
     display: `"Cinzel", ${SERIF_FALLBACK}`,
     body: `"Manrope", ${SANS_FALLBACK}`,
     weight: 600,
@@ -72,8 +68,6 @@ export const FONT_SETS: FontSet[] = [
   },
   {
     id: "moderna",
-    name: "Moderna",
-    tagline: "Manrope de punta a punta: limpia y con carácter",
     display: `"Manrope", ${SANS_FALLBACK}`,
     body: `"Manrope", ${SANS_FALLBACK}`,
     weight: 800,
@@ -83,8 +77,6 @@ export const FONT_SETS: FontSet[] = [
   },
   {
     id: "atletica",
-    name: "Atlética",
-    tagline: "Big Shoulders: números de marcador",
     display: `"Big Shoulders Display", "Arial Narrow", ${SANS_FALLBACK}`,
     body: `"Manrope", ${SANS_FALLBACK}`,
     weight: 800,
@@ -94,8 +86,6 @@ export const FONT_SETS: FontSet[] = [
   },
   {
     id: "cyber",
-    name: "Cyber",
-    tagline: "Unbounded y Space Grotesk: año 2000, versión 3000",
     display: `"Unbounded", ${SANS_FALLBACK}`,
     body: `"Space Grotesk", ${SANS_FALLBACK}`,
     weight: 600,
@@ -105,8 +95,6 @@ export const FONT_SETS: FontSet[] = [
   },
   {
     id: "editorial",
-    name: "Editorial",
-    tagline: "Instrument Serif: portada de revista",
     display: `"Instrument Serif", ${SERIF_FALLBACK}`,
     body: `"Manrope", ${SANS_FALLBACK}`,
     weight: 400,
@@ -116,8 +104,6 @@ export const FONT_SETS: FontSet[] = [
   },
   {
     id: "terminal",
-    name: "Terminal",
-    tagline: "JetBrains Mono en todo: ventas por consola",
     display: `"JetBrains Mono", ${MONO_FALLBACK}`,
     body: `"JetBrains Mono", ${MONO_FALLBACK}`,
     weight: 700,
@@ -127,8 +113,6 @@ export const FONT_SETS: FontSet[] = [
   },
   {
     id: "clasica",
-    name: "Clásica",
-    tagline: "Inter, la de Medusa",
     display: `Inter, ${SANS_FALLBACK}`,
     body: `Inter, ${SANS_FALLBACK}`,
     weight: 500,
@@ -165,6 +149,8 @@ export type ModeSpec = {
 
 export type PaletteId =
   | "catedral"
+  | "winter"
+  | "cine"
   | "tokio"
   | "roatan"
   | "copan"
@@ -177,9 +163,11 @@ export type PaletteId =
 
 export type Palette = {
   id: PaletteId
+  /**
+   * A proper name, the same in both languages. The few words of personality
+   * under it are translated: i18n/dict/appearance.ts.
+   */
   name: string
-  /** A few words of personality, shown on its card. */
-  tagline: string
   /** The type set that completes it, used while "Según la paleta" is on. */
   font: FontSetId
   /** null: Medusa's stock colors, nothing overridden. */
@@ -190,7 +178,6 @@ export const PALETTES: Palette[] = [
   {
     id: "catedral",
     name: "Catedral",
-    tagline: "Negro vacío y violeta sagrado. La tienda, del otro lado del mostrador.",
     font: "gotica",
     modes: {
       // The storefront's own colors: Void Black, Abyss Purple, Sacred Violet,
@@ -200,9 +187,30 @@ export const PALETTES: Palette[] = [
     },
   },
   {
+    // The season of "locking in" (October to December): frost on steel, and
+    // the scoreboard type. Blue is the one hue no other palette leads with.
+    id: "winter",
+    name: "Winter Arc",
+    font: "atletica",
+    modes: {
+      dark: { hue: 245, tint: 0.03, canvas: 0.15, accent: "#7DD3FC", fill: "#1C63CC", accent2: "#E0F2FE" },
+      light: { hue: 240, tint: 0.01, canvas: 0.972, accent: "#0B5CAD", fill: "#1C63CC", accent2: "#0284C7" },
+    },
+  },
+  {
+    // "Cine": what is said of anything that came out perfect. Film stock,
+    // no hue at all in the neutrals, and one red.
+    id: "cine",
+    name: "Cine",
+    font: "editorial",
+    modes: {
+      dark: { hue: 60, tint: 0.004, canvas: 0.13, accent: "#FF5A52", fill: "#C8102E", accent2: "#F4F1EA" },
+      light: { hue: 60, tint: 0.004, canvas: 0.965, accent: "#B00020", fill: "#C8102E", accent2: "#1C1917" },
+    },
+  },
+  {
     id: "tokio",
     name: "Neón Tokio",
-    tagline: "Lluvia, asfalto y letreros. Para vender de madrugada.",
     font: "cyber",
     modes: {
       dark: { hue: 268, tint: 0.032, canvas: 0.165, accent: "#FF6FB5", fill: "#C80070", accent2: "#22D3EE" },
@@ -212,7 +220,6 @@ export const PALETTES: Palette[] = [
   {
     id: "roatan",
     name: "Roatán",
-    tagline: "Arena clara, mar turquesa y un atardecer de coral.",
     font: "moderna",
     modes: {
       dark: { hue: 218, tint: 0.036, canvas: 0.185, accent: "#2DD4BF", fill: "#0F766E", accent2: "#FB7185" },
@@ -222,7 +229,6 @@ export const PALETTES: Palette[] = [
   {
     id: "copan",
     name: "Copán",
-    tagline: "Piedra tallada, jade y estuco. Cuentas con mil años de calma.",
     font: "editorial",
     modes: {
       dark: { hue: 155, tint: 0.018, canvas: 0.185, accent: "#4ADEAB", fill: "#047857", accent2: "#E0B15A" },
@@ -232,7 +238,6 @@ export const PALETTES: Palette[] = [
   {
     id: "guacamaya",
     name: "Guacamaya",
-    tagline: "Rojo, amarillo y azul en pleno vuelo. Imposible no verla.",
     font: "atletica",
     modes: {
       dark: { hue: 258, tint: 0.042, canvas: 0.172, accent: "#FF7A6B", fill: "#CC1B11", accent2: "#FACC15" },
@@ -242,7 +247,6 @@ export const PALETTES: Palette[] = [
   {
     id: "lempira",
     name: "Lempira",
-    tagline: "Negro y oro. Para los días en que la caja suena.",
     font: "gotica",
     modes: {
       dark: { hue: 85, tint: 0.008, canvas: 0.148, accent: "#E9C46A", fill: "#8C6300", accent2: "#F6E7B4" },
@@ -252,7 +256,6 @@ export const PALETTES: Palette[] = [
   {
     id: "terminal",
     name: "Terminal",
-    tagline: "Fósforo verde sobre negro. Todo es una línea de comandos.",
     font: "terminal",
     modes: {
       dark: { hue: 150, tint: 0.014, canvas: 0.14, accent: "#4ADE80", fill: "#077A37", accent2: "#A3E635" },
@@ -262,7 +265,6 @@ export const PALETTES: Palette[] = [
   {
     id: "chicle",
     name: "Chicle",
-    tagline: "Rosa chicle y celeste. Dosmilero sin pedir perdón.",
     font: "moderna",
     modes: {
       dark: { hue: 342, tint: 0.04, canvas: 0.185, accent: "#F9A8D4", fill: "#C61F5E", accent2: "#7DD3FC" },
@@ -272,7 +274,6 @@ export const PALETTES: Palette[] = [
   {
     id: "cafe",
     name: "Café Marcala",
-    tagline: "Tueste oscuro, crema y cereza madura. Con olor a mañana.",
     font: "editorial",
     modes: {
       dark: { hue: 55, tint: 0.024, canvas: 0.172, accent: "#E8B273", fill: "#B7413A", accent2: "#F0704F" },
@@ -282,7 +283,6 @@ export const PALETTES: Palette[] = [
   {
     id: "clasico",
     name: "Medusa clásico",
-    tagline: "El panel tal como vino, sin tocar.",
     font: "clasica",
     modes: null,
   },

@@ -21,9 +21,14 @@
  * class on <html> set from the saved preferences, plus a media query.
  */
 
+import type { Dict } from "../i18n/dictionary"
+import { subscribeLang } from "../i18n/lang"
+import { tr } from "../i18n/tr"
+
 type Tab = {
   path: string
-  label: string
+  /** Which word of the dictionary names it. */
+  label: Exclude<keyof Dict["appearance"]["nav"], "aria" | "appearance">
   /** Paths that also light this tab up. */
   also?: string[]
   icon: string
@@ -36,7 +41,7 @@ const svg = (body: string) =>
 const TABS: Tab[] = [
   {
     path: "/orders",
-    label: "Pedidos",
+    label: "orders",
     also: ["/draft-orders"],
     icon: svg(
       `<path d="M6 3h12a1 1 0 0 1 1 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 12h6"/>`
@@ -44,7 +49,7 @@ const TABS: Tab[] = [
   },
   {
     path: "/products",
-    label: "Productos",
+    label: "products",
     also: ["/collections", "/categories"],
     icon: svg(
       `<path d="M3 11.5V4a1 1 0 0 1 1-1h7.5a1 1 0 0 1 .7.3l8.5 8.5a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 12.2a1 1 0 0 1-.3-.7Z"/><circle cx="7.5" cy="7.5" r="1.2"/>`
@@ -52,13 +57,13 @@ const TABS: Tab[] = [
   },
   {
     path: "/nuevo-pedido",
-    label: "Nuevo pedido",
+    label: "newOrder",
     primary: true,
     icon: svg(`<path d="M12 5v14M5 12h14"/>`),
   },
   {
     path: "/inventory",
-    label: "Inventario",
+    label: "inventory",
     also: ["/reservations"],
     icon: svg(
       `<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>`
@@ -66,7 +71,7 @@ const TABS: Tab[] = [
   },
   {
     path: "/analytics",
-    label: "Estadísticas",
+    label: "analytics",
     icon: svg(`<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>`),
   },
 ]
@@ -143,20 +148,31 @@ export const mountTabBar = () => {
 
   const nav = document.createElement("nav")
   nav.className = "y2k-tabbar"
-  nav.setAttribute("aria-label", "Secciones principales")
 
   const buttons = TABS.map((tab) => {
     const button = document.createElement("button")
     button.type = "button"
     button.className = tab.primary ? "y2k-tab y2k-tab-primary" : "y2k-tab"
-    button.setAttribute("aria-label", tab.label)
     button.innerHTML = tab.primary
       ? `<span class="y2k-tab-plus">${tab.icon}</span>`
-      : `${tab.icon}<span class="y2k-tab-label">${tab.label}</span>`
+      : `${tab.icon}<span class="y2k-tab-label"></span>`
     button.addEventListener("click", () => navigateAdmin(tab.path))
     nav.appendChild(button)
     return { tab, button }
   })
+
+  // The words, in the language in use; again whenever it changes.
+  const relabel = () => {
+    const words = tr().appearance.nav
+    nav.setAttribute("aria-label", words.aria)
+    for (const { tab, button } of buttons) {
+      button.setAttribute("aria-label", words[tab.label])
+      const text = button.querySelector(".y2k-tab-label")
+      if (text) {
+        text.textContent = words[tab.label]
+      }
+    }
+  }
 
   const refresh = () => {
     const path = adminPath()
@@ -178,6 +194,9 @@ export const mountTabBar = () => {
   window.addEventListener(NAVIGATION_EVENT, refresh)
   window.addEventListener("popstate", refresh)
 
+  subscribeLang(relabel)
+
   document.body.appendChild(nav)
+  relabel()
   refresh()
 }

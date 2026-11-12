@@ -1,6 +1,14 @@
 import type { Knex } from "knex"
 
-import { Granularity, Period, STORE_TIME_ZONE } from "./time"
+import { MOMENTUM_WINDOW_DAYS, Momentum, momentumOf } from "./momentum"
+import {
+  Granularity,
+  Period,
+  STORE_TIME_ZONE,
+  addDays,
+  dayKey,
+  startOfDay,
+} from "./time"
 
 /**
  * Sales figures for the dashboard, aggregated by Postgres.
@@ -431,6 +439,48 @@ export const pendingWork = async (
     awaiting_amount: money(row.awaiting_amount),
     to_fulfill: num(row.to_fulfill),
   }
+}
+
+/** The store-local days, from a given instant on, that had at least one sale. */
+const SELLING_DAYS_SQL = `
+select to_char(o.created_at at time zone ?, 'YYYY-MM-DD') as day
+from "order" o
+where ${IS_SALE}
+  and o.currency_code = ?
+  and o.created_at >= ?
+group by 1
+`
+
+const FIRST_SALE_SQL = `
+select to_char(min(o.created_at) at time zone ?, 'YYYY-MM-DD') as day
+from "order" o
+where ${IS_SALE}
+  and o.currency_code = ?
+`
+
+/**
+ * The streak of days with sales and "day N" since the first one (see
+ * momentum.ts). Two small aggregates: one row per selling day of the last
+ * `MOMENTUM_WINDOW_DAYS`, and a single date.
+ */
+export const salesMomentum = async (
+  pg: Knex,
+  currency: string,
+  now: number = Date.now()
+): Promise<Momentum> => {
+  const today = dayKey(now)
+  const since = startOfDay(addDays(today, -(MOMENTUM_WINDOW_DAYS - 1)))
+
+  const [days, first] = await Promise.all([
+    pg.raw(SELLING_DAYS_SQL, [STORE_TIME_ZONE, currency, new Date(since).toISOString()]),
+    pg.raw(FIRST_SALE_SQL, [STORE_TIME_ZONE, currency]),
+  ])
+
+  return momentumOf(
+    (days.rows as Row[]).map((row) => String(row.day)),
+    today,
+    (first.rows[0]?.day as string | null | undefined) ?? null
+  )
 }
 
 const CURRENCY_SQL = `
