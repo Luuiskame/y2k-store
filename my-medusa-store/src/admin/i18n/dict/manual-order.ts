@@ -18,10 +18,8 @@ export const manualOrderEs = {
   prepareFailed: "No se pudo preparar el pedido.",
   /** `number` comes with its space and hash (" #1042"), or empty. */
   created: (number: string) => `Pedido${number} creado`,
-  noProducts: "Sin productos",
   unitsAndTotal: (units: number, amount: string) =>
     `${units} ${units === 1 ? "artículo" : "artículos"} · ${amount}`,
-  addWhatGoes: "Agregá lo que va en el pedido",
   plusShipping: "Más el envío, en el siguiente paso",
   review: "Revisar pedido",
 
@@ -160,9 +158,7 @@ export const manualOrderEn: Words<typeof manualOrderEs> = {
   cartNotFound: "That storefront cart was not found.",
   prepareFailed: "Could not prepare the order.",
   created: (number) => `Order${number} created`,
-  noProducts: "No products",
   unitsAndTotal: (units, amount) => `${units} ${units === 1 ? "item" : "items"} · ${amount}`,
-  addWhatGoes: "Add what goes in the order",
   plusShipping: "Plus shipping, in the next step",
   review: "Review order",
 

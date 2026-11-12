@@ -100,8 +100,9 @@ export const MomentumPills = ({
 
 /**
  * The band under the figure: the motto, then the period's real figures and
- * the mantras by turns. `mask` covers the digits when amounts are hidden in
- * Modo foto.
+ * the phrases by turns. The phrases are the owner's own once they write
+ * some (Ajustes → Apariencia); until then, the originals in the panel's
+ * language. `mask` covers the digits when amounts are hidden in Modo foto.
  */
 export const SalesTicker = ({
   sales,
@@ -117,7 +118,7 @@ export const SalesTicker = ({
   className?: string
 }) => {
   const t = useT()
-  const { motto } = useThemePrefs()
+  const { motto, phrases } = useThemePrefs()
 
   const items = useMemo(() => {
     const period = t.analytics.presets[preset].label
@@ -157,8 +158,8 @@ export const SalesTicker = ({
       facts.push(t.larp.winterArc(arc.day, arc.of))
     }
 
-    return tickerItems({ motto, facts, mantras: t.larp.mantras, seed: storeDay() })
-  }, [t, motto, sales, live, preset, mask])
+    return tickerItems({ motto, facts, phrases: phrases ?? t.larp.mantras })
+  }, [t, motto, phrases, sales, live, preset, mask])
 
   return <Ticker items={items} className={className} />
 }

@@ -172,9 +172,15 @@ const NuevoPedidoPage = () => {
   }
 
   const units = unitCount(lines)
-  const itemErrors = attempted
-    ? errors.filter((error) => error.field === "items")
-    : []
+  // With the last product gone there is nothing to review, and no button to
+  // ask with: what a past attempt found wrong goes quiet again, and stays
+  // quiet when products come back, until the next review.
+  useEffect(() => {
+    if (units === 0) {
+      setAttempted(false)
+    }
+  }, [units])
+  const showErrors = attempted && units > 0
 
   return (
     <div className="flex flex-col gap-y-3" data-y2k-ready>
@@ -206,50 +212,37 @@ const NuevoPedidoPage = () => {
         onCurrency={setCurrency}
       />
 
-      {itemErrors.length > 0 && (
-        <Container className="px-6 py-3">
-          {itemErrors.map((error) => (
-            <Text
-              key={error.message}
-              size="small"
-              leading="compact"
-              className="text-ui-fg-error"
-              role="alert"
-            >
-              {error.message}
-            </Text>
-          ))}
-        </Container>
-      )}
-
       <CustomerFormSection
         customer={customer}
         errors={errors}
-        showErrors={attempted}
+        showErrors={showErrors}
         onChange={(patch) => setCustomer((current) => ({ ...current, ...patch }))}
       />
 
-      <div className="y2k-actionbar flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col">
-          <Text size="small" leading="compact" weight="plus">
-            {units === 0
-              ? words.noProducts
-              : words.unitsAndTotal(units, formatMoney(estimateSubtotal(lines), currency))}
-          </Text>
-          <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-            {units === 0 ? words.addWhatGoes : words.plusShipping}
-          </Text>
+      {/* The bar is the order so far and the way on to its review. With no
+          products there is neither: it is not there until the first one is
+          added, and it goes when the last one is taken out. */}
+      {units > 0 && (
+        <div className="y2k-actionbar flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            <Text size="small" leading="compact" weight="plus">
+              {words.unitsAndTotal(units, formatMoney(estimateSubtotal(lines), currency))}
+            </Text>
+            <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+              {words.plusShipping}
+            </Text>
+          </div>
+          <Button
+            size="large"
+            className="shrink-0"
+            onClick={onReview}
+            isLoading={createCart.isPending}
+            disabled={createCart.isPending}
+          >
+            {words.review}
+          </Button>
         </div>
-        <Button
-          size="large"
-          className="shrink-0"
-          onClick={onReview}
-          isLoading={createCart.isPending}
-          disabled={createCart.isPending}
-        >
-          {words.review}
-        </Button>
-      </div>
+      )}
 
       <ReviewModal
         key={reviewKey}

@@ -100,6 +100,7 @@
 :root {
   --y2k-accent: var(--fg-interactive);
   --y2k-accent-2: var(--fg-interactive-hover);
+  --y2k-ink-2: var(--y2k-accent-2);
   --y2k-fill: var(--bg-interactive);
   --y2k-canvas: var(--bg-subtle);
   --y2k-glow: rgba(59, 130, 246, 0.28);
@@ -168,6 +169,18 @@ html[data-y2k-font] .y2k-wordmark {
   text-transform: none;
 }
 
+/*
+ * The store's name where it stands as a title (the sign-in screen, Modo
+ * foto): the accent, whole, with its glow. Not the two-color gradient of the
+ * figures: a blackletter name fading into a second color is the first thing
+ * that stops reading, and the name has to read at a glance in every palette.
+ */
+.y2k-brand {
+  color: var(--y2k-accent);
+  line-height: 1.05;
+  text-shadow: 0 0 22px var(--y2k-glow);
+}
+
 /* --------------------------------------------------------------- canvas -- */
 
 html.y2k-aura body {
@@ -183,9 +196,13 @@ html[data-y2k-palette]:not([data-y2k-palette="clasico"]) ::selection {
 
 /* ---------------------------------------------------- our own components -- */
 
-/* The headline figure of a page: a gradient of the two accents, with a glow. */
+/*
+ * The headline figure of a page: a gradient of the two accents, with a glow.
+ * The second one as `--y2k-ink-2`: itself wherever it reads as text, and
+ * pulled toward the first where it would not (see `inkOf` in palettes.ts).
+ */
 .y2k-hero-number {
-  background-image: linear-gradient(120deg, var(--y2k-accent) 10%, var(--y2k-accent-2) 90%);
+  background-image: linear-gradient(120deg, var(--y2k-accent) 10%, var(--y2k-ink-2) 90%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -358,6 +375,44 @@ html[data-y2k-palette]:not([data-y2k-palette="clasico"]) ::selection {
     radial-gradient(60% 42% at 105% 100%, color-mix(in srgb, var(--y2k-accent-2) 26%, transparent), transparent 66%);
 }
 
+/*
+ * The middle of the poster, between the store's name and the motto. What is
+ * in it sits centered while it fits. When it does not (a short screen), it
+ * starts at the top and is cut at the bottom: the auto margins give way
+ * before anything is pushed up over the header, which is what centering
+ * with `justify-content` does.
+ */
+.y2k-photo-main {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  padding: 20px 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.y2k-photo-main > :first-child {
+  margin-top: auto;
+}
+
+.y2k-photo-main > :last-child {
+  margin-bottom: auto;
+}
+
+/* The curve gives up its height first: the figure and the numbers stay. */
+.y2k-photo-spark {
+  flex: 0 1 96px;
+  min-height: 0;
+}
+
+@media (min-width: 768px) {
+  .y2k-photo-spark {
+    flex-basis: 128px;
+  }
+}
+
 .y2k-photo-controls {
   padding: 28px 16px max(16px, env(safe-area-inset-bottom, 0px));
   background-image: linear-gradient(to top, var(--y2k-canvas) 55%, transparent);
@@ -380,10 +435,13 @@ html[data-y2k-palette]:not([data-y2k-palette="clasico"]) ::selection {
 /* ----------------------------------------------------- the panel's voice -- */
 
 /*
- * The motto, set big in the display face of the type set in use (the element
- * also carries `y2k-display`, which is what gives it that face). Fluid: the
- * same line fills a phone and a monitor. `--y2k-display-scale` evens out
- * faces that run narrow (Big Shoulders) or wide (Unbounded).
+ * A line of the owner's (the motto, the one Estadísticas opens with), set
+ * big in the display face of the type set in use (the element also carries
+ * `y2k-display`, which is what gives it that face). Fluid: the same line
+ * fills a phone and a monitor. `--y2k-display-scale` evens out faces that
+ * run narrow (Big Shoulders) or wide (Unbounded).
+ *
+ * Four sizes, chosen per line in Apariencia: sm, md (this one), lg and xl.
  */
 .y2k-motto {
   margin: 0;
@@ -392,12 +450,17 @@ html[data-y2k-palette]:not([data-y2k-palette="clasico"]) ::selection {
   line-height: 1.04;
   text-wrap: balance;
   overflow-wrap: anywhere;
-  background-image: linear-gradient(120deg, var(--y2k-accent) 8%, var(--y2k-accent-2) 92%);
+  background-image: linear-gradient(120deg, var(--y2k-accent) 8%, var(--y2k-ink-2) 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 20px var(--y2k-glow));
+}
+
+.y2k-motto[data-size="sm"] {
+  font-size: calc(clamp(1rem, 3.4vw, 1.25rem) * var(--y2k-display-scale, 1));
+  line-height: 1.12;
 }
 
 .y2k-motto[data-size="lg"] {
@@ -440,13 +503,22 @@ html[data-y2k-font="terminal"] .y2k-motto::after {
   }
 }
 
-/* Where Estadísticas signs off with it. */
-.y2k-manifesto::before {
+/*
+ * Where Estadísticas opens with a line and signs off with the motto: a short
+ * rule of the two accents on the side the page is on. Above the motto that
+ * closes it, under the line that opens it (`data-opens`).
+ */
+.y2k-manifesto::before,
+.y2k-manifesto[data-opens]::after {
   content: "";
   width: 56px;
   height: 2px;
   border-radius: 2px;
   background-image: linear-gradient(90deg, var(--y2k-accent), var(--y2k-accent-2));
+}
+
+.y2k-manifesto[data-opens]::before {
+  content: none;
 }
 
 /* The line under the day's figure. */
@@ -547,14 +619,12 @@ html[data-y2k-font="terminal"] .y2k-motto::after {
   color: var(--fg-base);
 }
 
-/* A small diamond between lines, drawn rather than typed: no font has to have it. */
-.y2k-ticker-item::after {
-  content: "";
+/* A banknote between lines, in the accent: an icon, so no font has to have it. */
+.y2k-ticker-sep {
   flex: none;
-  width: 5px;
-  height: 5px;
-  background-color: var(--y2k-accent);
-  transform: rotate(45deg);
+  width: 15px;
+  height: 15px;
+  color: var(--y2k-accent);
 }
 
 @keyframes y2k-ticker {
@@ -612,25 +682,15 @@ html[data-y2k-font="terminal"] .y2k-motto::after {
   width: 38px;
   height: 38px;
   border-radius: 10px;
+  /* The fill alone, which white always reads on; a gradient toward the
+     second accent turns pale under the letter in the lighter palettes. */
   background-color: var(--y2k-fill);
-  background-image: linear-gradient(140deg, var(--y2k-fill), color-mix(in srgb, var(--y2k-fill) 55%, var(--y2k-accent-2)));
   color: #fff;
   font-size: 24px;
   line-height: 1;
 }
 
-/* Shorter screens hold a shorter pile. */
-@media (max-height: 760px) {
-  .y2k-stack > li:nth-child(n + 5) {
-    display: none;
-  }
-}
-
-@media (max-height: 660px) {
-  .y2k-stack > li:nth-child(n + 4) {
-    display: none;
-  }
-}
+/* How many alerts the pile holds is measured: see PhotoMode. */
 
 /* -------------------------------------------------------------- tab bar -- */
 

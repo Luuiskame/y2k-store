@@ -1,6 +1,6 @@
 import { Eye, EyeSlash, XMark } from "@medusajs/icons"
 import { clx } from "@medusajs/ui"
-import { CSSProperties, useEffect, useRef, useState } from "react"
+import { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
 import { useT } from "../../i18n/use-t"
@@ -35,8 +35,35 @@ import { LivePill, Sparkline } from "./hero"
 
 const CONTROLS_VISIBLE_MS = 4000
 
-/** How many orders the pile shows; shorter screens show fewer (theme.css). */
+/** How many orders the pile shows at most; a shorter screen shows fewer. */
 const STACK_SIZE = 5
+
+/** One alert of the pile and the space between two, until one is on screen to measure. */
+const NOTIFY_HEIGHT = 86
+const NOTIFY_GAP = 8
+/** The space between the figure and the pile, and the line under it ("+4 más"). */
+const STACK_MARGIN = 20
+const STACK_MORE = 40
+
+/** The figure never takes more than this share of the height the middle has. */
+const FIGURE_SHARE = 0.4
+const FIGURE_SMALLEST = 22
+/** Under this much height (a phone on its side) only the figure is shown. */
+const TIGHT_BELOW = 260
+
+type Fit = {
+  /** The height the middle of the poster has for its content, in pixels. */
+  space: number
+  /** How many alerts fit whole under the figure. */
+  room: number
+  /** Whether the line under the pile ("+4 más") fits as well. */
+  more: boolean
+}
+
+/** Until the screen is measured: a tall one. */
+const ROOMY: Fit = { space: Infinity, room: STACK_SIZE, more: true }
+
+const sameFit = (a: Fit, b: Fit) => a.space === b.space && a.room === b.room && a.more === b.more
 
 type Scene = "board" | "stack"
 
@@ -110,6 +137,9 @@ const Notification = ({
  *
  * Two scenes: the scoreboard (the figure, its curve and three numbers), and
  * the pile of order alerts, which is how a good day looks on a lock screen.
+ * Whatever the screen, the middle never runs over the store's name above it
+ * or the motto below: the pile holds only the alerts that fit, and the curve
+ * of the scoreboard gives up its height before anything else does.
  * Both are the period's real orders. The figure always comes with its
  * period, its date and its currency, and the amounts can be covered
  * ("L •,•••.••") for a capture that shows the panel without the money.
@@ -135,6 +165,13 @@ export const PhotoMode = ({
   const [hidden, setHidden] = useState(false)
   const [controls, setControls] = useState(true)
   const close = useRef<HTMLButtonElement>(null)
+  // The middle of the poster and, in it, the block of the figure: what is
+  // left under the figure is the room the pile has. (A plain <div>, not a
+  // second <main>: the page has its own, and the room theme.css leaves under
+  // every <main> for the bottom bar would be taken from the poster too.)
+  const middle = useRef<HTMLDivElement>(null)
+  const headline = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState<Fit>(ROOMY)
 
   // The newest orders; the same request the phone's order list makes.
   const recent = useCompactOrders({ view: "all", q: "", enabled: scene === "stack" })
@@ -147,6 +184,47 @@ export const PhotoMode = ({
     const timer = setTimeout(() => setControls(false), CONTROLS_VISIBLE_MS)
     return () => clearTimeout(timer)
   }, [controls, preset, hidden, scene])
+
+  /*
+   * What the middle of the poster holds follows the height it really has.
+   * The pile shows as many alerts as fit whole under the figure, and no
+   * more: a full pile is taller than a phone has room for, and left to
+   * itself it pushes the figure up over the name of the store and the line
+   * under it down over the motto. Measured rather than guessed from the
+   * screen height, because what the figure, the caption and the motto take
+   * changes with the type set, the period and the words.
+   */
+  useLayoutEffect(() => {
+    const box = middle.current
+    const top = headline.current
+    if (!box || !top) {
+      return
+    }
+
+    const measure = () => {
+      const card = box.querySelector<HTMLElement>(".y2k-notify")?.offsetHeight || NOTIFY_HEIGHT
+      const style = getComputedStyle(box)
+      const space =
+        box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+      const under = space - top.offsetHeight - STACK_MARGIN
+      const cards = (height: number) =>
+        Math.max(0, Math.min(STACK_SIZE, Math.floor((height + NOTIFY_GAP) / (card + NOTIFY_GAP))))
+      // With the line under the pile if it fits; a single alert without it
+      // rather than none.
+      const withMore = cards(under - STACK_MORE)
+      const next: Fit =
+        withMore > 0
+          ? { space, room: withMore, more: true }
+          : { space, room: Math.min(1, cards(under)), more: false }
+      setFit((current) => (sameFit(current, next) ? current : next))
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(box)
+    observer.observe(top)
+    return () => observer.disconnect()
+  }, [scene])
 
   useEffect(() => {
     close.current?.focus()
@@ -164,7 +242,11 @@ export const PhotoMode = ({
   const money = (value: number, compact = false) =>
     sales ? show(formatMoney(value, sales.currency, { compact })) : "—"
   const change = sales ? changeOf(sales.totals.sales, sales.previous.sales) : null
-  const caption = hype && !hidden ? captionOf(t, sales, preset) : null
+  // A phone on its side: the figure alone, at a size that fits.
+  const tight = fit.space < TIGHT_BELOW
+  const sized = (max: number) =>
+    Math.max(FIGURE_SMALLEST, Math.min(max, Math.floor(fit.space * FIGURE_SHARE)))
+  const caption = hype && !hidden && !tight ? captionOf(t, sales, preset) : null
 
   // The pile only holds sales of the period on screen, newest first.
   const pile = sales
@@ -173,15 +255,15 @@ export const PhotoMode = ({
         return order.status !== "canceled" && day >= sales.range.from && day <= sales.range.to
       })
     : []
-  const piled = pile.slice(0, STACK_SIZE)
+  const piled = pile.slice(0, fit.room)
   const beyond = sales ? Math.max(0, sales.totals.orders - piled.length) : 0
 
   const figure = (max: number) => (
-    <div className="flex w-full max-w-[900px] flex-col items-center gap-2">
+    <div ref={headline} className="flex w-full max-w-[900px] flex-none flex-col items-center gap-2">
       <span className="txt-compact-small-plus text-ui-fg-subtle uppercase tracking-[0.22em]">
         {t.analytics.hero.salesOf(words.label)}
       </span>
-      <FitText max={max} min={34} className="y2k-num y2k-hero-number">
+      <FitText max={sized(max)} min={Math.min(34, sized(max))} className="y2k-num y2k-hero-number">
         {sales ? money(sales.totals.sales) : "…"}
       </FitText>
       <span className="txt-compact-small text-ui-fg-subtle">
@@ -203,9 +285,9 @@ export const PhotoMode = ({
       className="y2k-photo fixed inset-0 z-50 flex select-none flex-col overflow-hidden"
       onClick={() => setControls((visible) => !visible)}
     >
-      <header className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="y2k-wordmark y2k-hero-number text-[clamp(2.2rem,10vw,3.4rem)]">
+      <header className="flex flex-none items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="y2k-wordmark y2k-brand text-[clamp(2.2rem,10vw,3.4rem)]">
             {STORE_NAME}
           </span>
           <span className="txt-compact-xsmall-plus text-ui-fg-subtle uppercase tracking-[0.3em]">
@@ -216,37 +298,41 @@ export const PhotoMode = ({
       </header>
 
       {scene === "board" ? (
-        <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
+        <div ref={middle} className="y2k-photo-main gap-6">
           {figure(128)}
 
-          <Sparkline
-            values={sales?.series.current.sales ?? []}
-            className="h-24 max-w-[720px] md:h-32"
-            strokeWidth={2.5}
-          />
+          {!tight && (
+            <Sparkline
+              values={sales?.series.current.sales ?? []}
+              className="y2k-photo-spark max-w-[720px]"
+              strokeWidth={2.5}
+            />
+          )}
 
-          <div className="grid w-full max-w-[720px] grid-cols-3 gap-4">
-            <Stat
-              label={t.analytics.hero.orders}
-              value={sales ? show(formatNumber(sales.totals.orders)) : "—"}
-            />
-            <Stat
-              label={t.analytics.hero.averageOrder}
-              value={sales ? money(sales.totals.average_order, true) : "—"}
-            />
-            <Stat
-              label={t.analytics.photo.visits}
-              value={traffic ? show(formatNumber(traffic.totals.sessions)) : "—"}
-            />
-          </div>
-        </main>
+          {!tight && (
+            <div className="grid w-full max-w-[720px] flex-none grid-cols-3 gap-4">
+              <Stat
+                label={t.analytics.hero.orders}
+                value={sales ? show(formatNumber(sales.totals.orders)) : "—"}
+              />
+              <Stat
+                label={t.analytics.hero.averageOrder}
+                value={sales ? money(sales.totals.average_order, true) : "—"}
+              />
+              <Stat
+                label={t.analytics.photo.visits}
+                value={traffic ? show(formatNumber(traffic.totals.sessions)) : "—"}
+              />
+            </div>
+          )}
+        </div>
       ) : (
-        <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-5 text-center">
+        <div ref={middle} className="y2k-photo-main gap-5">
           {figure(84)}
 
           {piled.length > 0 ? (
             <ul
-              className="y2k-stack flex w-full max-w-[520px] flex-col gap-2 text-left"
+              className="y2k-stack flex w-full max-w-[520px] flex-none flex-col gap-2 text-left"
               aria-label={t.analytics.photo.stackAria}
               style={{ "--y2k-n": piled.length } as CSSProperties}
               // A new period or a new order replays the pile building up.
@@ -256,8 +342,8 @@ export const PhotoMode = ({
                 <Notification key={order.id} order={order} index={index} show={show} />
               ))}
             </ul>
-          ) : (
-            <p className="txt-compact-small text-ui-fg-subtle max-w-[420px]">
+          ) : fit.room === 0 ? null : (
+            <p className="txt-compact-small text-ui-fg-subtle max-w-[420px] flex-none">
               {/* "No orders" is only said once the orders are in hand: a
                   request that failed or has not answered must not read as an
                   empty day. */}
@@ -268,15 +354,15 @@ export const PhotoMode = ({
                 : t.analytics.photo.stackEmpty}
             </p>
           )}
-          {beyond > 0 && piled.length > 0 && (
-            <span className="txt-compact-small-plus text-ui-fg-subtle">
+          {beyond > 0 && piled.length > 0 && fit.more && (
+            <span className="txt-compact-small-plus text-ui-fg-subtle flex-none">
               {show(t.analytics.photo.stackMore(formatNumber(beyond)))}
             </span>
           )}
-        </main>
+        </div>
       )}
 
-      <footer className="flex flex-col gap-3">
+      <footer className="flex flex-none flex-col gap-3">
         <Motto size="md" className="text-center" />
         <div className="flex items-end justify-between gap-4">
           <span className="txt-compact-small-plus text-ui-fg-subtle">{STORE_HANDLE}</span>

@@ -1,6 +1,7 @@
 import {
   Rgb,
   channels,
+  contrast,
   mix,
   oklch,
   parseHex,
@@ -511,10 +512,34 @@ const effectTokens = (s: Swatches, mode: Mode): Record<string, string> => {
   )
 }
 
+/** What big text needs against what is behind it (WCAG, large scale). */
+export const LARGE_TEXT_CONTRAST = 3
+
+/**
+ * The second accent as text. It was chosen as a color (for gradients, the
+ * glow, a second series), and in a few palettes it is too close to the page
+ * to be read: a pale lilac or a gold on white. Wherever it reads on both the
+ * page and the cards it is itself; where it does not, it moves toward the
+ * first accent, which always reads, and only as far as it takes.
+ */
+export const inkOf = (s: Swatches): Rgb => {
+  const reads = (color: Rgb) =>
+    Math.min(contrast(color, s.card), contrast(color, s.canvas)) >= LARGE_TEXT_CONTRAST
+
+  for (let step = 0; step < 10; step += 1) {
+    const color = mix(s.accent2, s.accent, step / 10)
+    if (reads(color)) {
+      return color
+    }
+  }
+  return s.accent
+}
+
 /** What the admin's own components read, on top of Medusa's tokens. */
 const ownTokens = (s: Swatches, mode: Mode): Record<string, string> => ({
   "--y2k-accent": toHex(s.accent),
   "--y2k-accent-2": toHex(s.accent2),
+  "--y2k-ink-2": toHex(inkOf(s)),
   "--y2k-fill": toHex(s.fill),
   "--y2k-canvas": toHex(s.canvas),
   "--y2k-glow": rgba(s.accent, mode === "dark" ? 0.38 : 0.22),
@@ -574,6 +599,8 @@ export type Preview = {
   accent: string
   fill: string
   accent2: string
+  /** The second accent as the end of a figure's gradient (see `inkOf`). */
+  ink2: string
 }
 
 export const previewOf = (palette: Palette, mode: Mode): Preview => {
@@ -589,6 +616,7 @@ export const previewOf = (palette: Palette, mode: Mode): Preview => {
       accent: stock["--fg-interactive"],
       fill: stock["--button-inverted"],
       accent2: stock["--fg-muted"],
+      ink2: stock["--fg-muted"],
     }
   }
   const s = swatchesOf(palette.modes[mode], mode)
@@ -602,5 +630,6 @@ export const previewOf = (palette: Palette, mode: Mode): Preview => {
     accent: toHex(s.accent),
     fill: toHex(s.fill),
     accent2: toHex(s.accent2),
+    ink2: toHex(inkOf(s)),
   }
 }

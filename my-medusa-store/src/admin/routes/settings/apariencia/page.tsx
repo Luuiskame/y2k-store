@@ -1,10 +1,21 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
-import { CheckCircleSolid } from "@medusajs/icons"
-import { Button, Container, Heading, Input, Label, Switch, Text, clx } from "@medusajs/ui"
+import { CheckCircleSolid, Plus, XMark } from "@medusajs/icons"
+import {
+  Button,
+  Container,
+  Heading,
+  IconButton,
+  Input,
+  Label,
+  Switch,
+  Text,
+  clx,
+} from "@medusajs/ui"
 import { CSSProperties, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { Motto } from "../../../components/larp/motto"
+import { BigLine } from "../../../components/larp/motto"
+import { Ticker } from "../../../components/larp/ticker"
 import { alignDashboard } from "../../../i18n/dashboard"
 import { LANGS, Lang, langOfCode } from "../../../i18n/lang"
 import { tr } from "../../../i18n/tr"
@@ -24,10 +35,17 @@ import {
 import {
   DEFAULT_MOTTO,
   MOTTO_MAX_LENGTH,
+  PHRASES_MAX,
+  PHRASE_MAX_LENGTH,
+  PHRASE_SIZES,
+  PhraseSize,
   ThemePrefs,
   cleanMotto,
+  cleanOpener,
+  cleanPhrases,
   resolveTheme,
   sameLook,
+  samePhrases,
 } from "../../../theme/prefs"
 
 /** Which side Medusa's light/dark switch is on, kept up to date. */
@@ -97,7 +115,7 @@ const MiniPreview = ({
           <span
             style={{
               ...displayStyle(font, 17),
-              backgroundImage: `linear-gradient(120deg, ${preview.accent}, ${preview.accent2})`,
+              backgroundImage: `linear-gradient(120deg, ${preview.accent}, ${preview.ink2})`,
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",
@@ -287,68 +305,335 @@ const Toggle = ({
   </div>
 )
 
-/**
- * The motto, as a field. What is typed is kept here until it is a motto
- * worth saving: storing every keystroke would trim the space someone is
- * about to type a word after. An empty field goes back to the original.
- */
-const MottoField = ({
-  motto,
+/** The sizes by the letters the store already sells in. */
+const SIZE_LETTERS: Record<PhraseSize, string> = { sm: "S", md: "M", lg: "L", xl: "XL" }
+
+/** How big a phrase is set: S, M, L or XL. */
+const SizePicker = ({
+  id,
+  value,
   onChange,
 }: {
-  motto: string
-  onChange: (motto: string) => void
+  id: string
+  value: PhraseSize
+  onChange: (size: PhraseSize) => void
 }) => {
   const words = useT().appearance.larp
-  const [draft, setDraft] = useState(motto)
 
-  // The motto changed elsewhere (the account's copy arrived, "back to the
+  return (
+    <div className="flex items-center gap-3">
+      <Text id={id} size="small" leading="compact" className="text-ui-fg-subtle shrink-0">
+        {words.size}
+      </Text>
+      <div className="y2k-chips" role="radiogroup" aria-labelledby={id}>
+        {PHRASE_SIZES.map((size) => (
+          <button
+            key={size}
+            type="button"
+            role="radio"
+            aria-checked={size === value}
+            aria-label={words.sizes[size]}
+            title={words.sizes[size]}
+            data-size={size}
+            className={clx("y2k-chip min-w-[44px] justify-center", size === value && "is-on")}
+            onClick={() => onChange(size)}
+          >
+            {SIZE_LETTERS[size]}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * One of the two lines Estadísticas is framed by (the one it opens with and
+ * the motto it closes with): its switch, its words, its size, and how it
+ * looks, at that size, in the palette in use.
+ *
+ * What is typed is kept here until it is a line worth saving: storing every
+ * keystroke would trim the space someone is about to type a word after.
+ */
+const PhraseField = ({
+  id,
+  label,
+  help,
+  value,
+  clean,
+  placeholder,
+  on,
+  size,
+  emptyNote,
+  original,
+  onText,
+  onToggle,
+  onSize,
+}: {
+  /** Of the text field; the switch and the sizes derive theirs from it. */
+  id: string
+  label: string
+  help: string
+  /** The line as stored. */
+  value: string
+  /** What typed text is stored as (an empty motto is the original one). */
+  clean: (raw: string) => string
+  placeholder: string
+  on: boolean
+  size: PhraseSize
+  /** Said in place of the preview while there is no line. */
+  emptyNote?: string
+  /** The line "Volver al original" puts back; none for a line that has none. */
+  original?: string
+  onText: (text: string) => void
+  onToggle: (on: boolean) => void
+  onSize: (size: PhraseSize) => void
+}) => {
+  const words = useT().appearance.larp
+  const [draft, setDraft] = useState(value)
+
+  // The line changed elsewhere (the account's copy arrived, "back to the
   // original"): the field shows it, unless it is what is being typed.
   useEffect(() => {
-    setDraft((current) => (cleanMotto(current) === motto ? current : motto))
-  }, [motto])
+    setDraft((current) => (clean(current) === value ? current : value))
+  }, [value, clean])
 
-  const type = (value: string) => {
-    setDraft(value)
-    onChange(cleanMotto(value))
+  const type = (text: string) => {
+    setDraft(text)
+    onText(clean(text))
   }
 
   return (
-    <div className="flex flex-col gap-3 px-6 py-4">
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="y2k-motto" size="small" weight="plus">
-          {words.mottoLabel}
-        </Label>
-        <Text size="small" leading="compact" className="text-ui-fg-subtle">
-          {words.mottoHelp}
-        </Text>
+    <div className="flex flex-col gap-3 px-6 py-4" data-y2k-phrase={id}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={`${id}-on`} size="small" weight="plus">
+            {label}
+          </Label>
+          <Text size="small" leading="compact" className="text-ui-fg-subtle">
+            {help}
+          </Text>
+        </div>
+        <Switch id={`${id}-on`} checked={on} onCheckedChange={onToggle} />
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {/* Medusa's Input sits in a wrapper of its own: the wrapper is what
             has to take the row's width. */}
         <div className="min-w-0 flex-1">
           <Input
-            id="y2k-motto"
+            id={id}
+            aria-label={label}
             value={draft}
             maxLength={MOTTO_MAX_LENGTH}
-            placeholder={DEFAULT_MOTTO}
+            placeholder={placeholder}
             onChange={(event) => type(event.target.value)}
-            onBlur={() => setDraft(motto)}
+            onBlur={() => setDraft(value)}
+            autoComplete="off"
+          />
+        </div>
+        {original !== undefined && (
+          <Button
+            size="small"
+            variant="secondary"
+            className="shrink-0"
+            disabled={value === original}
+            onClick={() => type(original)}
+          >
+            {words.mottoReset}
+          </Button>
+        )}
+      </div>
+      <SizePicker id={`${id}-size`} value={size} onChange={onSize} />
+      {value ? (
+        <div
+          className={clx(
+            "y2k-hero px-5 py-6 text-center transition-opacity",
+            !on && "opacity-50"
+          )}
+        >
+          <BigLine text={value} size={size} />
+        </div>
+      ) : (
+        emptyNote && (
+          <Text size="small" leading="compact" className="text-ui-fg-muted">
+            {emptyNote}
+          </Text>
+        )
+      )}
+      {!on && value && (
+        <Text size="small" leading="compact" className="text-ui-fg-muted" role="status">
+          {words.hidden}
+        </Text>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The lines of the ticker, as a list the owner edits: change one in place,
+ * take one out, add their own. Until they touch it the list shows the
+ * originals, which follow the panel's language; from the first change it is
+ * theirs and stays as written.
+ *
+ * A row emptied while typing stays on screen (nothing below it jumps) and is
+ * simply not stored.
+ */
+const PhrasesField = ({
+  custom,
+  originals,
+  motto,
+  onChange,
+}: {
+  /** The owner's lines, or null while they keep the originals. */
+  custom: string[] | null
+  originals: string[]
+  /** Leads the preview, as it leads every lap of the real ticker. */
+  motto: string
+  onChange: (phrases: string[] | null) => void
+}) => {
+  const words = useT().appearance.larp
+  const shown = custom ?? originals
+  const [drafts, setDrafts] = useState(shown)
+  const [fresh, setFresh] = useState("")
+
+  // The list changed elsewhere (the account's copy, the language of the
+  // originals, "back to the originals"): the rows show it, unless it is what
+  // they already say.
+  const shownKey = shown.join("\n")
+  useEffect(() => {
+    setDrafts((current) =>
+      samePhrases(cleanPhrases(current) ?? [], shown) ? current : shown
+    )
+    // `shown` is a new array on every render; its text is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownKey])
+
+  const stored = cleanPhrases(drafts) ?? []
+  const full = stored.length >= PHRASES_MAX
+  const next = cleanPhrases([fresh])?.[0] ?? ""
+
+  const commit = (rows: string[]) => {
+    setDrafts(rows)
+    const lines = cleanPhrases(rows) ?? []
+    // A list that says what the originals say is the originals again.
+    onChange(samePhrases(lines, originals) ? null : lines)
+  }
+
+  const add = () => {
+    if (!next || full) {
+      return
+    }
+    commit([...drafts, next])
+    setFresh("")
+  }
+
+  return (
+    <div className="flex flex-col gap-3 px-6 py-4" data-y2k-phrases>
+      <div className="flex flex-col gap-1">
+        <Text size="small" leading="compact" weight="plus">
+          {words.phrasesLabel}
+        </Text>
+        <Text size="small" leading="compact" className="text-ui-fg-subtle">
+          {words.phrasesHelp}
+        </Text>
+      </div>
+
+      {drafts.length > 0 && (
+        <ul className="flex flex-col gap-2" aria-label={words.phrasesLabel}>
+          {drafts.map((line, index) => (
+            <li key={index} className="flex items-center gap-2" data-y2k-phrase-row>
+              <div className="min-w-0 flex-1">
+                <Input
+                  aria-label={words.phraseAria(index + 1)}
+                  value={line}
+                  maxLength={PHRASE_MAX_LENGTH}
+                  placeholder={words.phraseBlank}
+                  onChange={(event) =>
+                    commit(drafts.map((row, at) => (at === index ? event.target.value : row)))
+                  }
+                  // Left as stored (trimmed, single spaces); an empty row
+                  // stays empty rather than disappearing under the thumb.
+                  onBlur={() =>
+                    setDrafts((current) =>
+                      current.map((row, at) =>
+                        at === index ? cleanPhrases([row])?.[0] ?? "" : row
+                      )
+                    )
+                  }
+                  autoComplete="off"
+                />
+              </div>
+              <IconButton
+                type="button"
+                variant="transparent"
+                className="shrink-0"
+                aria-label={words.phraseRemove(index + 1)}
+                onClick={() => commit(drafts.filter((_row, at) => at !== index))}
+              >
+                <XMark />
+              </IconButton>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          add()
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <Input
+            id="y2k-phrase-new"
+            aria-label={words.phraseNew}
+            value={fresh}
+            maxLength={PHRASE_MAX_LENGTH}
+            placeholder={words.phraseNewPlaceholder}
+            onChange={(event) => setFresh(event.target.value)}
+            disabled={full}
             autoComplete="off"
           />
         </div>
         <Button
+          type="submit"
           size="small"
           variant="secondary"
           className="shrink-0"
-          disabled={motto === DEFAULT_MOTTO}
-          onClick={() => type(DEFAULT_MOTTO)}
+          disabled={!next || full}
+          data-y2k-phrase-add
         >
-          {words.mottoReset}
+          <Plus />
+          {words.phraseAdd}
+        </Button>
+      </form>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Text size="small" leading="compact" className="text-ui-fg-muted" role="status">
+          {full
+            ? words.phrasesFull(PHRASES_MAX)
+            : stored.length === 0
+            ? words.phrasesNone
+            : words.phrasesCount(stored.length, PHRASES_MAX)}
+        </Text>
+        <Button
+          size="small"
+          variant="secondary"
+          disabled={custom === null}
+          onClick={() => onChange(null)}
+          data-y2k-phrases-reset
+        >
+          {words.phrasesReset}
         </Button>
       </div>
-      <div className="y2k-hero px-5 py-6 text-center">
-        <Motto size="lg" />
+
+      <div className="flex flex-col gap-2">
+        <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
+          {words.phrasesPreview}
+        </Text>
+        <div className="y2k-hero">
+          <Ticker items={[motto, ...stored]} className="py-3" />
+        </div>
       </div>
     </div>
   )
@@ -498,7 +783,40 @@ const AparienciaPage = () => {
             {words.larp.description}
           </Text>
         </div>
-        <MottoField motto={prefs.motto} onChange={(motto) => set({ motto })} />
+        <PhraseField
+          id="y2k-opener"
+          label={words.larp.openerLabel}
+          help={words.larp.openerHelp}
+          value={prefs.opener}
+          clean={cleanOpener}
+          placeholder={words.larp.openerPlaceholder}
+          on={prefs.openerOn}
+          size={prefs.openerSize}
+          emptyNote={words.larp.openerEmpty}
+          onText={(opener) => set({ opener })}
+          onToggle={(openerOn) => set({ openerOn })}
+          onSize={(openerSize) => set({ openerSize })}
+        />
+        <PhraseField
+          id="y2k-motto"
+          label={words.larp.mottoLabel}
+          help={words.larp.mottoHelp}
+          value={prefs.motto}
+          clean={cleanMotto}
+          placeholder={DEFAULT_MOTTO}
+          on={prefs.mottoOn}
+          size={prefs.mottoSize}
+          original={DEFAULT_MOTTO}
+          onText={(motto) => set({ motto })}
+          onToggle={(mottoOn) => set({ mottoOn })}
+          onSize={(mottoSize) => set({ mottoSize })}
+        />
+        <PhrasesField
+          custom={prefs.phrases}
+          originals={t.larp.mantras}
+          motto={prefs.motto}
+          onChange={(phrases) => set({ phrases })}
+        />
         <Toggle
           id="y2k-hype"
           label={words.larp.hypeLabel}

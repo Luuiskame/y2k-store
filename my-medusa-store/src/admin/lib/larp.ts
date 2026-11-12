@@ -77,30 +77,30 @@ export const winterArcDay = (day: string): { day: number; of: number } | null =>
 }
 
 /**
- * What the ticker shows, in order: the motto, then a figure and a mantra by
- * turns. The mantras start at a different one each day.
+ * What the ticker shows, in order: the motto, then the period's figures and
+ * the phrases, every one of them, each list in its own order and spread
+ * evenly through the other. Two figures and eight phrases do not run as two
+ * pairs and six phrases in a row: a figure comes up every few phrases.
+ *
+ * The phrases are the owner's (Ajustes → Apariencia) or, until they write
+ * their own, the panel's originals. All of them run on every lap, in the
+ * order they were written: what is listed there is what is seen here.
  */
 export const tickerItems = ({
   motto,
   facts,
-  mantras,
-  seed,
+  phrases,
 }: {
   motto: string
   facts: string[]
-  mantras: string[]
-  seed: string
+  phrases: string[]
 }): string[] => {
-  const items = [motto]
-  const start = mantras.length ? hashOf(seed) % mantras.length : 0
-  const turns = Math.max(facts.length, Math.min(4, mantras.length))
-  for (let turn = 0; turn < turns; turn += 1) {
-    if (facts[turn]) {
-      items.push(facts[turn])
-    }
-    if (mantras.length) {
-      items.push(mantras[(start + turn) % mantras.length])
-    }
-  }
-  return items.filter(Boolean)
+  // Each line gets a place between 0 and 1 along the lap; a figure and a
+  // phrase due at the same place go figure first.
+  const placed = [facts.filter(Boolean), phrases.filter(Boolean)].flatMap((lines, list) =>
+    lines.map((text, index) => ({ text, at: (index + 0.5) / lines.length, list }))
+  )
+  placed.sort((a, b) => a.at - b.at || a.list - b.list)
+
+  return [motto, ...placed.map((line) => line.text)].filter(Boolean)
 }

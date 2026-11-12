@@ -14,7 +14,7 @@ import "../theme/boot"
  */
 const LoginBrandWidget = () => (
   <div className="flex flex-col items-center gap-y-1 pb-2">
-    <span className="y2k-wordmark y2k-hero-number text-[44px]">{STORE_NAME}</span>
+    <span className="y2k-wordmark y2k-brand text-[44px]">{STORE_NAME}</span>
     <span className="text-ui-fg-muted txt-compact-xsmall-plus uppercase tracking-[0.28em]">
       Honduras
     </span>
